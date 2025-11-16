@@ -53,7 +53,11 @@ class ItemListView(generics.ListAPIView):
 #         return Item.objects.filter(business=business)
 
 
+class AppRunView(APIView):
+    permission_classes = [AllowAny]
 
+    def get(self, request):
+        return "App running"
 
 class DashboardView(APIView):
     permission_classes = [IsAuthenticated, IsUserOrAdmin]

@@ -5,10 +5,11 @@ from products.views import ItemDetailView, ItemListCreateView
 from customers.views import CustomerDetailView, CustomerListCreateView, CustomerLoginView, CustomerSignupView
 from business_entity.views import BusinessSetupView
 from users import views as UserViews
-from .views import DashboardView, ItemListView
+from .views import DashboardView, ItemListView, AppRunView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 urlpatterns = [
+    path('/', AppRunView.as_view(), name='run'),
     path('register/', UserViews.RegisterView.as_view(), name='auth_register'),
     # path('login/', UserViews.LoginView.as_view(), name='auth_login'),
     path('dashboard/', DashboardView.as_view(), name="dashboard"),
