@@ -61,6 +61,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_superuser = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now) 
     
+    active_business = models.ForeignKey(
+    'business_entity.BusinessEntity',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    related_name="active_users")
+
+
     # Assign the custom manager
     objects = CustomUserManager()
 

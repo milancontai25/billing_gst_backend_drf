@@ -17,7 +17,7 @@ class Customer(models.Model):
     pin = models.IntegerField(blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     note = models.TextField(blank=True, null=True)
-    password = models.CharField(max_length=128, blank=True, null=True)
+    password = models.CharField(max_length=128, blank=True, null=True, default='statgrow123')
     is_customer = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):

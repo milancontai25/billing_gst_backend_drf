@@ -12,20 +12,19 @@ class CustomerListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        try:
-            business = BusinessEntity.objects.get(owner=user)
-        except BusinessEntity.DoesNotExist:
-            raise serializers.ValidationError("Business entity not found for this user.")
-        
-        return Customer.objects.filter(business=business)
+
+        if not user.active_business:
+            raise serializers.ValidationError("Please select an active business first.")
+
+        return Customer.objects.filter(business=user.active_business)
 
     def perform_create(self, serializer):
         user = self.request.user
-        try:
-            business = BusinessEntity.objects.get(owner=user)
-        except BusinessEntity.DoesNotExist:
-            raise serializers.ValidationError("Business entity not found for this user.")
-        serializer.save(business=business)
+
+        if not user.active_business:
+            raise serializers.ValidationError("Please select an active business first.")
+
+        serializer.save(business=user.active_business)
 
 
 class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -34,12 +33,11 @@ class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        try:
-            business = BusinessEntity.objects.get(owner=user)
-        except BusinessEntity.DoesNotExist:
-            raise serializers.ValidationError("Business entity not found for this user.")
-        
-        return Customer.objects.filter(business=business)
+
+        if not user.active_business:
+            raise serializers.ValidationError("Please select an active business first.")
+
+        return Customer.objects.filter(business=user.active_business)
 
 
 class CustomerSignupView(generics.CreateAPIView):

@@ -3,7 +3,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):    
     class Meta:
         model = User
         fields = ['id', 'name', 'email', 'phone', 'is_superuser', 'is_active', 'date_joined']

@@ -46,7 +46,7 @@ class ItemListView(generics.ListAPIView):
 #     def get_queryset(self):
 #         user = self.request.user
 #         try:
-#             business = BusinessEntity.objects.get(owner=user)
+#             business = BusinessEntity.objects.get(user=user)
 #         except BusinessEntity.DoesNotExist:
 #             raise serializers.ValidationError("Business entity not found for this user.")
         
@@ -59,6 +59,7 @@ class AppRunView(APIView):
     def get(self, request):
         return "App running"
 
+
 class DashboardView(APIView):
     permission_classes = [IsAuthenticated, IsUserOrAdmin]
 
@@ -66,74 +67,60 @@ class DashboardView(APIView):
         user = request.user
         update_last_login(None, user)
 
-        # ---------- ADMIN DASHBOARD ----------
+        # -------- ADMIN DASHBOARD --------
         if user.is_superuser:
             users = User.objects.exclude(is_superuser=True)
-            user_data = UserSerializer(users, many=True).data
-            business_data = BusinessEntitySerializer(
-                BusinessEntity.objects.select_related('owner').all(),
-                many=True
-            ).data
+            all_businesses = BusinessEntity.objects.select_related('user').all()
+
             return Response({
                 "message": f"Welcome Admin {user.name}!",
-                "users": user_data,
-                "businesses": business_data
-            }, status=status.HTTP_200_OK)
+                "total_users": users.count(),
+                "total_businesses": all_businesses.count(),
+                "users": UserSerializer(users, many=True).data,
+                "businesses": BusinessEntitySerializer(all_businesses, many=True).data
+            }, status=200)
 
-        # ---------- USER DASHBOARD ----------
-        business, created = BusinessEntity.objects.get_or_create(
-            owner=user,
-            defaults={
-                "entity_name": "",
-                "type": "",  # can be empty until user fills
-                "description": ""
-            }
-        )
-        print(business)
+        # -------- USER DASHBOARD --------
+        businesses = BusinessEntity.objects.filter(user=user)
 
-        user_data = UserSerializer(user).data
-        business_data = BusinessEntitySerializer(business).data
-
-        flag = created or not business.entity_name
-
-        if flag:
+        # If user has no business
+        if businesses.count() == 0:
             return Response({
                 "message": f"Welcome {user.name}!",
-                "user": user_data,
-                "business": business_data,
-                "is_new_business": created,
-                "requires_setup": flag  # flag for frontend
-            }, status=status.HTTP_200_OK)
-        
-        # business = BusinessEntity.objects.filter(owner=user).first()
-        # print(business)
+                "requires_setup": True,
+                "businesses": [],
+                "user": UserSerializer(user).data,
+            }, status=200)
 
-        total_customers = Customer.objects.filter(business=business).count()
-        total_products = Item.objects.filter(business=business).count()
-        total_orders = Order.objects.filter(business=business).count()
-        total_invoices = Invoice.objects.filter(business=business).count()
-        # total_revenue = Invoice.objects.filter(business=business, status="paid").aggregate(total=models.Sum("total_amount"))["total"] or 0.0
-        total_expenses = 0  # You can extend later if you have expense tracking
+        # Ensure active business exists
+        if not user.active_business:
+            user.active_business = businesses.first()
+            user.save()
 
-        serializer = BusinessEntitySerializer(business, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save(owner=user)
+        active_business = user.active_business
 
-            return Response({
-                "requires_setup": False,
-                "message": f"Welcome back, {user.name}!",
-                "business": serializer.data,
-                "dashboard": {
-                    # "total_revenue": total_revenue,
-                    "total_customers": total_customers,
-                    "total_products": total_products,
-                    "total_orders": total_orders,
-                    "total_invoices": total_invoices,
-                    "total_expenses": total_expenses,
-                    # "profit_loss": total_revenue - total_expenses,
-                }
-            }, status=status.HTTP_200_OK)
+        # Fetch business-specific stats
+        total_customers = Customer.objects.filter(business=active_business).count()
+        total_products = Item.objects.filter(business=active_business).count()
+        total_orders = Order.objects.filter(business=active_business).count()
+        total_invoices = Invoice.objects.filter(business=active_business).count()
 
+        return Response({
+            "message": f"Welcome, {user.name}!",
+            "requires_setup": False,
+            "user": UserSerializer(user).data,
+
+            "businesses": BusinessEntitySerializer(businesses, many=True).data,
+            "active_business": BusinessEntitySerializer(active_business).data,
+
+            "dashboard": {
+                "total_customers": total_customers,
+                "total_products": total_products,
+                "total_orders": total_orders,
+                "total_invoices": total_invoices,
+                "total_expenses": 0
+            }
+        }, status=200)
 
 
 # class LoginView(generics.GenericAPIView):

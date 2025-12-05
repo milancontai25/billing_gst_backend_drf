@@ -2,12 +2,19 @@ from django.db import models
 from users.models import User
 
 class BusinessEntity(models.Model):
-    entity_name = models.CharField(max_length=150)
-    type = models.CharField(max_length=20, blank=False, null=False)
-    description = models.TextField(blank=True, null=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="businesses")
-    image_bucket_url = models.URLField(max_length=500, blank=True, null=True, help_text="Cloud bucket link for image")
-    entity_code_name = models.CharField(max_length=150, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    business_name = models.CharField(max_length=255)
+    logo_bucket_url = models.URLField(blank=True, null=True)
+    owner_name = models.CharField(max_length=255, blank=True, null=True)
+    business_type = models.CharField(max_length=55)
+    gst_status = models.CharField(max_length=55)
+    gst_number = models.CharField(max_length=30, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    kyc_doc_type = models.CharField(max_length=20)
+    kyc_bucket_url = models.URLField(blank=True, null=True)
+    entity_code_name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.entity_name} ({self.type})"
+        return f"{self.business_name}"
+    
