@@ -10,6 +10,7 @@ from rest_framework import status, generics, filters
 from .models import Invoice, InvoiceItem
 from .serializers import InvoiceSerializer, InvoiceItemSerializer
 from django.db.models import Q
+from rest_framework import serializers
 
 
 class ItemSearchListView(generics.ListAPIView):
@@ -17,28 +18,18 @@ class ItemSearchListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
-
-        # get user's business
-        try:
-            business = BusinessEntity.objects.get(owner=user)
-        except BusinessEntity.DoesNotExist:
+        business = self.request.user.active_business
+        if business is None:
             return Item.objects.none()
 
-        # get the search term from query params
         search_term = self.request.query_params.get('search', '').strip()
-
-        # if no search term, return nothing
         if not search_term:
             return Item.objects.none()
 
-        # return only matching product names (case-insensitive, partial match)
-        queryset = Item.objects.filter(
+        return Item.objects.filter(
             business=business,
-            # Q(product_name__icontains=search_term)
+            item_name__icontains=search_term
         )
-
-        return queryset
 
 
 
@@ -48,17 +39,18 @@ class ItemDetailByNameView(APIView):
     def get(self, request):
         product_name = request.query_params.get('product_name')
         if not product_name:
-            return Response({"error": "Product name is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Product name is required."}, status=400)
+
+        business = request.user.active_business
+        if business is None:
+            return Response({"error": "No active business selected."}, status=400)
 
         try:
-            user = self.request.user
-            business = BusinessEntity.objects.get(owner=user)
-            item = Item.objects.get(business=business, product_name=product_name)
+            item = Item.objects.get(business=business, item_name=product_name)
         except Item.DoesNotExist:
-            return Response({"error": "Item not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Item not found."}, status=404)
 
-        serializer = ProductSerializer(item)
-        return Response(serializer.data)
+        return Response(ProductSerializer(item).data)
 
 
 class CustomerSearchListView(generics.ListAPIView):
@@ -68,8 +60,10 @@ class CustomerSearchListView(generics.ListAPIView):
     search_fields = ['name']
 
     def get_queryset(self):
-        user = self.request.user
-        business = BusinessEntity.objects.get(owner=user)
+        business = self.request.user.active_business
+        if business is None:
+            return Customer.objects.none()
+
         return Customer.objects.filter(business=business)
 
 
@@ -79,44 +73,37 @@ class CustomerDetailByNameView(APIView):
     def get(self, request):
         name = request.query_params.get('name')
         if not name:
-            return Response({"error": "Product name is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Customer name is required."}, status=400)
+
+        business = request.user.active_business
+        if business is None:
+            return Response({"error": "No active business selected."}, status=400)
 
         try:
-            user = self.request.user
-            business = BusinessEntity.objects.get(owner=user)
             customer = Customer.objects.get(business=business, name=name)
         except Customer.DoesNotExist:
-            return Response({"error": "Customer not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Customer not found."}, status=404)
 
-        serializer = CustomerSerializer(customer)
-        return Response(serializer.data)
+        return Response(CustomerSerializer(customer).data)
 
 
 class InvoiceListCreateView(generics.ListCreateAPIView):
-    """
-    GET  -> List all invoices for the logged-in user's business
-    POST -> Create new invoice with invoice items and auto stock update
-    """
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        return Invoice.objects.filter(business__owner=user).order_by('-date')
+        return Invoice.objects.filter(business=user.active_business).order_by('-date')
 
     def get_serializer_context(self):
-        """
-        Add request object to serializer context
-        so serializer can access user and request data.
-        """
         context = super().get_serializer_context()
         context.update({"request": self.request})
         return context
-    
-def perform_create(self, serializer):
-    user = self.request.user
-    business = BusinessEntity.objects.get(owner=user)
-    serializer.save(business=business)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        business = user.active_business
+        serializer.save(business=business)
 
         
 class InvoiceDetailView(generics.RetrieveAPIView):
@@ -124,8 +111,11 @@ class InvoiceDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
-        return Invoice.objects.filter(business__owner=user)
+        business = self.request.user.active_business
+        if business is None:
+            return Invoice.objects.none()
+
+        return Invoice.objects.filter(business=business)
 
 
 class InvoiceItemListView(generics.ListAPIView):

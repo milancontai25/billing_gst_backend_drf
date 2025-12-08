@@ -10,19 +10,22 @@ class ItemListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        try:
-            business = BusinessEntity.objects.get(owner=user)
-        except BusinessEntity.DoesNotExist:
-            raise serializers.ValidationError("Business entity not found for this user.")
+        
+        business = user.active_business
+        if business is None:
+            raise serializers.ValidationError("No active business selected.")
+
         return Item.objects.filter(business=business)
 
     def perform_create(self, serializer):
         user = self.request.user
-        try:
-            business = BusinessEntity.objects.get(owner=user)
-        except BusinessEntity.DoesNotExist:
-            raise serializers.ValidationError("Business entity not found for this user.")
+        
+        business = user.active_business
+        if business is None:
+            raise serializers.ValidationError("No active business selected.")
+        
         serializer.save(business=business)
+
 
 class ItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductSerializer
@@ -30,10 +33,10 @@ class ItemDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        try:
-            business = BusinessEntity.objects.get(owner=user)
-        except BusinessEntity.DoesNotExist:
-            raise serializers.ValidationError("Business entity not found for this user.")
         
+        business = user.active_business
+        if business is None:
+            raise serializers.ValidationError("No active business selected.")
+
         return Item.objects.filter(business=business)
 

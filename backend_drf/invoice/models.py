@@ -12,7 +12,8 @@ class Invoice(models.Model):
     customer_name = models.CharField(max_length=100, blank=False, null=False)
 
     total_value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total_gst = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    # total_gst = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    discount_percent = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False, default=0.00)
     round_off = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     net_payable = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
