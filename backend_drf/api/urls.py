@@ -11,6 +11,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 urlpatterns = [
     path('', AppRunView.as_view(), name='run'),
     path('register/', UserViews.RegisterView.as_view(), name='auth_register'),
+
+    path('forgot-password/', UserViews.ForgotPasswordView.as_view(), name='forgot_password'),
+    path('reset-password/', UserViews.ResetPasswordView.as_view(), name='reset_password'),
+
     # path('login/', UserViews.LoginView.as_view(), name='auth_login'),
     path('dashboard/', DashboardView.as_view(), name="dashboard"),
     path('business/setup/', BusinessSetupView.as_view(), name='business-setup'),

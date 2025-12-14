@@ -13,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from django.contrib.auth.models import update_last_login
 from django.utils.text import slugify
+from django.contrib.sites.models import Site
 
 def generate_unique_entity_code_name(name):
     base_slug = slugify(name)  # "objectsol tech" → "objectsol-tech"
@@ -28,38 +29,59 @@ def generate_unique_entity_code_name(name):
 
     return slug
 
+import os
+from django.conf import settings
+from rest_framework.parsers import MultiPartParser, FormParser
+
+
 class BusinessSetupView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request):
         user = request.user
-        business = BusinessEntity.objects.filter(user=user).first()
-        user_data = UserSerializer(user).data
-        business_data = BusinessEntitySerializer(business).data if business else None
 
-        return Response({
-            "user": user_data,
-            "business": business_data
-        }, status=status.HTTP_200_OK)
-    
+        businesses = BusinessEntity.objects.filter(user=user)
+
+        user_data = UserSerializer(user).data
+        business_data = BusinessEntitySerializer(businesses, many=True).data
+
+        return Response(
+            {
+                "user": user_data,
+                "businesses": business_data
+            },
+            status=status.HTTP_200_OK
+        )
+
 
     def post(self, request):
         user = request.user
         data = request.data.copy()
 
         if "business_name" not in data or not data["business_name"]:
-            return Response({"error": "business_name is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "business_name is required"}, status=400)
 
-        # Generate unique code
+        # ---------- Generate CODE ----------
         data["entity_code_name"] = generate_unique_entity_code_name(data["business_name"])
 
+        # ---------- File Upload Handling ----------
+        logo_file = request.FILES.get("logo_file")
+        kyc_file = request.FILES.get("kyc_file")
+
+        if logo_file:
+            logo_url = self.save_file_to_hostinger(request, logo_file, "business_logo")
+            data["logo_bucket_url"] = logo_url
+
+        if kyc_file:
+            kyc_url = self.save_file_to_hostinger(request, kyc_file, "kyc_docs")
+            data["kyc_bucket_url"] = kyc_url
+
         serializer = BusinessEntitySerializer(data=data)
+
         if serializer.is_valid():
             business = serializer.save(user=user)
 
-            # ------------------------
-            # NEW: Set as active business
-            # ------------------------
             if user.active_business is None:
                 user.active_business = business
                 user.save()
@@ -71,6 +93,27 @@ class BusinessSetupView(APIView):
             }, status=201)
 
         return Response(serializer.errors, status=400)
+
+
+    # -----------------------------------------
+    # Save file to Hostinger VPS & return URL
+    # -----------------------------------------
+    def save_file_to_hostinger(self, request, file, folder_name):
+
+        upload_path = os.path.join(settings.MEDIA_ROOT, folder_name)
+
+        if not os.path.exists(upload_path):
+            os.makedirs(upload_path)
+
+        file_path = os.path.join(upload_path, file.name)
+
+        with open(file_path, "wb+") as destination:
+            for chunk in file.chunks():
+                destination.write(chunk)
+
+        file_url = f"{settings.SERVER_URL}{settings.MEDIA_URL}{folder_name}/{file.name}"
+
+        return file_url
 
 
     # def post(self, request):

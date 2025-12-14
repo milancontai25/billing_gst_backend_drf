@@ -60,7 +60,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now) 
-    
+    reset_otp = models.IntegerField(null=True, blank=True)
+
     active_business = models.ForeignKey(
     'business_entity.BusinessEntity',
     on_delete=models.SET_NULL,

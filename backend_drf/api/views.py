@@ -57,7 +57,9 @@ class AppRunView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        return "App running"
+        return Response({
+                "message": "app running!"
+            }, status=200)
 
 
 class DashboardView(APIView):

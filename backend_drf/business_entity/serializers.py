@@ -22,3 +22,7 @@ class BusinessEntitySerializer(serializers.ModelSerializer):
             'created_at',
             'user',
         ]
+        extra_kwargs = {
+            "logo_bucket_url": {"required": False},
+            "kyc_bucket_url": {"required": False},
+        }
