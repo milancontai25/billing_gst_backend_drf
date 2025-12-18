@@ -18,6 +18,7 @@ class BusinessEntity(models.Model):
     kyc_bucket_url = models.URLField(blank=True, null=True)
     entity_code_name = models.CharField(max_length=100, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.business_name}"

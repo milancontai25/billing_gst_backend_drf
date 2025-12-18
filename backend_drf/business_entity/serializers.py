@@ -7,21 +7,8 @@ class BusinessEntitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BusinessEntity
-        fields = [
-            'id',
-            'business_name',
-            'logo_bucket_url',
-            'owner_name',
-            'business_type',
-            'gst_status',
-            'gst_number',
-            'address',
-            'kyc_doc_type',
-            'kyc_bucket_url',
-            'entity_code_name',
-            'created_at',
-            'user',
-        ]
+        fields = '__all__'
+        
         extra_kwargs = {
             "logo_bucket_url": {"required": False},
             "kyc_bucket_url": {"required": False},
