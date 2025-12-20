@@ -30,12 +30,22 @@ class CustomerJWTAuthentication(JWTAuthentication):
 
 class ItemListView(generics.ListAPIView):
     serializer_class = ProductSerializer
-    authentication_classes = [CustomerJWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny] 
 
     def get_queryset(self):
-        customer = self.request.user  # now correctly a Customer
-        return Item.objects.filter(business=customer.business)
+        # 1. Grab the slug string from the URL
+        slug_from_url = self.kwargs.get('business_slug')
+        
+        # 2. Filter using the slug field
+        return Item.objects.filter(business__slug=slug_from_url)
+        
+    # serializer_class = ProductSerializer
+    # authentication_classes = [CustomerJWTAuthentication]
+    # permission_classes = [IsAuthenticated]
+
+    # def get_queryset(self):
+    #     customer = self.request.user  # now correctly a Customer
+    #     return Item.objects.filter(business=customer.business)
 
 
 

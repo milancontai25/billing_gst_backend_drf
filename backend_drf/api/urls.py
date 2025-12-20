@@ -48,6 +48,6 @@ urlpatterns = [
     path('customer/login/', CustomerLoginView.as_view(), name='customer-login'),
     path('customer/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('customer/verify/', TokenVerifyView.as_view(), name='token-verify'),
-    path('customer/dashboard/', ItemListView.as_view(), name="custoemr-dashboard"),
+    path('business/<slug:business_slug>/items/', ItemListView.as_view(), name="customer-dashboard"),
     path('customer/order/create', CreateOrderView.as_view(), name="custoemr-dashboard"),
 ]

@@ -15,23 +15,26 @@ from django.contrib.auth.models import update_last_login
 from django.utils.text import slugify
 from django.contrib.sites.models import Site
 
-def generate_unique_entity_code_name(name):
-    base_slug = slugify(name)  # "objectsol tech" → "objectsol-tech"
+import os
+from django.conf import settings
+from rest_framework.parsers import MultiPartParser, FormParser
+
+
+def generate_unique_slug(name):
+    """
+    Generates a URL-safe slug from the name.
+    If the slug exists, appends a counter (e.g., 'joes-pizza-1').
+    """
+    base_slug = slugify(name)
     slug = base_slug
     counter = 1
 
-    from .models import BusinessEntity
-
-    # Loop until unique
-    while BusinessEntity.objects.filter(entity_code_name=slug).exists():
+    # Loop until we find a slug that doesn't exist in the database
+    while BusinessEntity.objects.filter(slug=slug).exists():
         slug = f"{base_slug}-{counter}"
         counter += 1
 
     return slug
-
-import os
-from django.conf import settings
-from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class BusinessSetupView(APIView):
@@ -40,7 +43,6 @@ class BusinessSetupView(APIView):
 
     def get(self, request):
         user = request.user
-
         businesses = BusinessEntity.objects.filter(user=user)
 
         user_data = UserSerializer(user).data
@@ -54,21 +56,23 @@ class BusinessSetupView(APIView):
             status=status.HTTP_200_OK
         )
 
-
     def post(self, request):
         user = request.user
+        # Make a mutable copy of the data
         data = request.data.copy()
 
         if "business_name" not in data or not data["business_name"]:
             return Response({"error": "business_name is required"}, status=400)
 
-        # ---------- Generate CODE ----------
-        data["entity_code_name"] = generate_unique_entity_code_name(data["business_name"])
+        # ---------- Generate SLUG ----------
+        # Logic updated to use the new function and key
+        data["slug"] = generate_unique_slug(data["business_name"])
 
         # ---------- File Upload Handling ----------
         logo_file = request.FILES.get("logo_file")
         kyc_file = request.FILES.get("kyc_file")
 
+        # Assuming 'save_file_to_hostinger' is a method defined in this class or a mixin
         if logo_file:
             logo_url = self.save_file_to_hostinger(request, logo_file, "business_logo")
             data["logo_bucket_url"] = logo_url
@@ -82,6 +86,7 @@ class BusinessSetupView(APIView):
         if serializer.is_valid():
             business = serializer.save(user=user)
 
+            # Set as active business if the user doesn't have one selected yet
             if user.active_business is None:
                 user.active_business = business
                 user.save()

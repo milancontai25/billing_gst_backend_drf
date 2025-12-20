@@ -1,8 +1,13 @@
 from django.db import models
 from users.models import User
+from django.conf import settings
 
 class BusinessEntity(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE, 
+        related_name='businesses'
+    )
     business_name = models.CharField(max_length=255)
     logo_bucket_url = models.URLField(blank=True, null=True)
     owner_name = models.CharField(max_length=255, blank=True, null=True)
@@ -16,7 +21,7 @@ class BusinessEntity(models.Model):
     pin = models.IntegerField(blank=True, null=True)
     kyc_doc_type = models.CharField(max_length=20)
     kyc_bucket_url = models.URLField(blank=True, null=True)
-    entity_code_name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
