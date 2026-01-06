@@ -4,11 +4,10 @@ from business_entity.serializers import BusinessEntitySerializer
 from rest_framework import serializers
 
 class CustomerSerializer(serializers.ModelSerializer):
-    business = BusinessEntitySerializer(read_only=True)
-
     class Meta:
         model = Customer
         fields = '__all__'
+        read_only_fields = ['business']
 
 
 class CustomerSignupSerializer(serializers.ModelSerializer):
@@ -17,7 +16,7 @@ class CustomerSignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = [
-            'business_code_name', 'name', 'email', 'phone', 'password',
+            'name', 'email', 'phone', 'password',
             'country', 'state', 'district', 'pin', 'address'
         ]
         extra_kwargs = {'password': {'write_only': True}}

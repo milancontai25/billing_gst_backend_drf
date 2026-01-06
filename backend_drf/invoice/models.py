@@ -6,7 +6,8 @@ from products.models import Item
 
 class Invoice(models.Model):
     business = models.ForeignKey(BusinessEntity, on_delete=models.CASCADE, related_name="invoices")
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="invoices")
+    # customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="invoices")
+    customer = models.IntegerField()
     invoice_id = models.CharField(max_length=20, unique=True)
     date = models.DateField(auto_now_add=True)
     customer_name = models.CharField(max_length=100, blank=False, null=False)

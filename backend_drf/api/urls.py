@@ -21,13 +21,13 @@ urlpatterns = [
     path("business/switch/", SwitchBusinessView.as_view(), name="switch-business"),
     
     path('products/', ItemListCreateView.as_view(), name='item-list-create'),
-    path('products/<int:pk>', ItemDetailView.as_view(), name='item-detail'),
-    path('products/', ItemSearchListView.as_view(), name='item-search'),
+    path('products/<int:pk>/', ItemDetailView.as_view(), name='item-detail'),
+    path('search/products/', ItemSearchListView.as_view(), name='item-search'),
     path('products/detail/', ItemDetailByNameView.as_view(), name='item-detail-by-name'),
 
     path('customers/', CustomerListCreateView.as_view(), name='customer-list-create'),
-    path('customers/<int:pk>', CustomerDetailView.as_view(), name='customer-detail'),
-    path('customers/', CustomerSearchListView.as_view(), name='customer-search'),
+    path('customers/<int:pk>/', CustomerDetailView.as_view(), name='customer-detail'),
+    path('search/customers/', CustomerSearchListView.as_view(), name='customer-search'),
     path('customers/detail/', CustomerDetailByNameView.as_view(), name='customer-detail-by-name'),
 
     # path('token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),

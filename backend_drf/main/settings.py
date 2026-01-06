@@ -202,3 +202,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "statgrowdeveloper@gmail.com"
 EMAIL_HOST_PASSWORD = "kuon ozjo kwfn imts"   # NOT Gmail password
 
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173'
+]

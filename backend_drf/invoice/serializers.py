@@ -1,4 +1,5 @@
 # invoices/serializers.py
+from business_entity.serializers import BusinessEntitySerializer
 from business_entity.models import BusinessEntity
 from rest_framework import serializers
 from .models import Invoice, InvoiceItem
@@ -12,12 +13,13 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
+    business = BusinessEntitySerializer(read_only=True)
     invoice_items = InvoiceItemSerializer(many=True, write_only=True)
     items_details = InvoiceItemSerializer(source='invoice_items', many=True, read_only=True)
 
     class Meta:
         model = Invoice
-        exclude = ['business']
+        fields = '__all__'
 
     def create(self, validated_data):
         items_data = validated_data.pop('invoice_items')
