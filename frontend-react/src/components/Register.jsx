@@ -50,7 +50,7 @@ const Register = () => {
     };
     
     try {
-        const response = await axios.post('http://127.0.0.1:8000/api/v1/register/', userData);
+        const response = await axios.post('/api/v1/register/', userData);
         console.log('Registration Successful:', response.data);
         
         // SHOW POPUP INSTEAD OF ALERT

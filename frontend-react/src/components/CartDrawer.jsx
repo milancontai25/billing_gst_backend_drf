@@ -25,7 +25,7 @@ const CartDrawer = ({ isOpen, onClose, slug }) => {
     try {
       // Don't set full loading on refresh to prevent flickering
       if (!cart) setLoading(true); 
-      const res = await axios.get(`http://127.0.0.1:8000/api/v1/customer/cart/`, config);
+      const res = await axios.get(`/api/v1/customer/cart/`, config);
       setCart(res.data);
       setLoading(false);
     } catch (err) {
@@ -43,7 +43,7 @@ const CartDrawer = ({ isOpen, onClose, slug }) => {
       setUpdatingId(itemId); // Lock buttons for this item
       
       await axios.post(
-        `http://127.0.0.1:8000/api/v1/customer/cart/update/`,
+        `/api/v1/customer/cart/update/`,
         { item: itemId, action: action },
         config
       );

@@ -18,7 +18,7 @@ const AuthCustomer = ({ isOpen, onClose, onLoginSuccess }) => {
 
   if (!isOpen) return null;
 
-  const API_BASE = `http://127.0.0.1:8000/api/v1/business/${slug}/customer`;
+  const API_BASE = `/api/v1/business/${slug}/customer`;
 
   // --- HANDLERS ---
   const handleInputChange = (e) => {

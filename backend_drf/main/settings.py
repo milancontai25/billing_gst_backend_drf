@@ -90,7 +90,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'main.wsgi.application'
-SERVER_URL = "http://145.223.19.8:8080"
+SERVER_URL = "http://145.223.19.8"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -204,5 +204,6 @@ EMAIL_HOST_PASSWORD = "kuon ozjo kwfn imts"   # NOT Gmail password
 
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173'
+    "http://localhost:5173",
+    "http://72.62.241.108",
 ]

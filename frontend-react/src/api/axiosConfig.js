@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Create the instance
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/v1',
+  baseURL: '/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -39,7 +39,7 @@ api.interceptors.response.use(
         }
 
         // Call Backend to get new Access Token
-        const response = await axios.post('http://127.0.0.1:8000/api/v1/token/refresh/', {
+        const response = await axios.post('/api/v1/token/refresh/', {
             refresh: refreshToken
         });
 
