@@ -1,26 +1,27 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { 
   LayoutDashboard, ShoppingCart, Users, FileText, Package, 
-  BarChart2, ChevronDown, ChevronUp, PlusCircle, Settings, Store // <--- Import Store Icon
+  BarChart2, ChevronDown, ChevronUp, PlusCircle, Settings, Store 
 } from 'lucide-react';
 
 const Sidebar = ({ 
-  data, activeTab, setActiveTab, 
+  data, activeTab, 
   showSwitcher, setShowSwitcher, 
   handleSwitchBusiness, setShowSetupModal 
 }) => {
+  const navigate = useNavigate(); // Hook for navigation
+
   const menuItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'products', icon: Package, label: 'Products' },
-    { id: 'customers', icon: Users, label: 'Customers' },
-    { id: 'orders', icon: ShoppingCart, label: 'Orders' },
-    { id: 'invoices', icon: FileText, label: 'Invoices' },
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { id: 'products', icon: Package, label: 'Products', path: '/products' },
+    { id: 'customers', icon: Users, label: 'Customers', path: '/customers' },
+    { id: 'orders', icon: ShoppingCart, label: 'Orders', path: '/orders' },
+    { id: 'invoices', icon: FileText, label: 'Invoices', path: '/invoices' },
   ];
 
-  // Helper to open store
   const openMyStore = () => {
     if (data?.active_business?.slug) {
-      // Opens in new tab
       window.open(`/store/${data.active_business.slug}`, '_blank');
     } else {
       alert("Store is not active or slug is missing.");
@@ -29,7 +30,6 @@ const Sidebar = ({
 
   return (
     <aside className="sidebar">
-      {/* Brand Header */}
       <div className="brand-header">
         <div className="brand-logo">
           <BarChart2 size={28} color="#3B82F6" /> 
@@ -41,23 +41,22 @@ const Sidebar = ({
         {menuItems.map((item) => (
           <div 
             key={item.id} 
+            // Check if URL contains the ID (simple active check)
             className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(item.id)}
+            onClick={() => navigate(item.path)} // Navigate to URL
           >
             <item.icon size={18}/> {item.label}
           </div>
         ))}
 
-        {/* --- NEW: MY STORE LINK --- */}
         <div style={{ marginTop: '20px', borderTop: '1px solid #374151', paddingTop: '10px' }}>
            <div className="nav-item" onClick={openMyStore} style={{ color: '#60A5FA' }}>
               <Store size={18} /> My Online Store
            </div>
         </div>
-
       </nav>
-
-      {/* Business Switcher Footer (Keep existing code) */}
+      
+      {/* Footer / Switcher (Same as before) */}
       <div className="sidebar-footer">
         <div className="business-switcher">
           <div className={`biz-dropdown ${showSwitcher ? 'show' : ''}`}>
@@ -70,9 +69,6 @@ const Sidebar = ({
             <div className="dropdown-divider"></div>
             <div className="dropdown-action" onClick={() => { setShowSetupModal(true); setShowSwitcher(false); }}>
               <PlusCircle size={16}/> Add New Business
-            </div>
-            <div className="dropdown-action" onClick={() => { setShowSetupModal(true); setShowSwitcher(false); }}>
-              <Settings size={16}/> Manage Business
             </div>
           </div>
 

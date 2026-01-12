@@ -5,9 +5,12 @@ import {
 } from 'recharts';
 import { 
   ShoppingCart, Users, Package, FileText, IndianRupee, ShoppingBag 
-} from 'lucide-react'; // <--- Added IndianRupee and ShoppingBag
+} from 'lucide-react'; 
+import { useOutletContext } from 'react-router-dom';
 
-const DashboardHome = ({ data, lineData, pieData }) => {
+const DashboardHome = ({ lineData, pieData }) => {
+  const { data } = useOutletContext();
+
   return (
     <>
       <div className="stats-grid">

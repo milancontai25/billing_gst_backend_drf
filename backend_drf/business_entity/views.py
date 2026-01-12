@@ -1,3 +1,4 @@
+import uuid
 from django.shortcuts import render
 from django.db import models
 from rest_framework import generics, status
@@ -26,12 +27,12 @@ def generate_unique_slug(name):
     If the slug exists, appends a counter (e.g., 'joes-pizza-1').
     """
     base_slug = slugify(name)
-    slug = base_slug
+    slug = base_slug[:45]
     counter = 1
 
     # Loop until we find a slug that doesn't exist in the database
     while BusinessEntity.objects.filter(slug=slug).exists():
-        slug = f"{base_slug}-{counter}"
+        slug = f"{slug}-{counter}"
         counter += 1
 
     return slug
@@ -98,6 +99,7 @@ class BusinessSetupView(APIView):
             }, status=201)
 
         return Response(serializer.errors, status=400)
+
 
 
     # -----------------------------------------

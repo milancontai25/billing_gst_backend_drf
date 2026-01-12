@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// 1. Create the instance
 const api = axios.create({
   baseURL: 'http://127.0.0.1:8000/api/v1',
   headers: {
@@ -7,10 +8,10 @@ const api = axios.create({
   },
 });
 
-// Interceptor: Automatically add the Token to every request
+// 2. REQUEST INTERCEPTOR: Attach Access Token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken'); // Changed key to match Login.js logic
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -19,15 +20,51 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor: Handle 401 (Unauthorized) errors globally
+// 3. RESPONSE INTERCEPTOR: Handle Token Refresh
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('token');
-      window.location.href = '/login'; // Force redirect to login
+  (response) => response, // Return success directly
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Check if error is 401 AND we haven't tried refreshing yet
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true; // Mark as retried to avoid infinite loops
+
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+
+        if (!refreshToken) {
+            // No refresh token? Logout.
+            throw new Error("No refresh token available");
+        }
+
+        // Call Backend to get new Access Token
+        const response = await axios.post('http://127.0.0.1:8000/api/v1/token/refresh/', {
+            refresh: refreshToken
+        });
+
+        // Backend usually returns: { "access": "new_access_token..." }
+        const newAccessToken = response.data.access;
+
+        // Save new token
+        localStorage.setItem('accessToken', newAccessToken);
+
+        // Update the header of the failed request with the new token
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+        // Retry the original request
+        return api(originalRequest);
+
+      } catch (refreshError) {
+        // Refresh failed (refresh token also expired) -> Logout User
+        console.error("Session expired.", refreshError);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login'; 
+        return Promise.reject(refreshError);
+      }
     }
+
     return Promise.reject(error);
   }
 );

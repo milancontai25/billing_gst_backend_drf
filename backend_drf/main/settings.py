@@ -154,10 +154,10 @@ USE_TZ = True
 # MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 STATIC_URL = '/static/'
-STATIC_ROOT = '/var/www/project/static/'
+STATIC_ROOT = '/var/www/billing_gst/static/'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/var/www/project/media/'
+MEDIA_ROOT = '/var/www/billing_gst/media/'
 
 
 # Default primary key field type

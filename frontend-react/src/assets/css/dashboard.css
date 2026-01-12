@@ -762,3 +762,226 @@ body {
     display: none !important;
   }
 }
+
+/* --- ORDER PAGE SPECIFICS --- */
+
+/* Stats Cards Specific Colors */
+.stat-card.bg-blue-50 { background-color: #EFF6FF; border-color: #DBEAFE; }
+.stat-card.bg-yellow-50 { background-color: #FEFCE8; border-color: #FEF9C3; }
+.stat-card.bg-purple-50 { background-color: #F3E8FF; border-color: #E9D5FF; }
+.stat-card.bg-green-50 { background-color: #F0FDF4; border-color: #DCFCE7; }
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-align: center;
+}
+
+.stat-title { font-size: 14px; color: #4B5563; font-weight: 500; margin-bottom: 5px; }
+.stat-number { font-size: 24px; font-weight: 700; color: #111827; }
+
+/* Card Box Container for Table */
+.card-box {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.card-header-row { margin-bottom: 20px; }
+.card-header-row h3 { margin: 0; font-size: 18px; font-weight: 600; }
+
+/* Table Toolbar (Search + Filter) */
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 15px;
+}
+
+.search-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 15px;
+  background: #F9FAFB;
+}
+.search-box input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  font-size: 14px;
+}
+
+.filter-box select {
+  padding: 10px 15px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+/* Status Dropdown inside Table */
+.status-select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+/* Specific Badge Colors */
+.bg-yellow-100 { background-color: #FEF9C3; }
+.text-yellow-800 { color: #854D0E; }
+
+.bg-blue-100 { background-color: #DBEAFE; }
+.text-blue-800 { color: #1E40AF; }
+
+.bg-purple-100 { background-color: #F3E8FF; }
+.text-purple-800 { color: #6B21A8; }
+
+.bg-green-100 { background-color: #DCFCE7; }
+.text-green-800 { color: #166534; }
+
+.bg-red-100 { background-color: #FEE2E2; }
+.text-red-800 { color: #991B1B; }
+
+.bg-gray-100 { background-color: #F3F4F6; }
+.text-gray-800 { color: #1F2937; }
+
+/* Payment Colors */
+.bg-green-50 { background-color: #F0FDF4; }
+.text-green-600 { color: #16A34A; }
+.bg-red-50 { background-color: #FEF2F2; }
+.text-red-600 { color: #DC2626; }
+
+/* Small Outline Button */
+.btn-sm-outline {
+  border: 1px solid var(--border);
+  background: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.btn-sm-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* --- ORDER MODAL SPECIFICS --- */
+.order-modal { width: 700px; max-width: 95vw; }
+
+.modal-header-simple {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px 24px 10px 24px;
+}
+
+.close-btn-simple {
+  background: none; border: none; cursor: pointer; color: #9CA3AF;
+}
+.close-btn-simple:hover { color: #EF4444; }
+
+.modal-content { padding: 0 24px 24px 24px; }
+
+/* Utility Classes for Grid */
+.grid { display: grid; }
+.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.gap-4 { gap: 16px; }
+.mb-6 { margin-bottom: 24px; }
+.mt-6 { margin-top: 24px; }
+.p-4 { padding: 16px; }
+.rounded-lg { border-radius: 8px; }
+.border-b { border-bottom: 1px solid #E5E7EB; }
+.font-medium { font-weight: 500; }
+.font-bold { font-weight: 700; }
+
+
+/* ... (Keep all existing code above) ... */
+
+/* --- ADVANCED FILTER DROPDOWN (Added for Orders Page) --- */
+.wide-dropdown {
+  width: 300px !important; /* Overrides default width */
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.dropdown-section {
+  flex: 1;
+  padding: 8px 0;
+}
+
+/* Add border between columns if using row layout */
+.wide-dropdown > div:first-child { 
+  display: flex; /* Ensures columns sit side-by-side */
+}
+
+.dropdown-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #9CA3AF;
+  padding: 4px 12px;
+  margin-bottom: 4px;
+}
+
+.dropdown-option {
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #374151;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.1s;
+}
+
+.dropdown-option:hover {
+  background-color: #F3F4F6;
+  color: var(--primary);
+}
+
+.dropdown-option.active {
+  background-color: #EFF6FF;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.dropdown-footer {
+  padding: 10px;
+  text-align: center;
+  border-top: 1px solid #E5E7EB;
+  background: #F9FAFB;
+  font-size: 12px;
+  color: #EF4444; /* Red color for 'Clear' action */
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.dropdown-footer:hover {
+  background: #FEE2E2;
+}
+
+/* Ensure check icons inside active options are aligned */
+.dropdown-option svg {
+  color: var(--primary);
+}

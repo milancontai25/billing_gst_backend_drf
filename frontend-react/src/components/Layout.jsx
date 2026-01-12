@@ -1,37 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../api/axiosConfig'; 
-
-// Import Components
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import api from '../api/axiosConfig';
 import Sidebar from './Sidebar';
 import UserProfile from './UserProfile'; 
-import DashboardHome from './DashboardHome';
-import Products from './Products';
+import { X } from 'lucide-react';
 import '../assets/css/dashboard.css';
-import Customers from './Customers';
-import { Bell, User, LogOut, Settings, ChevronDown, X } from 'lucide-react';
-import Invoices from './Invoices';
 
-const lineData = [
-  { name: 'Jan', orders: 30 }, { name: 'Feb', orders: 45 },
-  { name: 'Mar', orders: 35 }, { name: 'Apr', orders: 60 },
-  { name: 'May', orders: 48 }, { name: 'Jun', orders: 55 },
-];
-const pieData = [
-  { name: 'Paid', value: 499, color: '#3B82F6' },
-  { name: 'Unpaid', value: 158, color: '#10B981' },
-];
-
-const Dashboard = () => {
+const Layout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // --- GLOBAL STATE ---
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showSwitcher, setShowSwitcher] = useState(false);
-  
+
   // --- BUSINESS FORM STATE ---
   const [setupForm, setSetupForm] = useState({
     business_name: '', owner_name: '', business_type: 'Retailer',
@@ -40,11 +24,7 @@ const Dashboard = () => {
     kyc_doc_type: 'Pan', logo_file: null, kyc_file: null
   });
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
+  // Fetch Global Dashboard Data
   const fetchDashboard = async () => {
     try {
       setLoading(true);
@@ -53,17 +33,25 @@ const Dashboard = () => {
       if (res.data.requires_setup) setShowSetupModal(true);
       setLoading(false);
     } catch (err) {
+      console.error(err);
       setLoading(false);
     }
   };
 
   useEffect(() => { fetchDashboard(); }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    navigate('/login');
+  };
+
   const handleSwitchBusiness = async (businessId) => {
     try {
       await api.post('/business/switch/', { business_id: businessId });
       setShowSwitcher(false);
-      fetchDashboard();
+      fetchDashboard(); 
+      navigate('/dashboard'); 
     } catch (err) { alert("Failed to switch business"); }
   };
 
@@ -71,17 +59,40 @@ const Dashboard = () => {
   const handleInputChange = (e) => setSetupForm({ ...setupForm, [e.target.name]: e.target.value });
   const handleFileChange = (e) => setSetupForm({ ...setupForm, [e.target.name]: e.target.files[0] });
 
+  // Inside src/components/Layout.jsx
+
   const handleSetupSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
-    Object.keys(setupForm).forEach(key => {
-        if (key !== 'logo_file' && key !== 'kyc_file') {
-            if (key === 'gst_number' && setupForm.gst_status === 'Unregister') return;
-            formData.append(key, setupForm[key]);
-        }
-    });
-    if (setupForm.logo_file) formData.append('logo_file', setupForm.logo_file);
-    if (setupForm.kyc_file) formData.append('kyc_file', setupForm.kyc_file);
+
+    // 1. Manually append text fields to ensure control
+    formData.append('business_name', setupForm.business_name);
+    formData.append('owner_name', setupForm.owner_name);
+    formData.append('business_type', setupForm.business_type);
+    formData.append('gst_status', setupForm.gst_status);
+    formData.append('address', setupForm.address);
+    formData.append('country', setupForm.country);
+    formData.append('state', setupForm.state);
+    formData.append('district', setupForm.district);
+    formData.append('kyc_doc_type', setupForm.kyc_doc_type);
+
+    // 2. Handle GST Logic (Only send if registered)
+    if (setupForm.gst_status === 'Registered' && setupForm.gst_number) {
+        formData.append('gst_number', setupForm.gst_number);
+    }
+
+    // 3. FIX: Handle PIN (Don't send empty string "")
+    if (setupForm.pin) {
+        formData.append('pin', setupForm.pin);
+    }
+
+    // 4. Handle Files (Only append if they exist)
+    if (setupForm.logo_file) {
+        formData.append('logo_file', setupForm.logo_file);
+    }
+    if (setupForm.kyc_file) {
+        formData.append('kyc_file', setupForm.kyc_file);
+    }
 
     try {
       await api.post('/business/setup/', formData, {
@@ -91,49 +102,43 @@ const Dashboard = () => {
       setShowSetupModal(false);
       fetchDashboard();
     } catch (err) {
-      alert("Error saving business.");
+    //   console.error("Setup Error:", err);
+      // 5. IMPROVED ERROR ALERT: Shows exactly what field failed
+      if (err.response && err.response.data) {
+          alert(`Validation Error: ${JSON.stringify(err.response.data)}`);
+      } else {
+          alert("Error saving business details.");
+      }
     }
   };
+
+  // Get current path for active tab highlighting
+  const currentPath = location.pathname.split('/')[1] || 'dashboard';
 
   if (loading) return <div className="loading-screen">Loading StatGrow...</div>;
 
   return (
     <div className="app-container">
-      
       {/* 1. SIDEBAR */}
       <Sidebar 
         data={data}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        activeTab={currentPath}
         showSwitcher={showSwitcher}
         setShowSwitcher={setShowSwitcher}
         handleSwitchBusiness={handleSwitchBusiness}
         setShowSetupModal={setShowSetupModal} 
       />
 
-      {/* 2. MAIN CONTENT */}
+      {/* 2. MAIN CONTENT AREA */}
       <main className="main-content">
         <UserProfile 
           user={data?.user} 
           handleLogout={handleLogout} 
-          activeTab={activeTab} // Passing activeTab to change title
+          activeTab={currentPath} 
         />
-
-        {/* --- CONDITIONAL RENDERING --- */}
-        {activeTab === 'dashboard' && (
-          <DashboardHome data={data} lineData={lineData} pieData={pieData} />
-        )}
-
-        {activeTab === 'products' && (
-          <Products />
-        )}
-
-        {activeTab === 'customers' && (
-            <Customers />
-         )}
-
-        {activeTab === 'invoices' && <Invoices />}
         
+        {/* RENDER THE CHILD PAGE HERE */}
+        <Outlet context={{ data, fetchDashboard }} />
       </main>
 
       {/* 3. BUSINESS SETUP MODAL (Global) */}
@@ -143,7 +148,6 @@ const Dashboard = () => {
             <div className="modal-header">
               <h2>{data?.requires_setup ? "Setup Your Business" : "Add New Business"}</h2>
               <p>Please complete your business profile below.</p>
-              {/* Optional: Close button if not forced setup */}
               {!data?.requires_setup && (
                  <button className="close-btn" onClick={() => setShowSetupModal(false)}><X size={20}/></button>
               )}
@@ -257,4 +261,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Layout;

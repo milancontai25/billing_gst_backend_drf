@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Order, OrderItem
+from .models import Cart, CartItem, Order, OrderItem
 
 class OrderItemSerializer(serializers.ModelSerializer):
     subtotal = serializers.SerializerMethodField()
@@ -14,10 +14,12 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     order_items = OrderItemSerializer(many=True, read_only=True)
+
     customer_name = serializers.CharField(source='customer.name', read_only=True)
     customer_email = serializers.EmailField(source='customer.email', read_only=True)
     customer_phone = serializers.CharField(source='customer.phone', read_only=True)
-    customer_city = serializers.CharField(source='customer.city', read_only=True)
+    customer_district = serializers.CharField(source='customer.district', read_only=True)
+    customer_state = serializers.CharField(source='customer.state', read_only=True)
     customer_address = serializers.CharField(source='customer.address', read_only=True)
 
     class Meta:
@@ -30,7 +32,8 @@ class OrderSerializer(serializers.ModelSerializer):
             'customer_name',
             'customer_email',
             'customer_phone',
-            'customer_city',
+            'customer_district',
+            'customer_state',
             'customer_address',
             'order_items',
             'total_amount',
@@ -38,3 +41,46 @@ class OrderSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
+
+class OrderStatusUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(
+        choices=['Pending', 'Confirmed', 'Shipped', 'Received', 'Cancelled'],
+        required=False
+    )
+    payment_status = serializers.ChoiceField(
+        choices=['unpaid', 'paid', 'refunded'],
+        required=False
+    )
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    item_name = serializers.CharField(source='item.item_name', read_only=True)
+    price = serializers.DecimalField(
+        source='item.mrp_baseprice',
+        max_digits=10,
+        decimal_places=2,
+        read_only=True
+    )
+    subtotal = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CartItem
+        fields = ['id', 'item', 'item_name', 'price', 'quantity', 'subtotal']
+
+    def get_subtotal(self, obj):
+        return obj.subtotal()
+
+
+
+class CartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True, read_only=True)
+    total_amount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Cart
+        fields = ['id', 'items', 'total_amount']
+
+    def get_total_amount(self, obj):
+        return sum(i.subtotal() for i in obj.items.all())
+
+

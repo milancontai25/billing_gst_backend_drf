@@ -20,24 +20,39 @@ from django.contrib.auth.models import update_last_login
 from products.serializers import ProductSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+
 class CustomerJWTAuthentication(JWTAuthentication):
     def get_user(self, validated_token):
+        # 🔒 Ensure this is a CUSTOMER token
+        if validated_token.get('type') != 'customer':
+            raise exceptions.AuthenticationFailed('Invalid token type')
+
+        customer_id = validated_token.get('customer_id')
+        business_id = validated_token.get('business_id')
+
+        if not customer_id or not business_id:
+            raise exceptions.AuthenticationFailed('Invalid token payload')
+
         try:
-            user_id = validated_token['user_id']
-            return Customer.objects.get(id=user_id)
+            return Customer.objects.get(
+                id=customer_id,
+                business_id=business_id
+            )
         except Customer.DoesNotExist:
             raise exceptions.AuthenticationFailed('No such customer')
 
+
 class ItemListView(generics.ListAPIView):
     serializer_class = ProductSerializer
-    permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        # 1. Grab the slug string from the URL
-        slug_from_url = self.kwargs.get('business_slug')
-        
-        # 2. Filter using the slug field
-        return Item.objects.filter(business__slug=slug_from_url)
+        business_slug = self.kwargs.get('business_slug')
+
+        return Item.objects.filter(
+            business__slug=business_slug
+        )
+
         
     # serializer_class = ProductSerializer
     # authentication_classes = [CustomerJWTAuthentication]

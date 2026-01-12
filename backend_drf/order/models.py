@@ -6,10 +6,11 @@ from products.models import Item  # your existing Item model
 class Order(models.Model):
     business = models.ForeignKey(BusinessEntity, on_delete=models.CASCADE, related_name="orders")
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="orders")
-
+    # customer = models.IntegerField()
     order_number = models.CharField(max_length=50, unique=True)
     date = models.DateField(auto_now_add=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = models.CharField(max_length=10)
     payment_status = models.CharField(max_length=10, default="unpaid")
     status = models.CharField(max_length=20, default="Pending")
     special_notes = models.TextField(blank=True, null=True)
@@ -32,3 +33,26 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product_name} ({self.quantity})"
+
+
+
+class Cart(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    business = models.ForeignKey(BusinessEntity, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('customer', 'business')
+
+    def __str__(self):
+        return f"Cart {self.id} - {self.customer.email}"
+
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+
+    def subtotal(self):
+        # ✅ FIXED FIELD
+        return self.item.mrp_baseprice * self.quantity
