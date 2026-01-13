@@ -1,0 +1,421 @@
+/* src/assets/css/landing.css */
+
+/* 1. We define variables specifically for this scope */
+.landing-scope {
+    --l-primary: #3b82f6;
+    --l-primary-dark: #2563eb;
+    --l-primary-deep: #1e3a8a;
+    --l-text-main: #111827;
+    --l-text-light: #4b5563;
+    --l-bg-light: #f9fafb;
+    font-family: 'Inter', sans-serif;
+    background-color: #fff;
+    color: var(--l-text-main);
+    line-height: 1.6;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* 2. Reset specific to this container */
+.landing-scope * {
+    box-sizing: border-box;
+}
+
+.landing-scope a { text-decoration: none; color: inherit; transition: 0.3s; }
+.landing-scope ul { list-style: none; padding: 0; margin: 0; }
+.landing-scope img { max-width: 100%; height: auto; display: block; }
+
+.landing-scope .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 2;
+}
+
+/* Global Utilities */
+.landing-scope .gradient-text {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+/* Blobs */
+.landing-scope .blob-cont {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+.landing-scope .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.4;
+    animation: landingFloat 10s infinite ease-in-out alternate;
+}
+.landing-scope .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #dbeafe; }
+.landing-scope .blob-2 { bottom: 10%; right: -10%; width: 400px; height: 400px; background: #bfdbfe; animation-delay: -5s; }
+
+@keyframes landingFloat {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(30px, 50px); }
+}
+
+/* --- BUTTONS (Strict Alignment Fixes) --- */
+.landing-scope .btn {
+    display: inline-flex;       /* Critical for centering text inside button */
+    align-items: center;        /* Vertically center text */
+    justify-content: center;    /* Horizontally center text */
+    padding: 0 24px;            /* Horizontal padding only */
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    text-decoration: none;
+    line-height: 1;             /* Prevents font spacing issues */
+    height: 48px;               /* Default Height */
+}
+
+.landing-scope .btn-sm { 
+    height: 40px;               /* Force fixed height for small buttons */
+    padding: 0 20px; 
+    font-size: 0.9rem; 
+}
+
+.landing-scope .btn-primary {
+    background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+    color: #ffffff !important;
+    border: none;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+.landing-scope .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+    opacity: 0.95;
+}
+
+.landing-scope .btn-outline {
+    background-color: transparent;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+}
+.landing-scope .btn-outline:hover {
+    background-color: white;
+    color: var(--l-primary-deep);
+    border-color: white;
+}
+
+.landing-scope .btn-outline-dark {
+    background-color: transparent;
+    color: var(--l-text-main);
+    border: 1px solid #e5e7eb;
+}
+.landing-scope .btn-outline-dark:hover {
+    border-color: var(--l-primary);
+    color: var(--l-primary);
+    background-color: #eff6ff;
+}
+
+
+
+/* --- HEADER & NAVIGATION (Fixed Positioning) --- */
+.landing-scope header {
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 72px;               /* Fixed Height */
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95); /* Slightly less transparent for readability */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex; 
+    align-items: center;        /* Vertically Center everything */
+}
+
+.landing-scope .nav-container {
+    width: 100%; 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    padding: 0 20px;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;        /* Vertically Center inner items */
+    height: 100%;
+}
+
+/* Logo Fixes */
+.landing-scope .logo {
+    font-size: 1.5rem; 
+    font-weight: 800; 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    color: var(--l-primary-deep);
+    text-decoration: none;
+    letter-spacing: -0.5px;
+    line-height: 1;             /* Fixes vertical offset */
+    white-space: nowrap;        /* Prevents wrapping */
+    flex-shrink: 0;
+}
+.landing-scope .logo svg {
+    width: 28px;
+    height: 28px;
+    display: block;             /* Removes inline-block spacing */
+}
+
+/* Navigation Right Side */
+.landing-scope .nav-right { 
+    display: flex; 
+    align-items: center; 
+    gap: 40px; 
+    height: 100%;
+}
+
+.landing-scope .nav-links { 
+    display: flex; 
+    gap: 30px; 
+    align-items: center; 
+    height: 100%;
+}
+
+.landing-scope .nav-link {
+    color: var(--l-text-light); 
+    font-weight: 500; 
+    font-size: 0.95rem; 
+    cursor: pointer;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 100%;               /* Full height for easier hovering */
+}
+.landing-scope .nav-link:hover { 
+    color: var(--l-primary); 
+}
+
+/* Nav Actions (Buttons Area) */
+.landing-scope .nav-actions { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+}
+
+/* Dropdown Menu */
+.landing-scope .nav-item-dropdown { 
+    position: relative; 
+    height: 100%; 
+    display: flex; 
+    align-items: center; 
+}
+.landing-scope .dropdown-menu {
+    display: none; 
+    position: absolute; 
+    top: 60px; /* Adjusted to sit nicely below header */
+    left: 50%; 
+    transform: translateX(-50%);
+    min-width: 200px; 
+    background: white; 
+    padding: 8px;
+    border-radius: 12px; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1); 
+    border: 1px solid #e5e7eb;
+    z-index: 100;
+}
+.landing-scope .nav-item-dropdown:hover .dropdown-menu { display: block; animation: fadeInQuick 0.2s ease-out; }
+.landing-scope .dropdown-menu a { 
+    display: block; 
+    padding: 10px 16px; 
+    color: var(--l-text-light); 
+    font-size: 0.9rem; 
+    border-radius: 8px;
+}
+.landing-scope .dropdown-menu a:hover { 
+    background-color: #eff6ff; 
+    color: var(--l-primary); 
+}
+
+/* --- MOBILE MENU (Hamburger) --- */
+.landing-scope .hamburger { 
+    display: none; 
+    flex-direction: column; 
+    cursor: pointer; 
+    gap: 6px; 
+    z-index: 1001;
+}
+.landing-scope .hamburger span { 
+    width: 24px; 
+    height: 2px; 
+    background-color: var(--l-text-main); 
+    border-radius: 2px; 
+    transition: 0.3s; 
+}
+
+@media (max-width: 992px) {
+    .landing-scope .hamburger { display: flex; }
+    
+    .landing-scope .nav-right {
+        position: fixed; 
+        top: 72px; 
+        left: 0; 
+        width: 100%; 
+        height: calc(100vh - 72px);
+        background: white; 
+        flex-direction: column; 
+        align-items: flex-start;
+        padding: 30px; 
+        gap: 25px; 
+        border-top: 1px solid #f3f4f6;
+        transform: translateY(-150%); 
+        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        z-index: 900; 
+        overflow-y: auto;
+    }
+    
+    .landing-scope .nav-right.open { transform: translateY(0); }
+    
+    .landing-scope .nav-links { 
+        flex-direction: column; 
+        width: 100%; 
+        align-items: flex-start; 
+        gap: 0; 
+        height: auto;
+    }
+    
+    .landing-scope .nav-link, 
+    .landing-scope .nav-item-dropdown { 
+        width: 100%; 
+        padding: 12px 0; 
+        border-bottom: 1px solid #f9fafb; 
+        display: block;
+        height: auto;
+    }
+    
+    .landing-scope .dropdown-menu { 
+        position: static; 
+        display: block; 
+        transform: none; 
+        box-shadow: none; 
+        border: none; 
+        padding-left: 20px; 
+        margin-top: 5px;
+        background: transparent;
+    }
+    
+    .landing-scope .nav-actions { 
+        display: flex; 
+        flex-direction: column; 
+        width: 100%; 
+        gap: 15px; 
+        margin-top: 20px;
+    }
+    
+    .landing-scope .nav-actions .btn { 
+        width: 100%; 
+        display: flex; /* Ensure centering in mobile too */
+    }
+}
+
+
+/* Hero */
+.landing-scope .hero {
+    position: relative; width: 100%; min-height: 100vh;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%);
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    color: white; padding-top: 100px; overflow: hidden;
+}
+.landing-scope .hero-glow {
+    position: absolute; width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; pointer-events: none;
+}
+.landing-scope .hero h1 {
+    font-size: 4rem; line-height: 1.1; font-weight: 800; margin-bottom: 24px;
+    background: linear-gradient(to right, #ffffff, #93c5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.landing-scope .hero p { font-size: 1.25rem; color: #d1d5db; max-width: 800px; margin: 0 auto 40px; font-weight: 300; }
+.landing-scope .hero-buttons { display: flex; justify-content: center; gap: 15px; margin-bottom: 50px; }
+.landing-scope .trust-badges { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
+.landing-scope .trust-item { display: flex; align-items: center; gap: 8px; color: #bfdbfe; font-weight: 600; }
+
+@media (max-width: 768px) {
+    .landing-scope .hero h1 { font-size: 2.5rem; }
+    .landing-scope .hero-buttons { flex-direction: column; width: 100%; align-items: center; }
+    .landing-scope .hero-buttons .btn { width: 100%; max-width: 300px; }
+    .landing-scope .trust-badges { flex-direction: column; gap: 15px; }
+}
+
+/* Features */
+.landing-scope .section-header { text-align: center; margin-bottom: 60px; position: relative; z-index: 2; }
+.landing-scope .section-header h2 { font-size: 2.5rem; margin-bottom: 15px; font-weight: 800; color: var(--l-text-main); }
+.landing-scope .features { padding: 100px 0; position: relative; }
+.landing-scope .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; position: relative; z-index: 2; }
+.landing-scope .feature-card {
+    padding: 30px; border-radius: 24px; background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px); border: 1px solid #e5e7eb; transition: 0.3s;
+}
+.landing-scope .feature-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.08); border-color: rgba(59, 130, 246, 0.5); }
+.landing-scope .feature-icon {
+    width: 60px; height: 60px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;
+}
+.landing-scope .feature-icon svg { stroke: var(--l-primary-deep); }
+.landing-scope .feature-card h3 { font-size: 1.25rem; margin-bottom: 10px; font-weight: 700; color: var(--l-text-main); }
+.landing-scope .feature-card p { color: var(--l-text-light); }
+
+/* Gallery */
+.landing-scope .gallery-section { padding: 100px 0; background: var(--l-bg-light); }
+.landing-scope .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.landing-scope .gallery-item { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 4/3; }
+.landing-scope .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s ease; }
+.landing-scope .gallery-item:hover img { transform: scale(1.1); }
+.landing-scope .gallery-overlay {
+    position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px;
+    background: linear-gradient(transparent, rgba(30, 58, 138, 0.8)); color: white; opacity: 0; transition: 0.3s;
+}
+.landing-scope .gallery-item:hover .gallery-overlay { opacity: 1; }
+
+/* Testimonials */
+.landing-scope .testimonials { padding: 100px 0; background: #fdfdfd; position: relative; }
+.landing-scope .testimonial-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+.landing-scope .testimonial-card { padding: 30px; background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.landing-scope .testimonial-avatar { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 20px; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.landing-scope .author { font-weight: 700; color: var(--l-text-main); }
+
+/* FAQ */
+.landing-scope .faq { padding: 80px 0; max-width: 800px; margin: 0 auto; }
+.landing-scope details { margin-bottom: 15px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px 20px; }
+.landing-scope summary { cursor: pointer; font-weight: 600; color: var(--l-text-main); outline: none; }
+.landing-scope details p { margin-top: 15px; color: var(--l-text-light); }
+
+/* CTA */
+.landing-scope .cta-section { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%); padding: 100px 0; text-align: center; color: white; }
+.landing-scope .cta-section .btn-primary { background: white; color: #1e3a8a; }
+
+/* About */
+.landing-scope .about-section { padding: 100px 0; background: #fff; }
+.landing-scope .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+@media (max-width: 768px) { .landing-scope .about-grid { grid-template-columns: 1fr; } .landing-scope .about-text { order: 2; } }
+
+/* Footer */
+.landing-scope footer { padding: 60px 0 20px; background: #fff; border-top: 1px solid #f3f4f6; }
+.landing-scope .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+@media (max-width: 768px) { .landing-scope .footer-grid { grid-template-columns: 1fr; text-align: center; } }
+.landing-scope .copyright { text-align: center; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 0.85rem; }
+
+/* Modal */
+.landing-scope .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px);
+    z-index: 2000; display: flex; align-items: center; justify-content: center;
+}
+.landing-scope .modal-content {
+    background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 90%; width: 450px; position: relative;
+}
+.landing-scope .modal-close { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: #9ca3af; cursor: pointer; }

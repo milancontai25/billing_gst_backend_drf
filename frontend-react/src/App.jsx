@@ -1,7 +1,5 @@
 import { useState } from 'react'
 // import './assets/css/style.css'
-import './assets/css/main.css';
-import Main from './components/Main'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Register from './components/Register'
 import Login from './components/Login'
@@ -15,20 +13,8 @@ import Checkout from './components/Checkout'
 import OrderHistory from './components/OrderHistory'
 import Layout from './components/Layout'
 import Orders from './components/Orders';
-import Header from './components/Header';
-import Footer from './components/Footer';
+import LandingPage from './components/LandingPage';
 
-const PublicLayout = () => {
-  return (
-    <>
-      <Header />
-      {/* <div className="main-content"> */}
-        <Outlet /> {/* This is where Main, Login, or Register renders */}
-      {/* </div> */}
-      <Footer />
-    </>
-  );
-};
 
 function App() {
 
@@ -47,10 +33,7 @@ function App() {
     <>
       <BrowserRouter>
         <Routes>
-          <Route element={<PublicLayout />}>
-            <Route path='/' element={<Main />} />
-          </Route>
-          
+          <Route path="/" element={<LandingPage />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route element={<Layout />}>
