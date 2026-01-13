@@ -90,7 +90,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'main.wsgi.application'
-SERVER_URL = "http://145.223.19.8"
+SERVER_URL = "http://72.62.241.108"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -154,10 +154,10 @@ USE_TZ = True
 # MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 STATIC_URL = '/static/'
-STATIC_ROOT = '/var/www/billing_gst/backend/static/'
+STATIC_ROOT = '/var/www/billing_gst/backend_drf/static/'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/var/www/billing_gst/backend/media/'
+MEDIA_ROOT = '/var/www/billing_gst/backend_drf/media/'
 
 
 # Default primary key field type
