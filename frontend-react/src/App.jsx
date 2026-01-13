@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import './assets/css/style.css'
+// import './assets/css/style.css'
+import './assets/css/main.css';
 import Main from './components/Main'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Register from './components/Register'
 import Login from './components/Login'
 import DashboardHome from './components/DashboardHome'
@@ -14,6 +15,20 @@ import Checkout from './components/Checkout'
 import OrderHistory from './components/OrderHistory'
 import Layout from './components/Layout'
 import Orders from './components/Orders';
+import Header from './components/Header';
+import Footer from './components/Footer';
+
+const PublicLayout = () => {
+  return (
+    <>
+      <Header />
+      {/* <div className="main-content"> */}
+        <Outlet /> {/* This is where Main, Login, or Register renders */}
+      {/* </div> */}
+      <Footer />
+    </>
+  );
+};
 
 function App() {
 
@@ -26,13 +41,18 @@ function App() {
     { name: 'Unpaid', value: 158, color: '#10B981' },
   ];
   
+  
+
   return (
     <>
       <BrowserRouter>
         <Routes>
-          <Route path='/' element={<Main />} />
-          <Route path='/register' element={<Register />} />
+          <Route element={<PublicLayout />}>
+            <Route path='/' element={<Main />} />
+          </Route>
+          
           <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<DashboardHome lineData={lineData} pieData={pieData} />} />
             <Route path="/products" element={<Products />} />

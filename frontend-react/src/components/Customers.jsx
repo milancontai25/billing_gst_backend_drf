@@ -273,7 +273,7 @@ const Customers = () => {
                 </div>
                 <div className="form-group half-width">
                   <label>Pincode</label>
-                  <input type="number" name="pin" value={formData.pin} onChange={handleInputChange} />
+                  <input type="number" name="pin" value={formData.pin} onChange={handleInputChange} required/>
                 </div>
               </div>
 

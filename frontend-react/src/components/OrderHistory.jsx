@@ -17,7 +17,7 @@ const OrderHistory = () => {
       try {
         setLoading(true);
         const res = await axios.get(
-            `http://127.0.0.1:8000/api/v1/customer/orders/`, 
+            `api/v1/customer/orders/`, 
             { headers: { Authorization: `Bearer ${token}` } }
         );
         setOrders(res.data);

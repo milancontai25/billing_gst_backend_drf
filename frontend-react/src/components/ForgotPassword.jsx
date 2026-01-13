@@ -62,7 +62,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/v1/reset-password/', {
+      const response = await axios.post('api/v1/reset-password/', {
         email: email, // Email is preserved from Step 1
         otp: otp,
         new_password: newPassword

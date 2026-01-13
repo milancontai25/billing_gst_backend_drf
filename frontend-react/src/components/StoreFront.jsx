@@ -26,7 +26,7 @@ const StoreFront = () => {
   const [user, setUser] = useState(null);
 
   const categories = ["All", "Cosmetics", "Grocery", "Fashion", "Electronics", "Home Decor", "Furniture"];
-  const PRODUCT_API_URL = `http://127.0.0.1:8000/api/v1/business/${slug}/items/`;
+  const PRODUCT_API_URL = `/api/v1/business/${slug}/items/`;
 
   useEffect(() => {
     checkLoginStatus();

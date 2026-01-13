@@ -24,7 +24,7 @@ const Checkout = () => {
 
       try {
         setLoading(true);
-        const res = await axios.get(`http://127.0.0.1:8000/api/v1/customer/cart/checkout/preview/`, config);
+        const res = await axios.get(`api/v1/customer/cart/checkout/preview/`, config);
         setPreview(res.data);
         setLoading(false);
       } catch (err) {
@@ -40,7 +40,7 @@ const Checkout = () => {
     try {
       setPlacingOrder(true);
       await axios.post(
-        `http://127.0.0.1:8000/api/v1/customer/cart/checkout/cash/`, 
+        `api/v1/customer/cart/checkout/cash/`, 
         { payment_method: paymentMethod },
         config
       );
