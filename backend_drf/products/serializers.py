@@ -9,8 +9,9 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = '__all__'
+        fields = '__all__'  # keep this
         read_only_fields = ['business', 'item_image_url']
+
 
     def create(self, validated_data):
         image = validated_data.pop('item_image', None)

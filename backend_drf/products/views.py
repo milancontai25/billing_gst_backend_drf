@@ -8,6 +8,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 class ItemListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_queryset(self):
         business = self.request.user.active_business
@@ -26,10 +27,10 @@ class ItemListCreateView(generics.ListCreateAPIView):
 class ItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_queryset(self):
         business = self.request.user.active_business
         if not business:
             raise serializers.ValidationError("No active business selected.")
         return Item.objects.filter(business=business)
-

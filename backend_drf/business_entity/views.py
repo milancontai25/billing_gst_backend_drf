@@ -75,11 +75,11 @@ class BusinessSetupView(APIView):
 
         # Assuming 'save_file_to_hostinger' is a method defined in this class or a mixin
         if logo_file:
-            logo_url = save_file_to_server(logo_file, "business_logo")
+            logo_url = self.save_file_to_hostinger(request, logo_file, "business_logo")
             data["logo_bucket_url"] = logo_url
 
         if kyc_file:
-            kyc_url = save_file_to_server(kyc_file, "kyc_docs")
+            kyc_url = self.save_file_to_hostinger(request, kyc_file, "kyc_docs")
             data["kyc_bucket_url"] = kyc_url
 
         serializer = BusinessEntitySerializer(data=data)
@@ -105,22 +105,22 @@ class BusinessSetupView(APIView):
     # -----------------------------------------
     # Save file to Hostinger VPS & return URL
     # -----------------------------------------
-    # def save_file_to_hostinger(self, request, file, folder_name):
+    def save_file_to_hostinger(self, request, file, folder_name):
 
-    #     upload_path = os.path.join(settings.MEDIA_ROOT, folder_name)
+        upload_path = os.path.join(settings.MEDIA_ROOT, folder_name)
 
-    #     if not os.path.exists(upload_path):
-    #         os.makedirs(upload_path)
+        if not os.path.exists(upload_path):
+            os.makedirs(upload_path)
 
-    #     file_path = os.path.join(upload_path, file.name)
+        file_path = os.path.join(upload_path, file.name)
 
-    #     with open(file_path, "wb+") as destination:
-    #         for chunk in file.chunks():
-    #             destination.write(chunk)
+        with open(file_path, "wb+") as destination:
+            for chunk in file.chunks():
+                destination.write(chunk)
 
-    #     file_url = f"{settings.SERVER_URL}{settings.MEDIA_URL}{folder_name}/{file.name}"
+        file_url = f"{settings.SERVER_URL}{settings.MEDIA_URL}{folder_name}/{file.name}"
 
-    #     return file_url
+        return file_url
 
 
     # def post(self, request):
