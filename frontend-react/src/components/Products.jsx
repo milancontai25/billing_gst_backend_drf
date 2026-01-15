@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api/axiosConfig'; // Ensure this matches your folder structure
-import { Plus, Filter, Edit, Trash2, X, Save } from 'lucide-react';
+import api from '../api/axiosConfig';
+import { Plus, Filter, Edit, Trash2, X, Save, UploadCloud } from 'lucide-react';
 
 const Products = () => {
   // --- STATE ---
@@ -25,7 +25,8 @@ const Products = () => {
     min_stock: 5,
     description: '',
     customer_view: 'General',
-    area: ''
+    area: '',
+    image: null 
   };
   const [formData, setFormData] = useState(initialFormState);
 
@@ -42,14 +43,18 @@ const Products = () => {
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  useEffect(() => { fetchProducts(); }, []);
 
   // --- HANDLERS ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData({ ...formData, image: e.target.files[0] });
+    }
   };
 
   const openAddModal = () => {
@@ -68,35 +73,42 @@ const Products = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // --- FIX FOR 400 ERROR: SANITIZE DATA ---
-    const payload = { ...formData };
+    const submitData = new FormData();
     const numberFields = [
       'quantity_product', 'mrp_baseprice', 'cost_price', 
       'discount_percent', 'gst_percent', 'min_stock'
     ];
 
-    // Ensure numbers are numbers, not empty strings
-    numberFields.forEach(field => {
-      if (payload[field] === '' || payload[field] === null) {
-        payload[field] = 0; 
-      } else {
-        payload[field] = parseFloat(payload[field]);
-      }
+    Object.keys(formData).forEach(key => {
+        if (key === 'image') {
+            if (formData.image instanceof File) {
+                submitData.append('image', formData.image);
+            }
+        } 
+        else {
+            let value = formData[key];
+            if (numberFields.includes(key)) {
+                value = (value === '' || value === null) ? 0 : parseFloat(value);
+            }
+            if (value === null) value = '';
+            submitData.append(key, value);
+        }
     });
 
     try {
+      const config = { headers: { 'Content-Type': 'multipart/form-data' } };
+
       if (isEditing) {
-        await api.put(`/products/${editId}/`, payload);
+        await api.put(`/products/${editId}/`, submitData, config);
         alert("Product Updated Successfully!");
       } else {
-        await api.post('/products/', payload);
+        await api.post('/products/', submitData, config);
         alert("Product Added Successfully!");
       }
       setShowModal(false);
       fetchProducts(); 
     } catch (err) {
       console.error(err);
-      // Detailed error alerting
       if (err.response && err.response.data) {
         alert(`Server Error: ${JSON.stringify(err.response.data)}`);
       } else {
@@ -164,7 +176,18 @@ const Products = () => {
                   const status = getStockStatus(row.quantity_product, row.min_stock);
                   return (
                     <tr key={row.id}>
-                      <td className="fw-600 text-dark">{row.item_name}</td>
+                      <td className="fw-600 text-dark">
+                        <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                            {row.image && (
+                                <img 
+                                    src={row.image} 
+                                    alt="prod" 
+                                    style={{width:'30px', height:'30px', borderRadius:'4px', objectFit:'cover'}}
+                                />
+                            )}
+                            {row.item_name}
+                        </div>
+                      </td>
                       <td>{row.category}</td>
                       <td>{row.hsn_sac_code}</td>
                       <td>{row.quantity_product}</td>
@@ -191,24 +214,82 @@ const Products = () => {
       {/* === ADD/EDIT MODAL === */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-box extended-modal">
+          {/* Added 'product-edit-modal' class here for CSS targeting */}
+          <div className="modal-box extended-modal product-edit-modal">
             <div className="modal-header">
               <h2>{isEditing ? "Edit Product" : "Add New Product"}</h2>
               <button className="close-btn" onClick={() => setShowModal(false)}><X size={20}/></button>
             </div>
             
             <form onSubmit={handleSubmit} className="setup-form scrollable-form">
+              
+              {/* 1. Item Name & Category */}
               <div className="form-row">
                 <div className="form-group half-width">
                   <label>Item Name*</label>
                   <input type="text" name="item_name" value={formData.item_name} onChange={handleInputChange} required />
                 </div>
                 <div className="form-group half-width">
-                  <label>Category</label>
+                  <label>Category*</label>
                   <input type="text" name="category" value={formData.category} onChange={handleInputChange} placeholder="e.g. Grocery" />
                 </div>
               </div>
 
+              {/* 2. Product Image */}
+              <div className="form-group">
+                <label className="block fw-600" style={{fontSize:'13px', marginBottom:'6px'}}>Product Image</label>
+
+                {!formData.image && (
+                  <div className="image-upload-zone">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden-file-input-overlay"
+                    />
+                    <div className="upload-placeholder-content">
+                      {/* Reduced Icon Size to 24 */}
+                      <UploadCloud size={24} className="upload-icon-large" />
+                      <p className="upload-hint-text">
+                        <span className="upload-link">Upload</span> or drag
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show Preview */}
+                {formData.image && (
+                  <div className="image-preview-area">
+                     <div className="preview-left">
+                        <img
+                            src={formData.image instanceof File ? URL.createObjectURL(formData.image) : formData.image}
+                            alt="preview"
+                            className="preview-thumb-large"
+                        />
+                        <div className="preview-info">
+                            <span className="preview-filename">
+                                {formData.image instanceof File ? formData.image.name : 'Current Image'}
+                            </span>
+                        </div>
+                     </div>
+
+                     <div>
+                       <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          id="change-image-input"
+                          style={{display:'none'}}
+                       />
+                       <label htmlFor="change-image-input" className="change-image-btn" style={{fontSize:'12px', padding:'4px 8px'}}>
+                          Change
+                       </label>
+                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Rest of the form */}
               <div className="form-row">
                  <div className="form-group half-width">
                   <label>Item Type</label>

@@ -672,6 +672,6 @@ body { margin: 0; padding: 0; }
 .brand-logo-img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Ensures logo fills box without distortion */
+  object-fit: cover;
   display: block;
 }

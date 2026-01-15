@@ -985,3 +985,44 @@ body {
 .dropdown-option svg {
   color: var(--primary);
 }
+
+
+
+/* --- PRODUCT MODAL SPECIFIC STYLES --- */
+
+/* 1. Add gap between "Add New Product" header and the form */
+.product-edit-modal .modal-header {
+    margin-bottom: 25px; /* Adds the requested gap */
+}
+
+/* 2. Make the Upload Image box smaller */
+.product-edit-modal .image-upload-zone {
+    padding: 12px;       /* Reduced padding (was 24px) */
+    border-radius: 6px;
+    background: #F9FAFB;
+    border: 1px dashed #d1d5db;
+}
+
+/* 3. Adjust content inside the smaller box */
+.product-edit-modal .upload-placeholder-content {
+    gap: 4px;            /* Reduce gap between icon and text */
+}
+
+.product-edit-modal .upload-hint-text {
+    font-size: 0.8rem;   /* Smaller text */
+    margin: 0;
+}
+
+/* Hide the "support text" (JPG/PNG up to 5MB) to save space */
+.product-edit-modal .upload-support-text {
+    display: none; 
+}
+
+/* 4. Adjust Preview Area to be compact */
+.product-edit-modal .image-preview-area {
+    padding: 8px;
+}
+.product-edit-modal .preview-thumb-large {
+    width: 40px; 
+    height: 40px;
+}

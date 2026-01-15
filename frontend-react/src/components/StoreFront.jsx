@@ -14,6 +14,7 @@ const StoreFront = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [businessName, setBusinessName] = useState('');
+  const [businessLogo, setBusinessLogo] = useState('');
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -26,7 +27,7 @@ const StoreFront = () => {
   const [user, setUser] = useState(null);
 
   const categories = ["All", "Cosmetics", "Grocery", "Fashion", "Electronics", "Home Decor", "Furniture"];
-  const PRODUCT_API_URL = `/api/v1/business/${slug}/items/`;
+  const PRODUCT_API_URL = `http://127.0.0.1:8000/api/v1/business/${slug}/items/`;
 
   useEffect(() => {
     checkLoginStatus();
@@ -38,13 +39,14 @@ const StoreFront = () => {
         
         if (res.data && res.data.length > 0) {
              setBusinessName(res.data[0].business.business_name);
+             setBusinessLogo(res.data[0].business.logo_bucket_url);
         } else {
              const formattedSlug = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
              setBusinessName(formattedSlug);
         }
         setLoading(false);
       } catch (err) {
-        console.error("Store not found", err);
+        // console.error("Store not found", err);
         setBusinessName("Store Not Found");
         setLoading(false);
       }
@@ -80,7 +82,7 @@ const StoreFront = () => {
         return;
     }
     try {
-        await customerApi.post(`/customer/cart/add/`, { item: productId, quantity: 1 });
+        await customerApi.post(`http://127.0.0.1:8000/customer/cart/add/`, { item: productId, quantity: 1 });
         setIsCartOpen(true);
     } catch (err) {
         console.error(err);
@@ -117,7 +119,13 @@ const StoreFront = () => {
       <header className="store-header">
         <div className="header-content">
           <Link to={`/store/${slug}`} className="brand-section">
-            <div className="brand-logo-box"><Store size={22} /></div>
+            <div className="brand-logo-box">
+              {businessLogo ? (
+                <img src={businessLogo} className="brand-logo-img" alt="logo" />
+              ) : (
+                <Store size={22} /> 
+              )}
+            </div>
             <h1 className="brand-name">{businessName}</h1>
           </Link>
           
