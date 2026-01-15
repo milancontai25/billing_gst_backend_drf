@@ -41,6 +41,7 @@ const StoreFront = () => {
         
         if (res.data && res.data.length > 0) {
              setBusinessName(res.data[0].business.business_name);
+             console.log(res.data[0].business.logo_bucket_url);
              setBusinessLogo(res.data[0].business.logo_bucket_url);
         } else {
              const formattedSlug = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');

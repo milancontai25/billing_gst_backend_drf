@@ -3,6 +3,7 @@ from .models import Item
 from rest_framework import generics, serializers
 from .serializers import ProductSerializer
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 
 class ItemListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
@@ -15,23 +16,11 @@ class ItemListCreateView(generics.ListCreateAPIView):
         return Item.objects.filter(business=business)
 
     def perform_create(self, serializer):
-        user = self.request.user
-        business = user.active_business
-
+        business = self.request.user.active_business
         if not business:
             raise serializers.ValidationError("No active business selected.")
 
-        image_file = self.request.FILES.get('item_image')
-
-        image_url = None
-        if image_file:
-            image_url = save_file_to_server(image_file, "items")
-
-        serializer.save(
-            business=business,
-            item_image_url=image_url
-        )
-
+        serializer.save(business=business)
 
 
 class ItemDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -39,11 +28,8 @@ class ItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
-        
-        business = user.active_business
-        if business is None:
+        business = self.request.user.active_business
+        if not business:
             raise serializers.ValidationError("No active business selected.")
-
         return Item.objects.filter(business=business)
 

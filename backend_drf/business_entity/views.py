@@ -21,13 +21,18 @@ from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
 
 
-def generate_unique_entity_code_name(name):
+def generate_unique_slug(name):
+    """
+    Generates a URL-safe slug from the name.
+    If the slug exists, appends a counter (e.g., 'joes-pizza-1').
+    """
     base_slug = slugify(name)
-    slug = base_slug
+    slug = base_slug[:45]
     counter = 1
 
-    while BusinessEntity.objects.filter(entity_code_name=slug).exists():
-        slug = f"{base_slug}-{counter}"
+    # Loop until we find a slug that doesn't exist in the database
+    while BusinessEntity.objects.filter(slug=slug).exists():
+        slug = f"{slug}-{counter}"
         counter += 1
 
     return slug
@@ -41,54 +46,107 @@ class BusinessSetupView(APIView):
         user = request.user
         businesses = BusinessEntity.objects.filter(user=user)
 
-        return Response({
-            "user": UserSerializer(user).data,
-            "businesses": BusinessEntitySerializer(businesses, many=True).data
-        }, status=status.HTTP_200_OK)
+        user_data = UserSerializer(user).data
+        business_data = BusinessEntitySerializer(businesses, many=True).data
+
+        return Response(
+            {
+                "user": user_data,
+                "businesses": business_data
+            },
+            status=status.HTTP_200_OK
+        )
 
     def post(self, request):
         user = request.user
+        # Make a mutable copy of the data
         data = request.data.copy()
 
-        if not data.get("business_name"):
+        if "business_name" not in data or not data["business_name"]:
             return Response({"error": "business_name is required"}, status=400)
 
-        # generate unique entity code
-        data["entity_code_name"] = generate_unique_entity_code_name(
-            data["business_name"]
-        )
+        # ---------- Generate SLUG ----------
+        # Logic updated to use the new function and key
+        data["slug"] = generate_unique_slug(data["business_name"])
 
-        # file uploads
+        # ---------- File Upload Handling ----------
         logo_file = request.FILES.get("logo_file")
         kyc_file = request.FILES.get("kyc_file")
 
+        # Assuming 'save_file_to_hostinger' is a method defined in this class or a mixin
         if logo_file:
-            data["logo_bucket_url"] = self.save_file_to_server(
-                logo_file, "business_logo"
-            )
+            logo_url = save_file_to_server(logo_file, "business_logo")
+            data["logo_bucket_url"] = logo_url
 
         if kyc_file:
-            data["kyc_bucket_url"] = self.save_file_to_server(
-                kyc_file, "kyc_docs"
-            )
+            kyc_url = save_file_to_server(kyc_file, "kyc_docs")
+            data["kyc_bucket_url"] = kyc_url
 
         serializer = BusinessEntitySerializer(data=data)
 
         if serializer.is_valid():
             business = serializer.save(user=user)
 
-            # auto-set active business
-            if not user.active_business:
+            # Set as active business if the user doesn't have one selected yet
+            if user.active_business is None:
                 user.active_business = business
-                user.save(update_fields=["active_business"])
+                user.save()
 
             return Response({
-                "message": "Business created successfully",
-                "business": BusinessEntitySerializer(business).data
-            }, status=status.HTTP_201_CREATED)
+                "message": "Business created successfully.",
+                "business": serializer.data,
+                "active_business_set": True
+            }, status=201)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=400)
 
+
+
+    # -----------------------------------------
+    # Save file to Hostinger VPS & return URL
+    # -----------------------------------------
+    # def save_file_to_hostinger(self, request, file, folder_name):
+
+    #     upload_path = os.path.join(settings.MEDIA_ROOT, folder_name)
+
+    #     if not os.path.exists(upload_path):
+    #         os.makedirs(upload_path)
+
+    #     file_path = os.path.join(upload_path, file.name)
+
+    #     with open(file_path, "wb+") as destination:
+    #         for chunk in file.chunks():
+    #             destination.write(chunk)
+
+    #     file_url = f"{settings.SERVER_URL}{settings.MEDIA_URL}{folder_name}/{file.name}"
+
+    #     return file_url
+
+
+    # def post(self, request):
+    #     user = request.user
+    #     business = BusinessEntity.objects.filter(user=user).first()
+
+    #     if not business:
+    #         return Response({"error": "Business entity not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    #     data = request.data.copy()
+
+    #     # If entity_name exists → always regenerate entity_code_name
+    #     if "entity_name" in data:
+    #         entity_name = data["entity_name"]
+    #         unique_code = generate_unique_entity_code_name(entity_name)
+    #         data["entity_code_name"] = unique_code
+
+    #     serializer = BusinessEntitySerializer(business, data=data, partial=True)
+    #     if serializer.is_valid():
+    #         serializer.save(user=user)
+    #         return Response({
+    #             "message": "Business profile updated successfully.",
+    #             "business": serializer.data
+    #         }, status=status.HTTP_200_OK)
+
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SwitchBusinessView(APIView):

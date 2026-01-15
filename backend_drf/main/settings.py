@@ -90,7 +90,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'main.wsgi.application'
-SERVER_URL = "http://72.62.241.108"
+SERVER_URL = "https://statgrow.cloud"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -206,4 +206,5 @@ EMAIL_HOST_PASSWORD = "kuon ozjo kwfn imts"   # NOT Gmail password
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",
     "http://72.62.241.108",
+    "https://statgrow.cloud"
 ]
