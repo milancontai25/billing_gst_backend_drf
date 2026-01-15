@@ -18,7 +18,8 @@ const AuthCustomer = ({ isOpen, onClose, onLoginSuccess }) => {
 
   if (!isOpen) return null;
 
-  const API_BASE = `/api/v1/business/${slug}/customer`;
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+  const API_BASE = `${API_BASE_URL}/api/v1/business/${slug}/customer`;
 
   // --- HANDLERS ---
   const handleInputChange = (e) => {

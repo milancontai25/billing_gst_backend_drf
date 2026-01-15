@@ -12,6 +12,9 @@ const CartDrawer = ({ isOpen, onClose, slug }) => {
   // Track which specific item is currently updating to show a spinner on just that item
   const [updatingId, setUpdatingId] = useState(null);
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+  // const API_BASE = 
+
   // Helper for Auth Headers
   const getHeaders = () => {
     const token = localStorage.getItem('customer_token');
@@ -25,7 +28,7 @@ const CartDrawer = ({ isOpen, onClose, slug }) => {
     try {
       // Don't set full loading on refresh to prevent flickering
       if (!cart) setLoading(true); 
-      const res = await axios.get(`/api/v1/customer/cart/`, config);
+      const res = await axios.get(`${API_BASE_URL}/api/v1/customer/cart/`, config);
       setCart(res.data);
       setLoading(false);
     } catch (err) {
@@ -43,7 +46,7 @@ const CartDrawer = ({ isOpen, onClose, slug }) => {
       setUpdatingId(itemId); // Lock buttons for this item
       
       await axios.post(
-        `/api/v1/customer/cart/update/`,
+        `${API_BASE_URL}/api/v1/customer/cart/update/`,
         { item: itemId, action: action },
         config
       );

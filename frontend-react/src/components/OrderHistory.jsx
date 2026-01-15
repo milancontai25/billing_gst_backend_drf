@@ -9,6 +9,9 @@ const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
+  
   useEffect(() => {
     const fetchOrders = async () => {
       const token = localStorage.getItem('customer_token');
@@ -17,7 +20,7 @@ const OrderHistory = () => {
       try {
         setLoading(true);
         const res = await axios.get(
-            `api/v1/customer/orders/`, 
+            `${API_BASE_URL}/api/v1/customer/orders/`, 
             { headers: { Authorization: `Bearer ${token}` } }
         );
         setOrders(res.data);

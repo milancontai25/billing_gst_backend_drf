@@ -24,6 +24,8 @@ const ForgotPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false); // <--- ADDED THIS
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
   // --- STEP 1: SEND OTP ---
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -33,7 +35,7 @@ const ForgotPassword = () => {
 
     try {
       // Note: Endpoint expects 'email'
-      const response = await axios.post('http://127.0.0.1:8000/api/v1/forgot-password/', { 
+      const response = await axios.post(`${API_BASE_URL}/api/v1/forgot-password/`, { 
         email: email 
       });
       
@@ -62,7 +64,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await axios.post('api/v1/reset-password/', {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/reset-password/`, {
         email: email, // Email is preserved from Step 1
         otp: otp,
         new_password: newPassword

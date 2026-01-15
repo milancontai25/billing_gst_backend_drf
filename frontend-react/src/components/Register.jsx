@@ -24,6 +24,8 @@ const Register = () => {
 
   const [errors, setErrors] = useState({});
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
   // 3. Handle Input Changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -50,7 +52,7 @@ const Register = () => {
     };
     
     try {
-        const response = await axios.post('/api/v1/register/', userData);
+        const response = await axios.post(`${API_BASE_URL}/api/v1/register/`, userData);
         console.log('Registration Successful:', response.data);
         
         // SHOW POPUP INSTEAD OF ALERT

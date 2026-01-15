@@ -12,6 +12,8 @@ const Checkout = () => {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('CASH'); // Default to CASH
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
   const getHeaders = () => {
     const token = localStorage.getItem('customer_token');
     return token ? { headers: { Authorization: `Bearer ${token}` } } : null;
@@ -24,7 +26,7 @@ const Checkout = () => {
 
       try {
         setLoading(true);
-        const res = await axios.get(`api/v1/customer/cart/checkout/preview/`, config);
+        const res = await axios.get(`${API_BASE_URL}/api/v1/customer/cart/checkout/preview/`, config);
         setPreview(res.data);
         setLoading(false);
       } catch (err) {
@@ -40,7 +42,7 @@ const Checkout = () => {
     try {
       setPlacingOrder(true);
       await axios.post(
-        `api/v1/customer/cart/checkout/cash/`, 
+        `${API_BASE_URL}/api/v1/customer/cart/checkout/cash/`, 
         { payment_method: paymentMethod },
         config
       );

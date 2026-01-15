@@ -15,6 +15,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
   // Handle Input Change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -26,7 +28,7 @@ const Login = () => {
     e.preventDefault();
     
     try {
-        const response = await axios.post('http://127.0.0.1:8000/api/v1/token/', formData);
+        const response = await axios.post(`${API_BASE_URL}/api/v1/token/`, formData);
         
         console.log('Login Successful:', response.data);
         

@@ -1,9 +1,14 @@
 
 import axios from 'axios';
 
-// Create a dedicated instance
+
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
 const customerApi = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api/v1',
+    baseURL: `${baseURL}/api/v1`, // Appending your API version path
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 
 // --- 1. REQUEST INTERCEPTOR (Attaches Token) ---
