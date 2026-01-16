@@ -45,6 +45,7 @@ body {
 }
 
 /* --- SIDEBAR --- */
+/* --- SIDEBAR (Updated for Collapse & Mobile) --- */
 .sidebar {
   width: var(--sidebar-width);
   background: var(--bg-dark);
@@ -52,8 +53,111 @@ body {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  transition: width 0.3s;
+  transition: all 0.3s ease-in-out; /* Smooth transition */
   flex-shrink: 0;
+  white-space: nowrap; /* Prevents text wrapping when shrinking */
+  position: relative;
+  z-index: 50;
+  height: 100vh;
+}
+
+/* Collapsed State (Desktop) */
+.sidebar.collapsed {
+  width: 80px; /* Slim width */
+  padding: 20px 10px;
+}
+
+/* Hide text labels when collapsed */
+.sidebar.collapsed .brand-text,
+.sidebar.collapsed .nav-text,
+.sidebar.collapsed .biz-text,
+.sidebar.collapsed .sidebar-footer h4, /* Optional headers */
+.sidebar.collapsed .chevron-icon {
+  opacity: 0;
+  width: 0;
+  display: none;
+}
+
+/* Center icons when collapsed */
+.sidebar.collapsed .brand-logo,
+.sidebar.collapsed .nav-item,
+.sidebar.collapsed .active-business-btn {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sidebar.collapsed .biz-info {
+  justify-content: center;
+}
+
+/* Toggle Button (Desktop) */
+.sidebar-toggle {
+  position: absolute;
+  top: 25px;
+  right: -12px;
+  background: var(--primary);
+  color: white;
+  border: 1px solid var(--bg-dark);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 60;
+  transition: 0.2s;
+}
+.sidebar-toggle:hover { background: var(--primary-dark); }
+
+/* --- MOBILE RESPONSIVE SIDEBAR --- */
+@media (max-width: 768px) {
+  .app-container {
+    position: relative; /* For absolute sidebar positioning */
+  }
+
+  /* Hide Desktop Toggle on Mobile */
+  .sidebar-toggle { display: none; }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%); /* Hidden by default */
+    width: 260px; /* Full width drawer */
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0); /* Slide in */
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+  }
+
+  /* Overlay when mobile sidebar is open */
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 40;
+    display: none;
+  }
+  .mobile-overlay.show { display: block; }
+}
+
+/* --- MOBILE HAMBURGER BUTTON --- */
+.mobile-menu-btn {
+  display: none; /* Hidden on desktop */
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-gray);
+  margin-right: 15px;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-btn { display: block; }
+  .top-bar { gap: 10px; } /* Adjust spacing for hamburger */
 }
 
 .brand-header {

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 import { 
-  Search, Eye, X, Download, Filter, FileSpreadsheet, Check 
+  Search, Eye, X, Download, Filter, FileSpreadsheet 
 } from 'lucide-react';
+// IMPORT THE NEW VIEWER
+import OrderViewer from './OrderViewer';
 
 const Orders = () => {
   // --- STATE ---
@@ -11,7 +13,7 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   
   // Stats
-  const [stats, setStats] = useState({ total: 0, pending: 0, processing: 0, completed: 0 });
+  const [stats, setStats] = useState({ total: 0, pending: 0, processing: 0, completed: 0, shipped: 0 });
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,7 +24,6 @@ const Orders = () => {
   // Modal
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  
 
   // --- API CALLS ---
   const fetchOrders = async () => {
@@ -44,17 +45,14 @@ const Orders = () => {
   useEffect(() => {
     let result = orders;
 
-    // 1. Status Filter
     if (statusFilter !== 'All') {
       result = result.filter(o => o.status.toLowerCase() === statusFilter.toLowerCase());
     }
 
-    // 2. Payment Filter
     if (paymentFilter !== 'All') {
       result = result.filter(o => o.payment_status.toLowerCase() === paymentFilter.toLowerCase());
     }
 
-    // 3. Search Filter
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
       result = result.filter(o => 
@@ -90,11 +88,7 @@ const Orders = () => {
       o.status
     ]);
 
-    const csvContent = [
-        headers.join(","), 
-        ...rows.map(e => e.join(","))
-    ].join("\n");
-
+    const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -137,39 +131,13 @@ const Orders = () => {
 
   return (
     <div className="page-content">
-      
       {/* 1. STATS CARDS */}
       <div className="stats-grid orders-stats">
-        <div className="stat-card bg-blue-50">
-          <div className="stat-content">
-            <span className="stat-title">Total Orders</span>
-            <span className="stat-number">{stats.total}</span>
-          </div>
-        </div>
-        <div className="stat-card bg-yellow-50">
-          <div className="stat-content">
-            <span className="stat-title">Pending</span>
-            <span className="stat-number">{stats.pending}</span>
-          </div>
-        </div>
-        <div className="stat-card bg-purple-50">
-          <div className="stat-content">
-            <span className="stat-title">Processing</span>
-            <span className="stat-number">{stats.processing}</span>
-          </div>
-        </div>
-        <div className="stat-card bg-white-50">
-          <div className="stat-content">
-            <span className="stat-title">Shipped</span>
-            <span className="stat-number">{stats.shipped}</span>
-          </div>
-        </div>
-        <div className="stat-card bg-green-50">
-          <div className="stat-content">
-            <span className="stat-title">Completed</span>
-            <span className="stat-number">{stats.completed}</span>
-          </div>
-        </div>
+        <StatBox title="Total Orders" value={stats.total} color="bg-blue-50" />
+        <StatBox title="Pending" value={stats.pending} color="bg-yellow-50" />
+        <StatBox title="Processing" value={stats.processing} color="bg-purple-50" />
+        <StatBox title="Shipped" value={stats.shipped} color="bg-gray-100" />
+        <StatBox title="Completed" value={stats.completed} color="bg-green-50" />
       </div>
 
       {/* 2. ORDER LIST CARD */}
@@ -179,10 +147,8 @@ const Orders = () => {
           <p className="text-sm text-gray-500">Manage and track all customer orders</p>
         </div>
 
-        {/* --- TOOLBAR --- */}
+        {/* TOOLBAR (Search & Actions) */}
         <div className="table-toolbar">
-          
-          {/* A. SEARCH (Left - Grows automatically) */}
           <div className="search-box">
             <Search size={18} className="text-gray-400" />
             <input 
@@ -193,15 +159,11 @@ const Orders = () => {
             />
           </div>
           
-          {/* B. ACTION BUTTONS (Right - Export & Filter) */}
           <div className="action-buttons">
-            
-            {/* Export Button */}
             <button className="btn btn-gray" onClick={handleExport}>
                <FileSpreadsheet size={16} /> Export
             </button>
 
-            {/* Filter Button */}
             <div style={{ position: 'relative' }}>
               <button 
                   className={`btn btn-outline ${statusFilter !== 'All' || paymentFilter !== 'All' ? 'text-blue-600 border-blue-200 bg-blue-50' : ''}`} 
@@ -211,7 +173,6 @@ const Orders = () => {
                   {statusFilter === 'All' && paymentFilter === 'All' ? 'Filter' : 'Filters Active'}
               </button>
 
-              {/* Filter Dropdown */}
               {showFilter && (
                 <div className="dropdown-menu wide-dropdown" style={{ width: '280px', right: 0, display:'flex', flexDirection:'column' }}>
                   <div style={{ display: 'flex' }}>
@@ -223,7 +184,6 @@ const Orders = () => {
                               </div>
                           ))}
                       </div>
-                      
                       <div className="dropdown-section" style={{ flex: 1 }}>
                           <div className="dropdown-label">Payment</div>
                           {['All', 'Paid', 'Unpaid'].map(pmt => (
@@ -233,14 +193,13 @@ const Orders = () => {
                           ))}
                       </div>
                   </div>
-                  <div className="dropdown-footer" onClick={clearFilters} style={{ padding: '8px', textAlign: 'center', borderTop: '1px solid #eee', color: '#EF4444', cursor: 'pointer', fontSize:'12px', fontWeight:'600' }}>
+                  <div className="dropdown-footer" onClick={clearFilters}>
                       Clear All Filters
                   </div>
                 </div>
               )}
             </div>
           </div>
-
         </div>
 
         {/* Table */}
@@ -275,15 +234,28 @@ const Orders = () => {
         </div>
       </div>
 
-      {/* 3. ORDER DETAILS MODAL */}
+      {/* 3. ORDER VIEWER (Replaces the old Modal) */}
       {showModal && selectedOrder && (
-        <OrderDetailsModal order={selectedOrder} onClose={() => setShowModal(false)} />
+        <OrderViewer 
+            order={selectedOrder} 
+            // No business prop needed here anymore!
+            onClose={() => setShowModal(false)} 
+        />
       )}
     </div>
   );
 };
 
-// --- SUB-COMPONENTS ---
+// --- HELPER SUB-COMPONENTS ---
+
+const StatBox = ({ title, value, color }) => (
+  <div className={`stat-card ${color}`}>
+    <div className="stat-content">
+      <span className="stat-title">{title}</span>
+      <span className="stat-number">{value}</span>
+    </div>
+  </div>
+);
 
 const OrderRow = ({ order, onStatusUpdate, onView }) => {
   const getStatusColor = (s) => {
@@ -335,80 +307,5 @@ const OrderRow = ({ order, onStatusUpdate, onView }) => {
     </tr>
   );
 };
-
-const OrderDetailsModal = ({ order, onClose }) => (
-  <div className="modal-overlay">
-    <div className="modal-box order-modal">
-      <div className="modal-header-simple">
-        <div>
-          <h2 className="text-xl font-bold">Order Details</h2>
-          <p className="text-sm text-gray-500">#{order.order_number} • {new Date(order.date).toLocaleDateString()}</p>
-        </div>
-        <div className="flex gap-2">
-           <button className="btn btn-blue flex items-center gap-2">
-              <Download size={16} /> Bill
-           </button>
-           <button className="close-btn-simple" onClick={onClose}>
-              <X size={24} />
-           </button>
-        </div>
-      </div>
-
-      <div className="modal-content scrollable-form">
-        <div className="info-section bg-gray-50 p-4 rounded-lg mb-6">
-          <h4 className="text-sm font-bold text-gray-700 mb-3 border-b pb-2">Customer</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Name</p> <p className="font-medium">{order.customer_name}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Contact</p> <p className="font-medium">{order.customer_phone}</p>
-            </div>
-            <div className="col-span-2">
-              <p className="text-gray-500">Address</p> 
-              <p className="font-medium">{order.customer_address || "N/A"}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="items-section mb-6">
-          <h4 className="text-sm font-bold text-gray-700 mb-3">Items</h4>
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-left">
-              <tr>
-                <th className="p-2">Item</th>
-                <th className="p-2 text-center">Qty</th>
-                <th className="p-2 text-right">Price</th>
-                <th className="p-2 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {order.order_items.map((item, idx) => (
-                <tr key={idx} className="border-b">
-                  <td className="p-2 font-medium">{item.product_name}</td>
-                  <td className="p-2 text-center">{item.quantity}</td>
-                  <td className="p-2 text-right">₹{item.price}</td>
-                  <td className="p-2 text-right font-bold">₹{item.subtotal}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan="3" className="p-3 text-right font-bold text-lg">Total</td>
-                <td className="p-3 text-right font-bold text-lg text-blue-600">₹{order.total_amount}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        {order.special_notes && (
-          <div className="bg-blue-50 p-3 rounded-lg mb-4 text-sm text-blue-800 border border-blue-100">
-            <strong>Note:</strong> {order.special_notes}
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-);
 
 export default Orders;

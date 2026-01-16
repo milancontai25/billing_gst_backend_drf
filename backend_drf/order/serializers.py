@@ -1,3 +1,4 @@
+from business_entity.serializers import BusinessEntitySerializer
 from rest_framework import serializers
 from .models import Cart, CartItem, Order, OrderItem
 
@@ -14,7 +15,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     order_items = OrderItemSerializer(many=True, read_only=True)
-
+    business = BusinessEntitySerializer(read_only=True)
     customer_name = serializers.CharField(source='customer.name', read_only=True)
     customer_email = serializers.EmailField(source='customer.email', read_only=True)
     customer_phone = serializers.CharField(source='customer.phone', read_only=True)
@@ -25,6 +26,7 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
+            'business',
             'order_number',
             'date',
             'status',

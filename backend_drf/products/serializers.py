@@ -9,7 +9,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = '__all__'  # keep this
+        fields = '__all__' 
         read_only_fields = ['business', 'item_image_url']
 
 
@@ -40,3 +40,9 @@ class ProductSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+    
+    def validate_item_image(self, image):
+        if image.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("Image size must be under 5MB")
+        return image
+

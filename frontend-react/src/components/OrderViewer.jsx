@@ -1,10 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import api from '../api/axiosConfig';
+import React, { useRef, useState } from 'react';
 import { X, Download, Loader } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-// Helper for Image URLs
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   if (imagePath.startsWith('http')) return imagePath;
@@ -12,29 +10,16 @@ const getImageUrl = (imagePath) => {
   return `${API_BASE_URL}${imagePath}`;
 };
 
-const InvoiceViewer = ({ invoiceId, onClose }) => {
-  const [invoice, setInvoice] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
+const OrderViewer = ({ order, onClose }) => {
   const printRef = useRef();
+  const [downloading, setDownloading] = useState(false);
 
-  // --- FETCH DETAILS ---
-  useEffect(() => {
-    const fetchDetails = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get(`/invoices/${invoiceId}/`);
-        setInvoice(res.data);
-        setLoading(false);
-      } catch (err) {
-        alert("Failed to load invoice details");
-        onClose();
-      }
-    };
-    if (invoiceId) fetchDetails();
-  }, [invoiceId]);
+  if (!order) return null;
 
-  // --- DOWNLOAD PDF HANDLER ---
+  // Extract business from the order object (based on your API JSON)
+  const { business } = order;
+
+  // --- DOWNLOAD PDF LOGIC ---
   const handleDownload = async () => {
     const element = printRef.current;
     if (!element) return;
@@ -57,7 +42,7 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
       const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
       
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth * ratio, imgHeight * ratio);
-      pdf.save(`Invoice_${invoice.invoice_id}.pdf`);
+      pdf.save(`Invoice_${order.order_number}.pdf`);
       setDownloading(false);
     } catch (error) {
       console.error("Download failed:", error);
@@ -66,14 +51,8 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
     }
   };
 
-  if (loading) return <div className="modal-overlay"><div className="loading-screen">Loading Invoice...</div></div>;
-  if (!invoice) return null;
-
-  // Destructure Data
-  const { business, items_details, customer_name, customer_email, customer_phone, customer_address, invoice_id, date, total_value, total_gst, net_payable, status } = invoice;
-
-  // Status Styling
-  const isPaid = ['paid', 'completed'].includes(status.toLowerCase());
+  // Status Logic (Green for Paid, Red for Unpaid)
+  const isPaid = ['paid', 'completed', 'received', 'shipped', 'confirmed'].includes(order.status.toLowerCase());
   const statusColor = isPaid ? '#16A34A' : '#DC2626'; 
   const statusText = isPaid ? 'PAID' : 'UNPAID';
 
@@ -81,7 +60,7 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
     <div className="modal-overlay">
       <div className="modal-box" style={{ width: '850px', height: '95vh', display: 'flex', flexDirection: 'column', background:'#f3f4f6' }}>
         
-        {/* --- HEADER ACTIONS --- */}
+        {/* --- ACTIONS HEADER --- */}
         <div className="modal-header" style={{ background:'white', borderBottom: '1px solid #e5e7eb', padding: '15px 25px' }}>
           <h2 style={{ fontSize: '18px', fontWeight:'600' }}>Invoice Preview</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -115,10 +94,10 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
             }}
           >
             
-            {/* 1. HEADER SECTION */}
+            {/* 1. HEADER SECTION [cite: 1-12] */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
               
-              {/* Left: Company Details */}
+              {/* Left: Company Details [cite: 1-6] */}
               <div style={{ maxWidth: '50%' }}>
                 <div style={{ marginBottom: '15px' }}>
                    {business?.logo_bucket_url ? (
@@ -128,6 +107,7 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
                         style={{ height: '40px', objectFit: 'contain', objectPosition: 'left' }}
                       />
                    ) : (
+                      // Fallback Logo Style (The "H" in reference) [cite: 1]
                       <div style={{ 
                           width: '45px', height: '45px', background: '#673DE6', color: 'white', 
                           borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
@@ -155,7 +135,7 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
                 </div>
               </div>
 
-              {/* Right: Invoice Meta */}
+              {/* Right: Invoice Meta [cite: 7-12] */}
               <div style={{ textAlign: 'right' }}>
                 <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#2C2C2C', margin: '0 0 20px 0', letterSpacing: '1px' }}>INVOICE</h1>
                 
@@ -163,25 +143,29 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
                   <tbody>
                     <tr>
                       <td style={{ padding: '3px 15px 3px 0', color: '#6B7280' }}>Invoice #</td>
-                      <td style={{ padding: '3px 0', fontWeight: '600', color: '#111827' }}>{invoice_id}</td>
+                      <td style={{ padding: '3px 0', fontWeight: '600', color: '#111827' }}>{order.order_number}</td>
                     </tr>
                     <tr>
-                      <td style={{ padding: '3px 15px 3px 0', color: '#6B7280' }}>Invoice Date #</td>
-                      <td style={{ padding: '3px 0', fontWeight: '600', color: '#111827' }}>{new Date(date).toLocaleDateString()}</td>
+                      <td style={{ padding: '3px 15px 3px 0', color: '#6B7280' }}>Invoice Issued #</td>
+                      <td style={{ padding: '3px 0', fontWeight: '600', color: '#111827' }}>{new Date(order.date).toLocaleDateString()}</td>
                     </tr>
                     <tr>
-                      <td style={{ padding: '3px 15px 3px 0', color: '#6B7280' }}>Total Amount #</td>
-                      <td style={{ padding: '3px 0', fontWeight: '600', color: '#111827' }}>₹{net_payable}</td>
+                      <td style={{ padding: '3px 15px 3px 0', color: '#6B7280' }}>Invoice Amount #</td>
+                      <td style={{ padding: '3px 0', fontWeight: '600', color: '#111827' }}>₹{order.total_amount}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '3px 15px 3px 0', color: '#6B7280' }}>Order Nr. #</td>
+                      <td style={{ padding: '3px 0', fontWeight: '600', color: '#111827' }}>{order.id}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* 2. STATUS & BILLED TO */}
+            {/* 2. STATUS & BILLED TO [cite: 13-21] */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '50px', marginTop: '20px' }}>
               
-              {/* PAID STAMP */}
+              {/* PAID STAMP  */}
               <div style={{ marginTop: '10px' }}>
                  <div style={{ 
                     fontSize: '28px', fontWeight: '900', color: statusColor, 
@@ -193,79 +177,81 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
                  </div>
               </div>
 
-              {/* Billed To */}
+              {/* Billed To Section  */}
               <div style={{ minWidth: '220px' }}>
                 <h3 style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
                   BILLED TO
                 </h3>
                 <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
-                  {customer_name}
+                  {order.customer_name}
                 </div>
                 <div style={{ lineHeight: '1.6', fontSize: '13px' }}>
-                  {customer_address || "Address Not Provided"}<br/>
-                  {customer_email}<br/>
-                  {customer_phone}
+                  {order.customer_address || order.customer_district || "Address Not Provided"}<br/>
+                  {order.customer_state} {order.customer_phone}<br/>
+                  {order.customer_email}<br/>
                 </div>
               </div>
             </div>
 
-            {/* 3. TABLE */}
+            {/* 3. TABLE  */}
             <div style={{ marginBottom: '40px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #E5E7EB' }}>
                     <th style={{ textAlign: 'left', padding: '10px 0', fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</th>
-                    <th style={{ textAlign: 'right', padding: '10px 0', fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rate</th>
+                    <th style={{ textAlign: 'right', padding: '10px 0', fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Price</th>
                     <th style={{ textAlign: 'center', padding: '10px 0', fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Qty</th>
-                    <th style={{ textAlign: 'right', padding: '10px 0', fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>GST %</th>
+                    <th style={{ textAlign: 'right', padding: '10px 0', fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Excl. Tax</th>
+                    {/* Add Tax column here if available in your item data */}
                     <th style={{ textAlign: 'right', padding: '10px 0', fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount (INR)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items_details.map((item, index) => (
+                  {order.order_items.map((item, index) => (
                     <tr key={index} style={{ borderBottom: '1px solid #F3F4F6' }}>
                       <td style={{ padding: '15px 0', verticalAlign: 'top' }}>
-                        <div style={{ fontWeight: '600', color: '#1F2937', fontSize: '13px' }}>{item.item_name}</div>
+                        <div style={{ fontWeight: '600', color: '#1F2937', fontSize: '13px' }}>{item.product_name}</div>
                       </td>
-                      <td style={{ padding: '15px 0', textAlign: 'right', verticalAlign: 'top', color: '#4B5563' }}>₹{item.rate}</td>
+                      <td style={{ padding: '15px 0', textAlign: 'right', verticalAlign: 'top', color: '#4B5563' }}>₹{item.price}</td>
                       <td style={{ padding: '15px 0', textAlign: 'center', verticalAlign: 'top', color: '#4B5563' }}>{item.quantity}</td>
-                      <td style={{ padding: '15px 0', textAlign: 'right', verticalAlign: 'top', color: '#4B5563' }}>{item.gst_percent}%</td>
-                      <td style={{ padding: '15px 0', textAlign: 'right', fontWeight: '700', verticalAlign: 'top', color: '#111827' }}>₹{item.total_value}</td>
+                      <td style={{ padding: '15px 0', textAlign: 'right', verticalAlign: 'top', color: '#4B5563' }}>₹{item.subtotal}</td>
+                      <td style={{ padding: '15px 0', textAlign: 'right', fontWeight: '700', verticalAlign: 'top', color: '#111827' }}>₹{item.subtotal}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* 4. TOTALS SECTION */}
+            {/* 4. TOTALS SECTION [cite: 23-33] */}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <div style={{ width: '300px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px', color: '#4B5563' }}>
-                  <span>Subtotal</span>
-                  <span>₹{total_value}</span>
+                  <span>Total excl. Tax</span>
+                  <span>₹{order.total_amount}</span>
                 </div>
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px', color: '#4B5563' }}>
-                  <span>Total GST</span>
-                  <span>₹{total_gst}</span>
-                </div>
+                {/* Placeholder for IGST/Tax if you calculate it separately later [cite: 26] */}
+                {/* <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px', color: '#4B5563' }}>
+                  <span>IGST @ 18%</span>
+                  <span>₹0.00</span>
+                </div> */}
                 
                 <div style={{ borderTop: '2px solid #E5E7EB', margin: '15px 0' }}></div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <span style={{ fontSize: '16px', fontWeight: '700', color: '#111827' }}>Total</span>
-                  <span style={{ fontSize: '18px', fontWeight: '800', color: '#111827' }}>₹{net_payable}</span>
+                  <span style={{ fontSize: '18px', fontWeight: '800', color: '#111827' }}>₹{order.total_amount}</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px', color: '#6B7280' }}>
                   <span>Payments</span>
-                  <span>(₹{isPaid ? net_payable : '0.00'})</span>
+                  <span>(₹{isPaid ? order.total_amount : '0.00'})</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px', background: '#F9FAFB', padding: '10px', borderRadius: '6px' }}>
                   <span style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>Amount Due</span>
                   <span style={{ fontSize: '16px', fontWeight: '700', color: isPaid ? '#16A34A' : '#DC2626' }}>
-                    ₹{isPaid ? '0.00' : net_payable}
+                    ₹{isPaid ? '0.00' : order.total_amount}
                   </span>
                 </div>
               </div>
@@ -284,4 +270,4 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
   );
 };
 
-export default InvoiceViewer;
+export default OrderViewer;

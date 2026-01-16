@@ -3,18 +3,22 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import Sidebar from './Sidebar';
 import UserProfile from './UserProfile'; 
-import { X } from 'lucide-react';
+import { X, Menu } from 'lucide-react'; // Import Menu icon
 import '../assets/css/dashboard.css';
 
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- GLOBAL STATE ---
+  // --- UI STATE ---
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showSwitcher, setShowSwitcher] = useState(false);
+  
+  // Sidebar State
+  const [isCollapsed, setIsCollapsed] = useState(false); // Desktop Minimize
+  const [isMobileOpen, setIsMobileOpen] = useState(false); // Mobile Drawer
 
   // --- BUSINESS FORM STATE ---
   const [setupForm, setSetupForm] = useState({
@@ -24,7 +28,6 @@ const Layout = () => {
     kyc_doc_type: 'Pan', logo_file: null, kyc_file: null
   });
 
-  // Fetch Global Dashboard Data
   const fetchDashboard = async () => {
     try {
       setLoading(true);
@@ -55,17 +58,15 @@ const Layout = () => {
     } catch (err) { alert("Failed to switch business"); }
   };
 
-  // Form Handlers
   const handleInputChange = (e) => setSetupForm({ ...setupForm, [e.target.name]: e.target.value });
   const handleFileChange = (e) => setSetupForm({ ...setupForm, [e.target.name]: e.target.files[0] });
-
-  // Inside src/components/Layout.jsx
 
   const handleSetupSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
-
-    // 1. Manually append text fields to ensure control
+    
+    // ... existing submit logic ...
+    // Manually append text fields to ensure control
     formData.append('business_name', setupForm.business_name);
     formData.append('owner_name', setupForm.owner_name);
     formData.append('business_type', setupForm.business_type);
@@ -76,17 +77,12 @@ const Layout = () => {
     formData.append('district', setupForm.district);
     formData.append('kyc_doc_type', setupForm.kyc_doc_type);
 
-    // 2. Handle GST Logic (Only send if registered)
     if (setupForm.gst_status === 'Registered' && setupForm.gst_number) {
         formData.append('gst_number', setupForm.gst_number);
     }
-
-    // 3. FIX: Handle PIN (Don't send empty string "")
     if (setupForm.pin) {
         formData.append('pin', setupForm.pin);
     }
-
-    // 4. Handle Files (Only append if they exist)
     if (setupForm.logo_file) {
         formData.append('logo_file', setupForm.logo_file);
     }
@@ -102,8 +98,6 @@ const Layout = () => {
       setShowSetupModal(false);
       fetchDashboard();
     } catch (err) {
-    //   console.error("Setup Error:", err);
-      // 5. IMPROVED ERROR ALERT: Shows exactly what field failed
       if (err.response && err.response.data) {
           alert(`Validation Error: ${JSON.stringify(err.response.data)}`);
       } else {
@@ -112,36 +106,60 @@ const Layout = () => {
     }
   };
 
-  // Get current path for active tab highlighting
   const currentPath = location.pathname.split('/')[1] || 'dashboard';
 
   if (loading) return <div className="loading-screen">Loading StatGrow...</div>;
 
   return (
     <div className="app-container">
-      {/* 1. SIDEBAR */}
+      
+      {/* 1. SIDEBAR (Passed props for collapse/mobile) */}
       <Sidebar 
         data={data}
         activeTab={currentPath}
         showSwitcher={showSwitcher}
         setShowSwitcher={setShowSwitcher}
         handleSwitchBusiness={handleSwitchBusiness}
-        setShowSetupModal={setShowSetupModal} 
+        setShowSetupModal={setShowSetupModal}
+        
+        // NEW PROPS
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+      />
+
+      {/* Mobile Overlay (Click to close sidebar) */}
+      <div 
+        className={`mobile-overlay ${isMobileOpen ? 'show' : ''}`} 
+        onClick={() => setIsMobileOpen(false)}
       />
 
       {/* 2. MAIN CONTENT AREA */}
       <main className="main-content">
-        <UserProfile 
-          user={data?.user} 
-          handleLogout={handleLogout} 
-          activeTab={currentPath} 
-        />
         
-        {/* RENDER THE CHILD PAGE HERE */}
+        {/* Inject Hamburger Menu into UserProfile area or creating a Top Bar wrapper */}
+        <div style={{ display:'flex', alignItems:'center', marginBottom: '20px' }}>
+            
+            {/* Mobile Menu Button */}
+            <button className="mobile-menu-btn" onClick={() => setIsMobileOpen(true)}>
+                <Menu size={24} />
+            </button>
+
+            {/* Existing User Profile Component */}
+            <div style={{ flex: 1 }}>
+                <UserProfile 
+                    user={data?.user} 
+                    handleLogout={handleLogout} 
+                    activeTab={currentPath} 
+                />
+            </div>
+        </div>
+        
         <Outlet context={{ data, fetchDashboard }} />
       </main>
 
-      {/* 3. BUSINESS SETUP MODAL (Global) */}
+      {/* 3. BUSINESS SETUP MODAL (Same as before) */}
       {showSetupModal && (
         <div className="modal-overlay">
           <div className="modal-box extended-modal">
