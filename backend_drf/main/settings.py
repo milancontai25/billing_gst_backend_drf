@@ -204,7 +204,7 @@ EMAIL_HOST_PASSWORD = "kuon ozjo kwfn imts"   # NOT Gmail password
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5174",
+    "http://localhost:5173",
     "http://72.62.241.108",
     "https://statgrow.cloud"
 ]

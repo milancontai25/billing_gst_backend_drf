@@ -138,7 +138,7 @@ const CartDrawer = ({ isOpen, onClose, slug }) => {
             </div>
             <button 
               className="checkout-btn" 
-              onClick={() => { onClose(); navigate(`/store/${slug}/checkout`); }}
+              onClick={() => { onClose(); navigate(`/${slug}/checkout`); }}
             >
               Proceed to Checkout <ArrowRight size={18}/>
             </button>

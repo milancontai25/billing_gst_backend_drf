@@ -3,7 +3,7 @@ from order.views import AddToCartView, CancelOrderView, CashCheckoutView, Checko
 from invoice.views import CustomerDetailByNameView, CustomerSearchListView, InvoiceDetailView, InvoiceItemListView, InvoiceListCreateView, ItemDetailByNameView, ItemSearchListView
 from products.views import ItemDetailView, ItemListCreateView
 from customers.views import CustomerAddressUpdateView, CustomerDetailView, CustomerForgotPasswordView, CustomerListCreateView, CustomerLoginOtpRequestView, CustomerLoginOtpVerifyView, CustomerLoginView, CustomerResetPasswordView, CustomerSignupView, CustomerTokenRefreshView
-from business_entity.views import BusinessSetupView, SwitchBusinessView
+from business_entity.views import BusinessSetupView, BusinessUpdateView, SwitchBusinessView
 from users import views as UserViews
 from .views import DashboardView, ItemListView, AppRunView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
@@ -22,6 +22,7 @@ urlpatterns = [
     # path('login/', UserViews.LoginView.as_view(), name='auth_login'),
     path('dashboard/', DashboardView.as_view(), name="dashboard"),
     path('business/setup/', BusinessSetupView.as_view(), name='business-setup'),
+    path('business/<int:pk>/update/', BusinessUpdateView.as_view(), name='business-setup-update'),
     path("business/switch/", SwitchBusinessView.as_view(), name="switch-business"),
     
     path('products/', ItemListCreateView.as_view(), name='item-list-create'),

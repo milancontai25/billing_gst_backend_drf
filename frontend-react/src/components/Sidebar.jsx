@@ -1,21 +1,25 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import logoImage from '../assets/images/statgrow-logo.png';
+import logo from '../assets/images/logo.png';
 import { 
   LayoutDashboard, ShoppingCart, Users, FileText, Package, 
   BarChart2, ChevronDown, ChevronUp, PlusCircle, Settings, Store,
-  ChevronLeft, ChevronRight // Import arrows for toggle
+  ChevronLeft, ChevronRight, Edit // Import Edit icon
 } from 'lucide-react';
 
 const Sidebar = ({ 
   data, activeTab, 
   showSwitcher, setShowSwitcher, 
-  handleSwitchBusiness, setShowSetupModal,
-  // NEW PROPS
+  handleSwitchBusiness, 
+  handleAddNewBusiness, // New Prop
+  handleEditBusiness,   // New Prop
   isCollapsed, setIsCollapsed,
   isMobileOpen, setIsMobileOpen
 }) => {
   const navigate = useNavigate();
 
+  // ... (keep menuItems, openMyStore, handleNavigation same) ...
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { id: 'products', icon: Package, label: 'Products', path: '/products' },
@@ -26,7 +30,7 @@ const Sidebar = ({
 
   const openMyStore = () => {
     if (data?.active_business?.slug) {
-      window.open(`/store/${data.active_business.slug}`, '_blank');
+      window.open(`/${data.active_business.slug}`, '_blank');
     } else {
       alert("Store is not active or slug is missing.");
     }
@@ -34,23 +38,26 @@ const Sidebar = ({
 
   const handleNavigation = (path) => {
     navigate(path);
-    setIsMobileOpen(false); // Close sidebar on mobile after clicking
+    setIsMobileOpen(false);
   };
 
   return (
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
       
-      {/* 1. Toggle Button (Desktop Only) */}
+      {/* 1. Toggle Button */}
       <div className="sidebar-toggle" onClick={() => setIsCollapsed(!isCollapsed)}>
         {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
       </div>
 
       {/* 2. Brand Header */}
       <div className="brand-header">
-        <div className="brand-logo">
-          <BarChart2 size={28} color="#3B82F6" /> 
-          <span className="text-white ml-2 brand-text" style={{ color: '#fff' }}>StatGrow</span>
-        </div>
+        {isCollapsed ? (
+          <div className="logo-icon-collapsed">
+             <img src={logo} alt="StatGrow Icon" className="sidebar-logo" />
+          </div>
+        ) : (
+          <img src={logoImage} alt="StatGrow" className="sidebar-logo-img" />
+        )}
       </div>
 
       {/* 3. Navigation */}
@@ -60,7 +67,7 @@ const Sidebar = ({
             key={item.id} 
             className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
             onClick={() => handleNavigation(item.path)}
-            title={isCollapsed ? item.label : ''} // Tooltip on hover when collapsed
+            title={isCollapsed ? item.label : ''} 
           >
             <item.icon size={20} style={{ minWidth: '20px' }} /> 
             <span className="nav-text">{item.label}</span>
@@ -79,18 +86,28 @@ const Sidebar = ({
       <div className="sidebar-footer">
         <div className="business-switcher">
           
-          {/* Dropdown Menu (Hidden if collapsed or logic to show popover can be added later) */}
+          {/* Dropdown Menu */}
           {!isCollapsed && (
             <div className={`biz-dropdown ${showSwitcher ? 'show' : ''}`}>
                 <div className="dropdown-header">All Business Profiles</div>
+                
+                {/* List Businesses */}
                 {data?.businesses?.map(biz => (
-                <div key={biz.id} className="dropdown-item" onClick={() => handleSwitchBusiness(biz.id)}>
-                    {biz.business_name}
-                </div>
+                  <div key={biz.id} className="dropdown-item" onClick={() => handleSwitchBusiness(biz.id)}>
+                      {biz.business_name}
+                  </div>
                 ))}
+                
                 <div className="dropdown-divider"></div>
-                <div className="dropdown-action" onClick={() => { setShowSetupModal(true); setShowSwitcher(false); }}>
-                <PlusCircle size={16}/> Add New Business
+                
+                {/* Edit Current Business (NEW) */}
+                <div className="dropdown-item" onClick={handleEditBusiness}>
+                   <Edit size={14}/> Edit Current Business
+                </div>
+
+                {/* Add New Business */}
+                <div className="dropdown-action" onClick={handleAddNewBusiness}>
+                   <PlusCircle size={16}/> Add New Business
                 </div>
             </div>
           )}
@@ -106,15 +123,18 @@ const Sidebar = ({
                 </div>
               )}
               
-              <div className="biz-text">
-                <span className="biz-name-display" style={{ color: '#ffffff', fontWeight: '600' }}>
-                    {data?.active_business?.business_name || "No Business"}
-                </span>
-                <span className="biz-role-display" style={{ color: '#9CA3AF' }}>
-                    {data?.active_business?.owner_name || "Owner"}
-                </span>
-              </div>
+              {!isCollapsed && (
+                <div className="biz-text">
+                  <span className="biz-name-display" style={{ color: '#ffffff', fontWeight: '600' }}>
+                      {data?.active_business?.business_name || "No Business"}
+                  </span>
+                  <span className="biz-role-display" style={{ color: '#9CA3AF' }}>
+                      {data?.active_business?.owner_name || "Owner"}
+                  </span>
+                </div>
+              )}
             </div>
+            
             {!isCollapsed && (
                showSwitcher ? <ChevronUp size={16} color="#9CA3AF"/> : <ChevronDown size={16} color="#9CA3AF"/>
             )}

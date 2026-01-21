@@ -19,6 +19,7 @@ from api.utils.file_upload import save_file_to_server
 import os
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.shortcuts import get_object_or_404
 
 
 def generate_unique_slug(name):
@@ -99,9 +100,8 @@ class BusinessSetupView(APIView):
             }, status=201)
 
         return Response(serializer.errors, status=400)
-
-
-
+    
+    
     # -----------------------------------------
     # Save file to Hostinger VPS & return URL
     # -----------------------------------------
@@ -121,6 +121,58 @@ class BusinessSetupView(APIView):
         file_url = f"{settings.SERVER_URL}{settings.MEDIA_URL}{folder_name}/{file.name}"
 
         return file_url
+
+
+class BusinessUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
+
+    def patch(self, request, pk):
+        business = get_object_or_404(
+            BusinessEntity,
+            id=pk,
+            user=request.user
+        )
+
+        data = request.data.copy()
+
+        # 🔒 Extra safety: strip KYC
+        data.pop("kyc_doc_type", None)
+        data.pop("kyc_bucket_url", None)
+
+        if "logo_file" in request.FILES:
+            data["logo_bucket_url"] = save_file_to_server(
+                request.FILES["logo_file"], "business_logo"
+            )
+
+        if "banner_1" in request.FILES:
+            data["banner_1_url"] = save_file_to_server(
+                request.FILES["banner_1"], "business_banners"
+            )
+
+        if "banner_2" in request.FILES:
+            data["banner_2_url"] = save_file_to_server(
+                request.FILES["banner_2"], "business_banners"
+            )
+
+        if "banner_3" in request.FILES:
+            data["banner_3_url"] = save_file_to_server(
+                request.FILES["banner_3"], "business_banners"
+            )
+
+        serializer = BusinessEntitySerializer(
+            business, data=data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            {"message": "Business updated successfully", "business": serializer.data},
+            status=200
+        )
+
+
+
 
 
     # def post(self, request):

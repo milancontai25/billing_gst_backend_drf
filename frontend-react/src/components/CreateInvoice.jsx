@@ -285,7 +285,7 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
              <div style={{width:'200px'}}>
                 <label>Payment Status</label>
                 <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                    <option>Unpaid</option><option>Paid</option>
+                    <option>Paid</option>
                 </select>
              </div>
              <div style={{fontSize:'20px', fontWeight:'bold'}}>

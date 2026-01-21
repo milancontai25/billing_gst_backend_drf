@@ -43,12 +43,12 @@ function App() {
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/orders" element={<Orders />} />
 
-            <Route path="*" element={<Navigate to="/dashboard" />} />
+            {/* <Route path="*" element={<Navigate to="/dashboard" />} /> */}
           </Route>
           <Route path="/forgot-password" element={<ForgotPassword /> } />
-          <Route path="/store/:slug" element={<StoreFront />} />
-          <Route path="/store/:slug/checkout" element={<Checkout />} />
-          <Route path="/store/:slug/orders" element={<OrderHistory />} />
+          <Route path="/:slug" element={<StoreFront />} />
+          <Route path="/:slug/checkout" element={<Checkout />} />
+          <Route path="/:slug/orders" element={<OrderHistory />} />
         </Routes>
       </BrowserRouter>
       

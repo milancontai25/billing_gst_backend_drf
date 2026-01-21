@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import '../assets/css/landing.css'; 
+import '../assets/css/landing.css';
+import logoImage from '../assets/images/statgrow-logo.png';
+import { ShoppingCart, Search, Store, User, Settings, LogOut, Package, ChevronDown, Loader2, Facebook, Instagram, Youtube, Twitter, Mail, Phone, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const LandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,65 +21,55 @@ const LandingPage = () => {
             <h3 style={{ fontSize: '1.5rem', marginBottom: '10px', color: '#111827' }}>Contact Us</h3>
             <p style={{ color: '#4b5563' }}>For demo or inquiries:</p>
             <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2563eb', margin: '20px 0', display: 'block' }}>
-                contact@statgrow.com
+                statgrowinfo@gmail.com
             </span>
             <p style={{ fontWeight: 600, color: '#111827' }}>Call Us: +91-7477686079</p>
-            <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #e5e7eb', textAlign: 'left' }}>
-              <p style={{ fontSize: '0.9rem', color: '#6b7280', fontWeight: 'bold', marginBottom: '5px' }}>Office Address:</p>
-              <p style={{ fontSize: '0.9rem', color: '#4b5563' }}>
-                StatGrow Technologies Pvt Ltd.<br />
-                Plot No. 42, Hitech City, Madhapur<br />
-                Hyderabad, Telangana - 500081
-              </p>
-            </div>
-            <a href="mailto:contact@statgrow.com" className="btn btn-primary" style={{ marginTop: '20px', width: '100%', color: 'white', display:'block' }}>
+            {/* ... Address details ... */}
+            <a href="mailto:contact@statgrow.com" className="btn btn-primary" style={{ marginTop: '20px', width: '100%', display:'flex' }}>
                 Send Email Now
             </a>
           </div>
         </div>
       )}
 
+
       {/* --- HEADER --- */}
       <header>
         <div className="nav-container">
-          <a href="#" className="logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                <polyline points="17 6 23 6 23 12"></polyline>
-            </svg>
-            StatGrow
-          </a>
           
+          {/* LOGO LINK */}
+          <Link to="/" className="logo" onClick={() => setIsMenuOpen(false)}>
+            <img 
+                src={logoImage} 
+                alt="StatGrow" 
+                className="logo-img" 
+            />
+          </Link>
+    
+    {/* ... rest of your header code ... */}
+          
+          {/* HAMBURGER ICON */}
           <div className="hamburger" onClick={toggleMenu}>
+            {/* Animated Hamburger Lines */}
             <span style={isMenuOpen ? { transform: 'rotate(45deg) translate(5px, 6px)' } : {}}></span>
             <span style={isMenuOpen ? { opacity: 0 } : {}}></span>
             <span style={isMenuOpen ? { transform: 'rotate(-45deg) translate(5px, -6px)' } : {}}></span>
           </div>
 
+          {/* NAV MENU (Collapsible) */}
           <div className={`nav-right ${isMenuOpen ? 'open' : ''}`}>
             <div className="nav-links">
               <a href="#about" className="nav-link" onClick={() => setIsMenuOpen(false)}>About</a>
-              
-              <div className="nav-item-dropdown">
-                <span className="nav-link">Our Products <span>▾</span></span>
-                <div className="dropdown-menu">
-                  <a href="#features" onClick={() => setIsMenuOpen(false)}>Business Analytics</a>
-                  <a href="#features" onClick={() => setIsMenuOpen(false)}>Inventory Management</a>
-                  <a href="#features" onClick={() => setIsMenuOpen(false)}>Smart Billing</a>
-                  <a href="#features" onClick={() => setIsMenuOpen(false)}>Online Store</a>
-                </div>
-              </div>
-
+              <a href="#features" className="nav-link" onClick={() => setIsMenuOpen(false)}>Features</a>
               <a href="#testimonials" className="nav-link" onClick={() => setIsMenuOpen(false)}>Testimonials</a>
               <a href="#faq" className="nav-link" onClick={() => setIsMenuOpen(false)}>FAQ</a>
             </div>
             
             <div className="nav-actions">
-              {/* LOGIN BUTTON */}
-              <Link to="/login" className="btn btn-sm btn-outline-dark">Log In</Link>
-              
-              {/* REGISTER BUTTON */}
-              <Link to="/register" className="btn btn-sm btn-primary" style={{ color: 'white' }}>
+              <Link to="/login" className="btn btn-sm btn-outline-dark" onClick={() => setIsMenuOpen(false)}>
+                  Log In
+              </Link>
+              <Link to="/register" className="btn btn-sm btn-primary" onClick={() => setIsMenuOpen(false)}>
                   Start for Free
               </Link>
             </div>
@@ -85,7 +77,7 @@ const LandingPage = () => {
         </div>
       </header>
 
-      {/* --- HERO --- */}
+      {/* --- HERO SECTION --- */}
       <section className="hero">
         <div className="hero-glow"></div>
         <div className="container">
@@ -93,10 +85,7 @@ const LandingPage = () => {
           <p>Everything you need to manage your business - analytics, inventory, billing, reports, and your own online store. All in one simple platform built for Indian businesses.</p>
           
           <div className="hero-buttons">
-            {/* HERO CTA -> REGISTER */}
-            <Link to="/register" className="btn btn-primary" style={{ color: '#ffffff', background: '#3b82f6' }}>
-                Start for Free
-            </Link>
+            <Link to="/register" className="btn btn-primary">Start for Free</Link>
             <a href="#features" className="btn btn-outline">Explore Features</a>
           </div>
 
@@ -117,7 +106,51 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* --- FEATURES (unchanged) --- */}
+      {/* --- ABOUT / STORY SECTION (Updated) --- */}
+      <section id="about" className="story-section">
+        <div className="container">
+            <div className="story-grid">
+                
+                {/* Left: Content */}
+                <div className="story-content">
+                    <h2 className="gradient-text">About Us</h2>
+                    <p>
+                        StatGrow was founded in 2025 with a simple observation: while large corporations had access to powerful ERP systems, local business owners in India were still struggling with manual entry and paper ledgers.
+                    </p>
+                    <p>
+                        We built StatGrow to be the bridge. A platform that is sophisticated enough to handle complex inventory and data analytics, yet simple enough for anyone to use without technical training.
+                    </p>
+                    
+                    <div className="stats-row">
+                        <div className="stat-item">
+                            <div className="stat-number">10k+</div>
+                            <div className="stat-label">Businesses</div>
+                        </div>
+                        <div className="stat-item">
+                            <div className="stat-number">25+</div>
+                            <div className="stat-label">Cities</div>
+                        </div>
+                        <div className="stat-item">
+                            <div className="stat-number">100%</div>
+                            <div className="stat-label">Made in India</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right: Image */}
+                <div className="story-image">
+                    {/* You can replace this src with your own team photo later */}
+                    <img 
+                        src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2670&auto=format&fit=crop" 
+                        alt="The StatGrow Team working together" 
+                    />
+                </div>
+
+            </div>
+        </div>
+      </section>
+
+      
       <section id="features" className="features">
         <div className="blob-cont">
           <div className="blob blob-1"></div>
@@ -174,69 +207,119 @@ const LandingPage = () => {
         </section>
       </div>
 
-      {/* --- CTA --- */}
+      {/* --- CTA SECTION --- */}
       <section id="cta" className="cta-section">
         <div className="container">
           <h2>Ready to Transform Your Business?</h2>
-          <p style={{ marginBottom: '30px', opacity: 0.9 }}>Join thousands of Indian businesses already growing with StatGrow.</p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', flexWrap: 'wrap' }}>
-            {/* CTA -> REGISTER */}
-            <Link to="/register" className="btn btn-primary" style={{color: '#1e3a8a', background: 'white'}}>
+          <p style={{ marginBottom: '30px', opacity: 0.9 }}>
+            Join thousands of Indian businesses already growing with StatGrow.
+          </p>
+          
+          {/* UPDATED BUTTON GROUP */}
+          <div className="cta-button-group">
+            
+            {/* 1. White Button (Blue Text) */}
+            <Link to="/register" className="btn btn-white">
                 Start for Free
             </Link>
             
-            <button onClick={() => setShowDemoModal(true)} className="btn btn-outline-dark" style={{borderColor:'rgba(255,255,255,0.5)', color:'white'}}>
+            {/* 2. Outline Button (White Text) */}
+            <button 
+                onClick={() => setShowDemoModal(true)} 
+                className="btn btn-outline-white"
+            >
                 Schedule a Demo
             </button>
+
           </div>
         </div>
       </section>
 
-      {/* --- ABOUT & FOOTER (unchanged) --- */}
-      <section id="about" className="about-section">
-        <div className="container">
-          <div className="about-grid">
-            <div className="about-image-wrapper">
-                <div style={{width:'100%', height:'300px', background:'linear-gradient(135deg, #dbeafe, #93c5fd)', borderRadius:'20px', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                    <span style={{fontSize:'3rem'}}>🚀</span>
-                </div>
-            </div>
-            <div className="about-text">
-              <h2 className="gradient-text">About Us</h2>
-              <p style={{ fontSize: '1.1rem', color: '#4b5563', marginBottom: '20px' }}>
-                StatGrow was founded with a single mission: to empower India's small and medium businesses with the same powerful tools used by large corporations, but at a price they can afford.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
+ 
       <footer>
         <div className="container">
           <div className="footer-grid">
+            
+            {/* 1. Brand Column */}
             <div className="footer-brand">
-              <h3 style={{ color: '#1e3a8a', display:'flex', alignItems:'center', gap:'10px' }}>
-                StatGrow
-              </h3>
-              <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Empowering Indian businesses.</p>
+              <Link to="/" className="footer-logo-link" onClick={() => window.scrollTo(0,0)}>
+                <img 
+                    src={logoImage} 
+                    alt="StatGrow" 
+                    className="footer-logo-img" 
+                />
+              </Link>
+              <p style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: '10px' }}>
+                Empowering Indian businesses<br/> with affordable technology.
+              </p>
+
+              {/* Social Icons (Keep your existing code here) */}
+              <div className="social-links">
+                 {/* ... keep your social icons code ... */}
+                 <a href="https://whatsapp.com/channel/0029VbBhada0rGiSzA4cbs2J" target="_blank" rel="noopener noreferrer" className="social-icon whatsapp">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.592 2.654-.694c.93.513 1.936.784 2.806.784 3.181 0 5.767-2.587 5.767-5.766.001-3.181-2.585-5.769-5.767-5.769zm9.969 5.766c0-5.384-4.379-9.766-9.769-9.766-5.381 0-9.759 4.382-9.769 9.766C2.452 15.825 4.541 18.256 6.3 19.387l-1.397 5.101 5.223-1.368c1.23.367 2.65.645 3.875.645 5.39 0 9.769-4.381 9.769-9.766z"/></svg>
+                 </a>
+                 <a href="https://www.facebook.com/share/19YTCJS1PB/" target="_blank" rel="noopener noreferrer" className="social-icon facebook">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                 </a>
+                 <a href="https://www.instagram.com/statgrowinfo/" target="_blank" rel="noopener noreferrer" className="social-icon instagram">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                 </a>
+                 <a href="https://www.linkedin.com/in/statgrow/" target="_blank" rel="noopener noreferrer" className="social-icon linkedin">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                 </a>
+                 <a href="https://www.youtube.com/@StatGrow" target="_blank" rel="noopener noreferrer" className="social-icon youtube">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+                 </a>
+              </div>
             </div>
+
+            {/* 2. Product Column */}
             <div className="footer-col">
               <h4>Product</h4>
               <ul>
                 <li><a href="#features">Features</a></li>
-                <li><a href="#">Pricing</a></li>
+                <li><a href="#testimonials">Testimonials</a></li>
               </ul>
             </div>
+
+            {/* 3. Support Column */}
             <div className="footer-col">
               <h4>Support</h4>
               <ul>
                 <li><a href="#faq">FAQ</a></li>
-                <li><a href="mailto:support@statgrow.com">Support</a></li>
+                <li><a href="mailto:statgrowinfo@gmail.com">Contact Us</a></li>
               </ul>
             </div>
+
+            {/* 4. Legal Column */}
+            <div className="footer-col">
+              <h4>Legal</h4>
+              <ul>
+                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="#">Terms of Service</a></li>
+              </ul>
+            </div>
+
+            {/* 5. Contact Column (Updated for alignment) */}
+            <div className="footer-col">
+              <h4>Contact Us</h4>
+              <ul className="contact-list">
+                <li>
+                  <Mail size={18} className="footer-icon" />
+                  <a href="mailto:statgrowinfo@gmail.com">statgrowinfo@gmail.com</a>
+                </li>
+                <li>
+                  <Phone size={18} className="footer-icon" />
+                  <span>+91-7477686079</span>
+                </li>
+              </ul>
+            </div>
+
           </div>
+          
           <div className="copyright">
-            <p>&copy; 2025 StatGrow. All rights reserved. Made with ❤️ in India.</p>
+            <p>&copy; 2025 StatGrow. All rights reserved.</p>
           </div>
         </div>
       </footer>

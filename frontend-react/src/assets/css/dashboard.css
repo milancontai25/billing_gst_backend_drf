@@ -44,8 +44,6 @@ body {
   position: relative;
 }
 
-/* --- SIDEBAR --- */
-/* --- SIDEBAR (Updated for Collapse & Mobile) --- */
 .sidebar {
   width: var(--sidebar-width);
   background: var(--bg-dark);
@@ -53,52 +51,93 @@ body {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  transition: all 0.3s ease-in-out; /* Smooth transition */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth animation */
   flex-shrink: 0;
-  white-space: nowrap; /* Prevents text wrapping when shrinking */
+  white-space: nowrap;
   position: relative;
   z-index: 50;
   height: 100vh;
+  border-right: 1px solid #1f2937;
 }
 
-/* Collapsed State (Desktop) */
+
+.brand-header {
+  height: 70px; 
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  /* padding-left: 5px; */
+  overflow: hidden; 
+}
+
+
+.sidebar-logo-img {
+  max-width: 190px;
+  height: 200px;    
+  object-fit: contain;
+  object-position: left;
+  display: block;
+}
+
+/* COLLAPSED STATE: Wrapper */
+.logo-icon-collapsed {
+  width: 40px;
+  height: 40px;
+  background: rgba(59, 130, 246, 0.1); 
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* COLLAPSED STATE: Small Icon Image */
+.sidebar-logo {
+  height: 62px; 
+  width: auto;
+  object-fit: contain;
+}
+
+/* --- COLLAPSED STATE (Desktop) --- */
 .sidebar.collapsed {
-  width: 80px; /* Slim width */
+  width: 80px; 
   padding: 20px 10px;
 }
 
-/* Hide text labels when collapsed */
-.sidebar.collapsed .brand-text,
+/* Center elements when collapsed */
+.sidebar.collapsed .brand-header {
+  justify-content: center; /* Center logo */
+  padding-left: 0;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center; /* Center icons */
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sidebar.collapsed .active-business-btn {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+/* Hide text elements when collapsed */
 .sidebar.collapsed .nav-text,
 .sidebar.collapsed .biz-text,
-.sidebar.collapsed .sidebar-footer h4, /* Optional headers */
 .sidebar.collapsed .chevron-icon {
   opacity: 0;
   width: 0;
   display: none;
 }
 
-/* Center icons when collapsed */
-.sidebar.collapsed .brand-logo,
-.sidebar.collapsed .nav-item,
-.sidebar.collapsed .active-business-btn {
-  justify-content: center;
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.sidebar.collapsed .biz-info {
-  justify-content: center;
-}
-
-/* Toggle Button (Desktop) */
+/* --- TOGGLE BUTTON --- */
 .sidebar-toggle {
   position: absolute;
-  top: 25px;
+  top: 30px;
   right: -12px;
-  background: var(--primary);
-  color: white;
-  border: 1px solid var(--bg-dark);
+  background: white; /* White background looks cleaner on dark border */
+  color: var(--primary);
+  border: 1px solid #e5e7eb;
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -107,9 +146,15 @@ body {
   justify-content: center;
   cursor: pointer;
   z-index: 60;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   transition: 0.2s;
 }
-.sidebar-toggle:hover { background: var(--primary-dark); }
+.sidebar-toggle:hover { 
+  background: var(--primary); 
+  color: white; 
+  border-color: var(--primary);
+}
+
 
 /* --- MOBILE RESPONSIVE SIDEBAR --- */
 @media (max-width: 768px) {

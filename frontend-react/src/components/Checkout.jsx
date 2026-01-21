@@ -22,7 +22,7 @@ const Checkout = () => {
   useEffect(() => {
     const fetchPreview = async () => {
       const config = getHeaders();
-      if (!config) return navigate(`/store/${slug}`); // Redirect if not logged in
+      if (!config) return navigate(`/${slug}`); // Redirect if not logged in
 
       try {
         setLoading(true);
@@ -31,7 +31,7 @@ const Checkout = () => {
         setLoading(false);
       } catch (err) {
         alert("Failed to load checkout preview.");
-        navigate(`/store/${slug}`);
+        navigate(`/${slug}`);
       }
     };
     fetchPreview();
@@ -47,7 +47,7 @@ const Checkout = () => {
         config
       );
       alert("Order Placed Successfully!");
-      navigate(`/store/${slug}/orders`); // Redirect to history
+      navigate(`/${slug}/orders`); // Redirect to history
     } catch (err) {
       alert("Failed to place order.");
       setPlacingOrder(false);

@@ -125,53 +125,69 @@
 
 
 /* --- HEADER & NAVIGATION (Fixed Positioning) --- */
+/* src/assets/css/landing.css */
+
+/* ... (Keep your existing Variables and Reset) ... */
+
+/* --- HEADER & NAVIGATION --- */
 .landing-scope header {
     position: fixed;
     top: 0; 
     left: 0; 
     width: 100%; 
-    height: 72px;               /* Fixed Height */
+    height: 72px;
     z-index: 1000;
-    background: rgba(255, 255, 255, 0.95); /* Slightly less transparent for readability */
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     display: flex; 
-    align-items: center;        /* Vertically Center everything */
+    align-items: center;
 }
 
 .landing-scope .nav-container {
     width: 100%; 
     max-width: 1200px; 
     margin: 0 auto; 
-    padding: 0 20px;
+    padding: 0 20px 0 0;
     display: flex; 
     justify-content: space-between; 
-    align-items: center;        /* Vertically Center inner items */
+    align-items: center;
     height: 100%;
 }
 
-/* Logo Fixes */
-.landing-scope .logo {
-    font-size: 1.5rem; 
-    font-weight: 800; 
+/* LOGO STYLING (Updated for Image) */
+/* --- LOGO STYLING (Fixed Size & Position) --- */
+/* --- LOGO STYLING (Increased Size) --- */
+.landing-scope header .logo {
     display: flex; 
     align-items: center; 
-    gap: 8px; 
-    color: var(--l-primary-deep);
     text-decoration: none;
-    letter-spacing: -0.5px;
-    line-height: 1;             /* Fixes vertical offset */
-    white-space: nowrap;        /* Prevents wrapping */
     flex-shrink: 0;
-}
-.landing-scope .logo svg {
-    width: 28px;
-    height: 28px;
-    display: block;             /* Removes inline-block spacing */
+    z-index: 1002;
+    height: 100%;
+    /* padding-right: 20px; */
 }
 
-/* Navigation Right Side */
+.landing-scope header .logo-img {
+    /* 1. Base Height: Fills most of the 72px header */
+    height: 60px; 
+    width: auto;
+    object-fit: contain;
+    display: block;
+    
+    /* 2. Zoom Effect: Increases visual size to crop out whitespace */
+    /* Adjust this value (1.2, 1.5, etc.) if you need it even bigger */
+    transform: scale(3.5); 
+    
+    /* 3. Position: Ensures it zooms from the left, keeping it aligned */
+    transform-origin: left center; 
+    
+    
+    margin-top: 35px; 
+}
+
+/* Navigation Right Side (Links + Buttons) */
 .landing-scope .nav-right { 
     display: flex; 
     align-items: center; 
@@ -194,12 +210,98 @@
     transition: color 0.2s;
     display: flex;
     align-items: center;
-    gap: 4px;
-    height: 100%;               /* Full height for easier hovering */
+    height: 100%;
 }
 .landing-scope .nav-link:hover { 
     color: var(--l-primary); 
 }
+
+.landing-scope .nav-actions { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+}
+
+/* --- MOBILE MENU (Hamburger) --- */
+.landing-scope .hamburger { 
+    display: none; 
+    flex-direction: column; 
+    cursor: pointer; 
+    gap: 6px; 
+    z-index: 1002; /* Above the menu */
+    padding: 5px;
+}
+.landing-scope .hamburger span { 
+    width: 26px; 
+    height: 2.5px; 
+    background-color: var(--l-text-main); 
+    border-radius: 2px; 
+    transition: 0.3s; 
+    transform-origin: center;
+}
+
+/* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 992px) {
+    .landing-scope .hamburger { display: flex; }
+    
+    .landing-scope .nav-right {
+        position: fixed; 
+        top: 0; /* Cover full screen or start from top */
+        left: 0; 
+        width: 100%; 
+        height: auto;
+        min-height: 300px;
+        background: white; 
+        flex-direction: column; 
+        align-items: flex-start;
+        padding: 80px 30px 40px 30px; /* Top padding clears the header */
+        gap: 20px; 
+        border-bottom: 1px solid #e5e7eb;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        
+        /* Animation Logic */
+        transform: translateY(-150%); 
+        transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+        z-index: 999; /* Below Header/Logo */
+    }
+    
+    .landing-scope .nav-right.open { 
+        transform: translateY(0); 
+    }
+    
+    .landing-scope .nav-links { 
+        flex-direction: column; 
+        width: 100%; 
+        align-items: flex-start; 
+        gap: 0; 
+        height: auto;
+    }
+    
+    .landing-scope .nav-link { 
+        width: 100%; 
+        padding: 15px 0; 
+        border-bottom: 1px solid #f3f4f6; 
+        display: block;
+        height: auto;
+        font-size: 1.1rem;
+    }
+    
+    .landing-scope .nav-actions { 
+        display: flex; 
+        flex-direction: column; 
+        width: 100%; 
+        gap: 15px; 
+        margin-top: 25px;
+    }
+    
+    .landing-scope .nav-actions .btn { 
+        width: 100%; 
+        justify-content: center;
+        height: 48px;
+    }
+}
+
+
 
 /* Nav Actions (Buttons Area) */
 .landing-scope .nav-actions { 
@@ -341,7 +443,42 @@
     background: linear-gradient(to right, #ffffff, #93c5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .landing-scope .hero p { font-size: 1.25rem; color: #d1d5db; max-width: 800px; margin: 0 auto 40px; font-weight: 300; }
-.landing-scope .hero-buttons { display: flex; justify-content: center; gap: 15px; margin-bottom: 50px; }
+.landing-scope .hero-buttons { display: flex; justify-content: center; gap: 12px; margin-bottom: 50px; }
+/* --- HERO BUTTONS SIZE FIX --- */
+/* --- HERO BUTTONS SIZE & WIDTH CONTROL --- */
+.landing-scope .hero-buttons .btn {
+    /* 1. FORCE AUTO WIDTH (Fixes the full-width stretching) */
+    width: auto !important;
+    max-width: 100%;
+
+    /* 2. MATCH CTA WIDTH (Consistent Look) */
+    min-width: 180px;       /* Standard width like CTA */
+    padding: 0 30px;        /* Consistent padding */
+
+    /* 3. SIZE & TEXT */
+    height: 45px;           /* Slightly compact height */
+    font-size: 0.95rem;     
+    border-radius: 50px;
+}
+
+/* Ensure they don't stretch on mobile unless screen is very small */
+@media (max-width: 768px) {
+    .landing-scope .hero-buttons .btn {
+        width: auto !important; /* Keep them compact on tablets/mobile */
+    }
+}
+
+/* Only stack and stretch on tiny screens (optional) */
+@media (max-width: 380px) {
+    .landing-scope .hero-buttons .btn {
+        width: 100% !important;
+    }
+}
+
+/* Optional: Adjust gap between them if needed */
+.landing-scope .hero-buttons {
+    gap: 12px;             /* Tighter spacing */
+}
 .landing-scope .trust-badges { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
 .landing-scope .trust-item { display: flex; align-items: center; gap: 8px; color: #bfdbfe; font-weight: 600; }
 
@@ -355,7 +492,7 @@
 /* Features */
 .landing-scope .section-header { text-align: center; margin-bottom: 60px; position: relative; z-index: 2; }
 .landing-scope .section-header h2 { font-size: 2.5rem; margin-bottom: 15px; font-weight: 800; color: var(--l-text-main); }
-.landing-scope .features { padding: 100px 0; position: relative; }
+.landing-scope .features { padding: 50px 0; position: relative; }
 .landing-scope .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; position: relative; z-index: 2; }
 .landing-scope .feature-card {
     padding: 30px; border-radius: 24px; background: rgba(255, 255, 255, 0.8);
@@ -371,7 +508,7 @@
 .landing-scope .feature-card p { color: var(--l-text-light); }
 
 /* Gallery */
-.landing-scope .gallery-section { padding: 100px 0; background: var(--l-bg-light); }
+.landing-scope .gallery-section { padding: 50px 0; background: var(--l-bg-light); }
 .landing-scope .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
 .landing-scope .gallery-item { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 4/3; }
 .landing-scope .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s ease; }
@@ -383,7 +520,7 @@
 .landing-scope .gallery-item:hover .gallery-overlay { opacity: 1; }
 
 /* Testimonials */
-.landing-scope .testimonials { padding: 100px 0; background: #fdfdfd; position: relative; }
+.landing-scope .testimonials { padding: 50px 0; background: #fdfdfd; position: relative; }
 .landing-scope .testimonial-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
 .landing-scope .testimonial-card { padding: 30px; background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
 .landing-scope .testimonial-avatar { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 20px; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -399,16 +536,355 @@
 .landing-scope .cta-section { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%); padding: 100px 0; text-align: center; color: white; }
 .landing-scope .cta-section .btn-primary { background: white; color: #1e3a8a; }
 
-/* About */
-.landing-scope .about-section { padding: 100px 0; background: #fff; }
-.landing-scope .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
-@media (max-width: 768px) { .landing-scope .about-grid { grid-template-columns: 1fr; } .landing-scope .about-text { order: 2; } }
+/* 1. Container control */
+.landing-scope .cta-button-group {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+/* 2. Button Sizing (Fixes the full-width issue) */
+.landing-scope .cta-section .btn {
+    width: auto !important;      /* Stop stretching */
+    min-width: 180px;            /* Consistent nice width */
+    max-width: 300px;
+    height: 50px;
+    padding: 0 30px;
+}
+
+/* 3. White Button (Start for Free) - Fixes Invisible Text */
+.landing-scope .btn-white {
+    background-color: #ffffff !important;
+    color: #1e3a8a !important;   /* Force Dark Blue Text */
+    border: none;
+    font-weight: 700;
+}
+.landing-scope .btn-white:hover {
+    background-color: #f8fafc !important;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* 4. Outline Button (Schedule Demo) */
+.landing-scope .btn-outline-white {
+    background-color: transparent !important;
+    border: 2px solid rgba(255, 255, 255, 0.6) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+.landing-scope .btn-outline-white:hover {
+    background-color: #ffffff !important;
+    color: #1e3a8a !important;
+    border-color: #ffffff !important;
+}
+
+/* Mobile Tweak: Stack them but keep size manageable */
+@media (max-width: 480px) {
+    .landing-scope .cta-section .btn {
+        width: 100% !important; /* Only full width on very small screens */
+        max-width: 100%;
+    }
+}
+
+
+/* --- NEW ABOUT / STORY SECTION --- */
+.landing-scope .story-section {
+    padding: 100px 0;
+    background: #ffffff;
+    overflow: hidden; /* Prevent overflow if image is large */
+}
+
+.landing-scope .story-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+}
+
+.landing-scope .story-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    font-weight: 800;
+}
+
+.landing-scope .story-content p {
+    font-size: 1.1rem;
+    color: #4b5563;
+    margin-bottom: 20px;
+    line-height: 1.7;
+}
+
+/* Stats Row Styling */
+.landing-scope .stats-row {
+    display: flex;
+    gap: 40px;
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.landing-scope .stat-item {
+    text-align: left;
+}
+
+.landing-scope .stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--l-primary); /* Uses your blue variable */
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.landing-scope .stat-label {
+    font-size: 0.95rem;
+    color: #6b7280;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Image Styling */
+.landing-scope .story-image {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.landing-scope .story-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform 0.5s ease;
+}
+
+.landing-scope .story-image:hover img {
+    transform: scale(1.03); /* Subtle zoom on hover */
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 900px) {
+    .landing-scope .story-grid {
+        grid-template-columns: 1fr; /* Stack vertically */
+        gap: 40px;
+    }
+    
+    .landing-scope .story-content {
+        order: 2; /* Text below image on mobile */
+    }
+    
+    .landing-scope .story-image {
+        order: 1; /* Image on top */
+    }
+    
+    .landing-scope .stats-row {
+        justify-content: space-between;
+        gap: 20px;
+    }
+    
+    .landing-scope .stat-number {
+        font-size: 2rem;
+    }
+}
+
 
 /* Footer */
 .landing-scope footer { padding: 60px 0 20px; background: #fff; border-top: 1px solid #f3f4f6; }
 .landing-scope .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
 @media (max-width: 768px) { .landing-scope .footer-grid { grid-template-columns: 1fr; text-align: center; } }
 .landing-scope .copyright { text-align: center; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 0.85rem; }
+
+.landing-scope .footer-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.landing-scope .footer-logo-link {
+    display: inline-block;
+    text-decoration: none;
+    margin-bottom: 0px; /* Adjust spacing below logo */
+}
+
+.landing-scope .footer-logo-img {
+    height: 50px; /* Slightly smaller than header */
+    width: auto;
+    object-fit: contain;
+    display: block;
+    
+    /* Apply same scale if the image has whitespace, 
+       but origin is top-left for footer stack */
+    transform: scale(3.5); 
+    transform-origin: left center;
+    /* margin-left: 10px; */
+}
+
+
+.landing-scope .footer-col h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--l-text-main);
+    margin-bottom: 20px;
+}
+
+/* Links List */
+.landing-scope .footer-col ul li {
+    margin-bottom: 12px;
+}
+
+.landing-scope .footer-col ul li a,
+.landing-scope .footer-col ul li span {
+    color: var(--l-text-light);
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+/* Hover Effect for Links */
+.landing-scope .footer-col ul li a:hover {
+    color: var(--l-primary);
+    transform: translateX(3px); /* Subtle slide right on hover */
+}
+
+/* --- FOOTER COLUMN STYLING --- */
+
+/* Headers */
+.landing-scope .footer-col h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--l-text-main);
+    margin-bottom: 20px;
+}
+
+/* Links List */
+.landing-scope .footer-col ul li {
+    margin-bottom: 12px;
+}
+
+.landing-scope .footer-col ul li a,
+.landing-scope .footer-col ul li span {
+    color: var(--l-text-light);
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+/* Hover Effect for Links */
+.landing-scope .footer-col ul li a:hover {
+    color: var(--l-primary);
+    transform: translateX(3px); /* Subtle slide right on hover */
+}
+
+/* Contact Us Specific Styling */
+.landing-scope .contact-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Space between icon and text */
+}
+
+.landing-scope .footer-icon {
+    color: var(--l-primary);
+    flex-shrink: 0; /* Prevents icon from squishing */
+}
+
+/* Responsive Grid Update */
+@media (max-width: 1024px) {
+    .landing-scope .footer-grid {
+        grid-template-columns: 2fr 1fr 1fr; /* 3 columns on tablet */
+        gap: 30px;
+    }
+    /* Move Brand to take full width or adjust order if needed */
+}
+
+@media (max-width: 768px) {
+    .landing-scope .footer-grid {
+        grid-template-columns: 1fr; /* 1 column on mobile */
+        text-align: center;
+        gap: 40px;
+    }
+    
+    .landing-scope .contact-list li {
+        justify-content: center; /* Center contact items on mobile */
+    }
+    
+    .landing-scope .footer-brand {
+        align-items: center;
+    }
+    
+    .landing-scope .social-links {
+        justify-content: center;
+    }
+}
+
+/* --- SOCIAL LINKS STYLING --- */
+.landing-scope .social-links {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    align-items: center;
+}
+
+.landing-scope .social-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #f3f4f6; /* Light gray background */
+    color: #6b7280;            /* Default icon color */
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+}
+
+/* Fix SVG alignment inside flex container */
+.landing-scope .social-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    display: block;
+}
+
+/* Hover Effects (Brand Colors) */
+.landing-scope .social-icon:hover {
+    transform: translateY(-3px);
+    color: white;
+    border-color: transparent;
+}
+
+/* WhatsApp Green */
+.landing-scope .social-icon.whatsapp:hover {
+    background-color: #25D366;
+    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+}
+
+/* Facebook Blue */
+.landing-scope .social-icon.facebook:hover {
+    background-color: #1877F2;
+    box-shadow: 0 4px 10px rgba(24, 119, 242, 0.3);
+}
+
+/* Instagram Gradient */
+.landing-scope .social-icon.instagram:hover {
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+    box-shadow: 0 4px 10px rgba(214, 36, 159, 0.3);
+}
+
+/* LinkedIn Blue */
+.landing-scope .social-icon.linkedin:hover {
+    background-color: #0A66C2;
+    box-shadow: 0 4px 10px rgba(10, 102, 194, 0.3);
+}
+
+/* YouTube Red */
+.landing-scope .social-icon.youtube:hover {
+    background-color: #FF0000;
+    box-shadow: 0 4px 10px rgba(255, 0, 0, 0.3);
+}
 
 /* Modal */
 .landing-scope .modal-overlay {

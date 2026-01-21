@@ -39,7 +39,7 @@ const OrderHistory = () => {
     <div className="history-page">
       <div className="history-container">
         <div className="history-header">
-           <Link to={`/store/${slug}`} className="back-link"><ArrowLeft size={18}/> Back to Store</Link>
+           <Link to={`/${slug}`} className="back-link"><ArrowLeft size={18}/> Back to Store</Link>
            <h1>My Orders</h1>
         </div>
 

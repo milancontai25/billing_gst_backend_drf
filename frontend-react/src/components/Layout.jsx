@@ -3,31 +3,40 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import Sidebar from './Sidebar';
 import UserProfile from './UserProfile'; 
-import { X, Menu } from 'lucide-react'; // Import Menu icon
+import { X, Menu } from 'lucide-react'; 
 import '../assets/css/dashboard.css';
 
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- UI STATE ---
+  // --- GLOBAL STATE ---
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showSwitcher, setShowSwitcher] = useState(false);
-  
+  const [isEditMode, setIsEditMode] = useState(false); 
+
   // Sidebar State
-  const [isCollapsed, setIsCollapsed] = useState(false); // Desktop Minimize
-  const [isMobileOpen, setIsMobileOpen] = useState(false); // Mobile Drawer
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // --- BUSINESS FORM STATE ---
-  const [setupForm, setSetupForm] = useState({
+  const initialFormState = {
     business_name: '', owner_name: '', business_type: 'Retailer',
     gst_status: 'Unregister', gst_number: '', address: '',
     country: 'India', state: '', district: '', pin: '',
-    kyc_doc_type: 'Pan', logo_file: null, kyc_file: null
-  });
+    kyc_doc_type: 'Pan', 
+    // Files
+    logo_file: null, kyc_file: null,
+    banner_1: null, banner_2: null, banner_3: null, // New Banners
+    // Social Media Fields
+    facebook_url: '', instagram_url: '', youtube_url: '', x_url: ''
+  };
 
+  const [setupForm, setSetupForm] = useState(initialFormState);
+
+  // Fetch Global Dashboard Data
   const fetchDashboard = async () => {
     try {
       setLoading(true);
@@ -58,43 +67,79 @@ const Layout = () => {
     } catch (err) { alert("Failed to switch business"); }
   };
 
+  // --- EDIT BUSINESS HANDLER ---
+  const handleEditBusiness = () => {
+    if (!data?.active_business) return;
+    const biz = data.active_business;
+    
+    setSetupForm({
+        business_name: biz.business_name || '',
+        owner_name: biz.owner_name || '',
+        business_type: biz.business_type || 'Retailer',
+        gst_status: biz.gst_status || 'Unregister',
+        gst_number: biz.gst_number || '',
+        address: biz.address || '',
+        country: biz.country || 'India',
+        state: biz.state || '',
+        district: biz.district || '',
+        pin: biz.pin || '',
+        kyc_doc_type: biz.kyc_doc_type || 'Pan',
+        kyc_pan_id: biz.kyc_pan_id,
+        // Files reset on edit
+        logo_file: null, kyc_file: null,
+        banner_1: null, banner_2: null, banner_3: null,
+        // Socials
+        facebook_url: biz.facebook_url || '',
+        instagram_url: biz.instagram_url || '',
+        youtube_url: biz.youtube_url || '',
+        x_url: biz.x_url || ''
+    });
+    setIsEditMode(true);
+    setShowSetupModal(true);
+    setShowSwitcher(false); 
+  };
+
+  // --- ADD NEW BUSINESS HANDLER ---
+  const handleAddNewBusiness = () => {
+      setSetupForm(initialFormState); 
+      setIsEditMode(false);
+      setShowSetupModal(true);
+      setShowSwitcher(false);
+  };
+
+  // Form Handlers
   const handleInputChange = (e) => setSetupForm({ ...setupForm, [e.target.name]: e.target.value });
   const handleFileChange = (e) => setSetupForm({ ...setupForm, [e.target.name]: e.target.files[0] });
 
   const handleSetupSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
-    
-    // ... existing submit logic ...
-    // Manually append text fields to ensure control
-    formData.append('business_name', setupForm.business_name);
-    formData.append('owner_name', setupForm.owner_name);
-    formData.append('business_type', setupForm.business_type);
-    formData.append('gst_status', setupForm.gst_status);
-    formData.append('address', setupForm.address);
-    formData.append('country', setupForm.country);
-    formData.append('state', setupForm.state);
-    formData.append('district', setupForm.district);
-    formData.append('kyc_doc_type', setupForm.kyc_doc_type);
 
-    if (setupForm.gst_status === 'Registered' && setupForm.gst_number) {
-        formData.append('gst_number', setupForm.gst_number);
-    }
-    if (setupForm.pin) {
-        formData.append('pin', setupForm.pin);
-    }
-    if (setupForm.logo_file) {
-        formData.append('logo_file', setupForm.logo_file);
-    }
-    if (setupForm.kyc_file) {
-        formData.append('kyc_file', setupForm.kyc_file);
-    }
+    // Append Fields
+    Object.keys(setupForm).forEach(key => {
+        // Skip file fields if they are null (don't overwrite existing images with null)
+        const isFileField = ['logo_file', 'kyc_file', 'banner_1', 'banner_2', 'banner_3'].includes(key);
+        if (isFileField && !setupForm[key]) return;
+
+        // Skip null values
+        if (setupForm[key] !== null && setupForm[key] !== undefined) {
+             formData.append(key, setupForm[key]);
+        }
+    });
 
     try {
-      await api.post('/business/setup/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' } 
-      });
-      alert("Business Saved Successfully!");
+      if (isEditMode && data?.active_business?.id) {
+          await api.patch(`/business/${data.active_business.id}/update/`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' } 
+          });
+          alert("Business Updated Successfully!");
+      } else {
+          await api.post('/business/setup/', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' } 
+          });
+          alert("Business Created Successfully!");
+      }
+      
       setShowSetupModal(false);
       fetchDashboard();
     } catch (err) {
@@ -113,59 +158,41 @@ const Layout = () => {
   return (
     <div className="app-container">
       
-      {/* 1. SIDEBAR (Passed props for collapse/mobile) */}
       <Sidebar 
         data={data}
         activeTab={currentPath}
         showSwitcher={showSwitcher}
         setShowSwitcher={setShowSwitcher}
         handleSwitchBusiness={handleSwitchBusiness}
-        setShowSetupModal={setShowSetupModal}
-        
-        // NEW PROPS
+        handleAddNewBusiness={handleAddNewBusiness} 
+        handleEditBusiness={handleEditBusiness}     
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
 
-      {/* Mobile Overlay (Click to close sidebar) */}
-      <div 
-        className={`mobile-overlay ${isMobileOpen ? 'show' : ''}`} 
-        onClick={() => setIsMobileOpen(false)}
-      />
+      <div className={`mobile-overlay ${isMobileOpen ? 'show' : ''}`} onClick={() => setIsMobileOpen(false)} />
 
-      {/* 2. MAIN CONTENT AREA */}
       <main className="main-content">
-        
-        {/* Inject Hamburger Menu into UserProfile area or creating a Top Bar wrapper */}
         <div style={{ display:'flex', alignItems:'center', marginBottom: '20px' }}>
-            
-            {/* Mobile Menu Button */}
             <button className="mobile-menu-btn" onClick={() => setIsMobileOpen(true)}>
                 <Menu size={24} />
             </button>
-
-            {/* Existing User Profile Component */}
             <div style={{ flex: 1 }}>
-                <UserProfile 
-                    user={data?.user} 
-                    handleLogout={handleLogout} 
-                    activeTab={currentPath} 
-                />
+                <UserProfile user={data?.user} handleLogout={handleLogout} activeTab={currentPath} />
             </div>
         </div>
-        
         <Outlet context={{ data, fetchDashboard }} />
       </main>
 
-      {/* 3. BUSINESS SETUP MODAL (Same as before) */}
+      {/* --- BUSINESS SETUP / EDIT MODAL --- */}
       {showSetupModal && (
         <div className="modal-overlay">
           <div className="modal-box extended-modal">
             <div className="modal-header">
-              <h2>{data?.requires_setup ? "Setup Your Business" : "Add New Business"}</h2>
-              <p>Please complete your business profile below.</p>
+              <h2>{isEditMode ? "Edit Business Profile" : (data?.requires_setup ? "Setup Your Business" : "Add New Business")}</h2>
+              <p>Please update your business details below.</p>
               {!data?.requires_setup && (
                  <button className="close-btn" onClick={() => setShowSetupModal(false)}><X size={20}/></button>
               )}
@@ -194,6 +221,7 @@ const Layout = () => {
                     <option value="Wholesaler">Wholesaler</option>
                     <option value="Manufacturer">Manufacturer</option>
                     <option value="Service">Service Provider</option>
+                    <option value="IT">IT / Tech</option>
                   </select>
                 </div>
                 <div className="form-group half-width">
@@ -202,11 +230,53 @@ const Layout = () => {
                 </div>
               </div>
 
-              {/* --- SECTION 2: LOCATION --- */}
+              {/* --- SECTION 2: BANNERS (NEW) --- */}
+              <div className="form-section-title">Store Banners</div>
+              <div className="form-row">
+                 <div className="form-group half-width">
+                    <label>Banner 1 (Main)</label>
+                    <input type="file" name="banner_1" onChange={handleFileChange} className="file-input" />
+                 </div>
+                 <div className="form-group half-width">
+                    <label>Banner 2</label>
+                    <input type="file" name="banner_2" onChange={handleFileChange} className="file-input" />
+                 </div>
+              </div>
+              <div className="form-row">
+                 <div className="form-group half-width">
+                    <label>Banner 3</label>
+                    <input type="file" name="banner_3" onChange={handleFileChange} className="file-input" />
+                 </div>
+              </div>
+
+              {/* --- SECTION 3: SOCIAL MEDIA --- */}
+              <div className="form-section-title">Social Media Presence</div>
+              <div className="form-row">
+                 <div className="form-group half-width">
+                   <label>Facebook URL</label>
+                   <input type="url" name="facebook_url" value={setupForm.facebook_url} onChange={handleInputChange} placeholder="https://facebook.com/..." />
+                 </div>
+                 <div className="form-group half-width">
+                   <label>Instagram URL</label>
+                   <input type="url" name="instagram_url" value={setupForm.instagram_url} onChange={handleInputChange} placeholder="https://instagram.com/..." />
+                 </div>
+              </div>
+              <div className="form-row">
+                 <div className="form-group half-width">
+                   <label>YouTube URL</label>
+                   <input type="url" name="youtube_url" value={setupForm.youtube_url} onChange={handleInputChange} placeholder="https://youtube.com/..." />
+                 </div>
+                 <div className="form-group half-width">
+                   <label>X (Twitter) URL</label>
+                   <input type="url" name="x_url" value={setupForm.x_url} onChange={handleInputChange} placeholder="https://x.com/..." />
+                 </div>
+              </div>
+
+              {/* --- SECTION 4: LOCATION --- */}
               <div className="form-section-title">Location</div>
               <div className="form-group">
                 <label>Address*</label>
-                <input type="text" name="address" value={setupForm.address} onChange={handleInputChange} placeholder="Building, Street, Area" required />
+                <input type="text" name="address" value={setupForm.address} onChange={handleInputChange} required />
               </div>
 
               <div className="form-row">
@@ -231,7 +301,7 @@ const Layout = () => {
                  </div>
               </div>
 
-              {/* --- SECTION 3: TAX & KYC --- */}
+              {/* --- SECTION 5: TAX & KYC --- */}
               <div className="form-section-title">Tax & Compliance</div>
               <div className="form-row">
                 <div className="form-group half-width">
@@ -244,29 +314,35 @@ const Layout = () => {
                 {setupForm.gst_status === 'Registered' && (
                   <div className="form-group half-width">
                     <label>GST Number</label>
-                    <input type="text" name="gst_number" value={setupForm.gst_number} onChange={handleInputChange} placeholder="Ex: 19ABCDE1234F1Z5" />
+                    <input type="text" name="gst_number" value={setupForm.gst_number} onChange={handleInputChange} />
                   </div>
                 )}
               </div>
 
-              <div className="form-row">
-                 <div className="form-group half-width">
-                    <label>KYC Document Type</label>
-                    <select name="kyc_doc_type" value={setupForm.kyc_doc_type} onChange={handleInputChange}>
-                       <option value="Pan">PAN Card</option>
-                       <option value="Aadhar">Aadhar Card</option>
-                       <option value="Driving License">Driving License</option>
-                       <option value="Voter ID">Voter ID</option>
-                       <option value="Passport">Passport</option>
-                    </select>
-                 </div>
-                 <div className="form-group half-width">
-                    <label>Upload KYC Document</label>
-                    <input type="file" name="kyc_file" onChange={handleFileChange} className="file-input" />
-                 </div>
-              </div>
+              {/* KYC Section: HIDDEN IN EDIT MODE */}
+              {!isEditMode && (
+                <div className="form-row">
+                   <div className="form-group half-width">
+                      <label>KYC Doc Type</label>
+                      <select name="kyc_doc_type" value={setupForm.kyc_doc_type} onChange={handleInputChange}>
+                         <option value="Pan">PAN Card</option>
+                         
+                      </select>
+                   </div>
+                   <div className="form-group half-width">
+                    <label>PAN</label>
+                    <input type="text" name="gst_number" value={setupForm.kyc_pan_id} onChange={handleInputChange} placeholder="Pan id"/>
+                  </div>
+                   <div className="form-group half-width">
+                      <label>Upload KYC</label>
+                      <input type="file" name="kyc_file" onChange={handleFileChange} className="file-input"  />
+                   </div>
+                </div>
+              )}
 
-              <button type="submit" className="btn-primary">Save Business Details</button>
+              <button type="submit" className="btn-primary">
+                  {isEditMode ? "Update Business Details" : "Save Business Details"}
+              </button>
               
               {!data?.requires_setup && (
                 <button type="button" className="btn-text" onClick={() => setShowSetupModal(false)}>Cancel</button>
