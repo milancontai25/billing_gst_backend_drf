@@ -46,43 +46,74 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class OrderStatusUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(
-        choices=['Pending', 'Confirmed', 'Shipped', 'Received', 'Cancelled'],
+        choices=['Pending', 'Confirmed', 'Processing', 'Shipped', 'Received', 'Cancelled'],
         required=False
     )
     payment_status = serializers.ChoiceField(
-        choices=['unpaid', 'paid', 'refunded'],
+        choices=['Unpaid', 'Paid', 'Refunded'],
         required=False
     )
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError(
+                "At least one field (status or payment_status) is required."
+            )
+        return attrs
+
 
 
 class CartItemSerializer(serializers.ModelSerializer):
     item_name = serializers.CharField(source='item.item_name', read_only=True)
-    price = serializers.DecimalField(
+
+    mrp_baseprice = serializers.DecimalField(
         source='item.mrp_baseprice',
         max_digits=10,
         decimal_places=2,
         read_only=True
     )
+
+    gross_amount = serializers.DecimalField(
+        source='item.gross_amount',
+        max_digits=10,
+        decimal_places=2,
+        read_only=True
+    )
+
     subtotal = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
-        fields = ['id', 'item', 'item_name', 'price', 'quantity', 'subtotal']
+        fields = [
+            'id',
+            'item',
+            'item_name',
+            'mrp_baseprice',
+            'gross_amount',
+            'quantity',
+            'subtotal'
+        ]
 
     def get_subtotal(self, obj):
         return obj.subtotal()
 
 
+from decimal import Decimal
 
 class CartSerializer(serializers.ModelSerializer):
-    items = CartItemSerializer(many=True, read_only=True)
+    items = serializers.SerializerMethodField()
     total_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
         fields = ['id', 'items', 'total_amount']
 
+    def get_items(self, obj):
+        qs = obj.items.all()
+        return CartItemSerializer(qs, many=True).data
+
     def get_total_amount(self, obj):
         return sum(i.subtotal() for i in obj.items.all())
+
 
 

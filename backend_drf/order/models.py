@@ -52,7 +52,14 @@ class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)  
+
+    class Meta:
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['cart', 'item']),
+        ]
 
     def subtotal(self):
-        # ✅ FIXED FIELD
-        return self.item.mrp_baseprice * self.quantity
+        return self.item.gross_amount * self.quantity
+

@@ -3,7 +3,6 @@ import api from '../api/axiosConfig';
 import { 
   Search, Eye, X, Download, Filter, FileSpreadsheet 
 } from 'lucide-react';
-// IMPORT THE NEW VIEWER
 import OrderViewer from './OrderViewer';
 
 const Orders = () => {
@@ -96,24 +95,49 @@ const Orders = () => {
     link.click();
   };
 
-  // Handle Status Update
+  // --- HANDLE STATUS UPDATE ---
   const handleStatusUpdate = async (orderNumber, newStatus) => {
-    try {
-      const updatedOrders = orders.map(o => 
-        o.order_number === orderNumber ? { ...o, status: newStatus } : o
-      );
-      setOrders(updatedOrders);
-      calculateStats(updatedOrders);
+  try {
+    await api.patch(`/orders/${orderNumber}/update-status/`, {
+      status: newStatus
+    });
 
-      await api.patch(`/orders/${orderNumber}/update-status/`, {
-        status: newStatus,
-        payment_status: updatedOrders.find(o => o.order_number === orderNumber).payment_status
-      });
-    } catch (err) {
-      alert("Failed to update status");
-      fetchOrders(); 
-    }
-  };
+    // Update state only AFTER success
+    const updatedOrders = orders.map(o =>
+      o.order_number === orderNumber ? { ...o, status: newStatus } : o
+    );
+
+    setOrders(updatedOrders);
+    calculateStats(updatedOrders);
+
+  } catch (err) {
+    alert("Failed to update status");
+    fetchOrders();
+  }
+};
+
+
+  // --- HANDLE PAYMENT UPDATE (NEW) ---
+  const handlePaymentUpdate = async (orderNumber, newPaymentStatus) => {
+  try {
+    await api.patch(`/orders/${orderNumber}/update-status/`, {
+      payment_status: newPaymentStatus
+    });
+
+    const updatedOrders = orders.map(o =>
+      o.order_number === orderNumber
+        ? { ...o, payment_status: newPaymentStatus }
+        : o
+    );
+
+    setOrders(updatedOrders);
+
+  } catch (err) {
+    alert("Failed to update payment status");
+    fetchOrders();
+  }
+};
+
 
   const openOrderDetails = async (orderNumber) => {
     try {
@@ -225,6 +249,7 @@ const Orders = () => {
                      key={order.order_number} 
                      order={order} 
                      onStatusUpdate={handleStatusUpdate} 
+                     onPaymentUpdate={handlePaymentUpdate} // Pass the new handler
                      onView={openOrderDetails} 
                    />
                  ))
@@ -234,11 +259,10 @@ const Orders = () => {
         </div>
       </div>
 
-      {/* 3. ORDER VIEWER (Replaces the old Modal) */}
+      {/* 3. ORDER VIEWER */}
       {showModal && selectedOrder && (
         <OrderViewer 
             order={selectedOrder} 
-            // No business prop needed here anymore!
             onClose={() => setShowModal(false)} 
         />
       )}
@@ -257,7 +281,10 @@ const StatBox = ({ title, value, color }) => (
   </div>
 );
 
-const OrderRow = ({ order, onStatusUpdate, onView }) => {
+// Updated OrderRow to include Payment Dropdown
+const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView }) => {
+  
+  // Style helpers
   const getStatusColor = (s) => {
     const status = s.toLowerCase();
     if (status === 'pending') return 'bg-yellow-100 text-yellow-800';
@@ -269,7 +296,7 @@ const OrderRow = ({ order, onStatusUpdate, onView }) => {
     return 'bg-gray-100 text-gray-800';
   };
 
-  const getPaymentColor = (s) => s.toLowerCase() === 'paid' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50';
+  const getPaymentColor = (s) => s.toLowerCase() === 'paid' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200';
 
   return (
     <tr>
@@ -280,11 +307,21 @@ const OrderRow = ({ order, onStatusUpdate, onView }) => {
       </td>
       <td>{new Date(order.date).toLocaleDateString()}</td>
       <td className="font-bold">₹{order.total_amount}</td>
+      
+      {/* Payment Dropdown */}
       <td>
-        <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${getPaymentColor(order.payment_status)}`}>
-          {order.payment_status}
-        </span>
+        <select 
+          className={`status-select ${getPaymentColor(order.payment_status)}`}
+          value={order.payment_status}
+          onChange={(e) => onPaymentUpdate(order.order_number, e.target.value)}
+          style={{ paddingRight: '20px' }} // Add space for dropdown arrow
+        >
+          <option value="Paid">Paid</option>
+          <option value="Unpaid">Unpaid</option>
+        </select>
       </td>
+
+      {/* Status Dropdown */}
       <td>
         <select 
           className={`status-select ${getStatusColor(order.status)}`}
@@ -299,6 +336,7 @@ const OrderRow = ({ order, onStatusUpdate, onView }) => {
           <option value="Cancelled">Cancelled</option>
         </select>
       </td>
+      
       <td>
         <button className="btn-sm-outline" onClick={() => onView(order.order_number)}>
           <Eye size={14} className="mr-1 inline"/> View

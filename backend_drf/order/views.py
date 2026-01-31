@@ -13,6 +13,7 @@ from customers.models import Customer
 from .serializers import CartSerializer, OrderItemSerializer, OrderSerializer, OrderStatusUpdateSerializer
 from datetime import date
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 
 class OrderListView(generics.ListAPIView):
     serializer_class = OrderSerializer
@@ -74,20 +75,15 @@ class UpdateOrderStatusView(APIView):
         serializer = OrderStatusUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = request.user
-
-        try:
-            order = Order.objects.get(
-                order_number=order_number,
-                business=user.active_business
-            )
-        except Order.DoesNotExist:
-            return Response(
-                {"error": "Order not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        order = get_object_or_404(
+            Order,
+            order_number=order_number,
+            business=request.user.active_business
+        )
 
         for field, value in serializer.validated_data.items():
+            if isinstance(value, str):
+                value = value.capitalize()
             setattr(order, field, value)
 
         order.save(update_fields=serializer.validated_data.keys())
@@ -96,8 +92,6 @@ class UpdateOrderStatusView(APIView):
             {"message": "Order updated successfully"},
             status=status.HTTP_200_OK
         )
-
-
 
 
 from django.utils.crypto import get_random_string
@@ -123,10 +117,6 @@ class AddToCartView(generics.GenericAPIView):
         except Item.DoesNotExist:
             return Response({"error": "Item not found"}, status=404)
 
-        # ✅ FIXED FIELD
-        if item.quantity_product < quantity:
-            return Response({"error": "Not enough stock"}, status=400)
-
         cart, _ = Cart.objects.get_or_create(
             customer=customer,
             business=business
@@ -135,15 +125,22 @@ class AddToCartView(generics.GenericAPIView):
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
             item=item,
-            defaults={'quantity': quantity}
+            defaults={'quantity': 0}
         )
 
-        if not created:
-            cart_item.quantity += quantity
-            cart_item.save()
+        new_quantity = cart_item.quantity + quantity
+
+        # 🔥 REAL STOCK CHECK
+        if item.quantity_product < new_quantity:
+            return Response(
+                {"error": "Not enough stock"},
+                status=400
+            )
+
+        cart_item.quantity = new_quantity
+        cart_item.save()
 
         return Response({"message": "Item added to cart"}, status=200)
-
 
 class ViewCartView(generics.RetrieveAPIView):
     serializer_class = CartSerializer
@@ -190,14 +187,14 @@ class CheckoutPreviewView(APIView):
         items = []
 
         for ci in cart_items:
-            line_total = ci.item.mrp_baseprice * ci.quantity
+            line_total = ci.item.gross_amount * ci.quantity
             total += line_total
 
             items.append({
                 "item_id": ci.item.id,
                 "name": ci.item.item_name,
                 "qty": ci.quantity,
-                "price": ci.item.mrp_baseprice,
+                "price": ci.item.gross_amount,
                 "subtotal": line_total
             })
 
@@ -241,7 +238,7 @@ class CashCheckoutView(APIView):
                 raise serializers.ValidationError(
                     f"Not enough stock for {ci.item.item_name}"
                 )
-            total += ci.item.mrp_baseprice * ci.quantity
+            total += ci.item.gross_amount * ci.quantity
 
         # CREATE ORDER (ONLY NOW)
         order = Order.objects.create(
@@ -264,7 +261,7 @@ class CashCheckoutView(APIView):
                 item=item,
                 product_name=item.item_name,
                 quantity=ci.quantity,
-                price=item.mrp_baseprice
+                price=item.gross_amount
             )
 
         cart_items.delete()

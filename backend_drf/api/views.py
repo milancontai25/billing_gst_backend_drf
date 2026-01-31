@@ -50,8 +50,10 @@ class ItemListView(generics.ListAPIView):
         business_slug = self.kwargs.get('business_slug')
 
         return Item.objects.filter(
-            business__slug=business_slug
-        )
+            business__slug=business_slug,
+            isShow=True
+        ).order_by('-created_date')
+
 
         
     # serializer_class = ProductSerializer

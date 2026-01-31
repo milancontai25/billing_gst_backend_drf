@@ -6,6 +6,10 @@ class Item(models.Model):
     item_type = models.CharField(max_length=20, blank=False, null=False)
     created_date = models.DateField(auto_now_add=True)
     item_image_url = models.URLField(blank=True, null=True)
+    item_image_1 = models.URLField(blank=True, null=True)
+    item_image_2 = models.URLField(blank=True, null=True)
+    item_image_3 = models.URLField(blank=True, null=True)
+    item_video_link = models.URLField(blank=True, null=True)
     item_name = models.CharField(max_length=150, blank=False, null=False)
     brand_product = models.CharField(max_length=150, blank=False, null=False, default='NA')
     hsn_sac_code_product = models.CharField(max_length=20, blank=True, null=True, default='NA')
@@ -14,8 +18,11 @@ class Item(models.Model):
 
     unit_product = models.CharField(max_length=50, blank=False, null=False, default='NA')
     quantity_product = models.IntegerField(blank=False, null=False, default=1)
+    min_order_quantity_product = models.IntegerField(blank=False, null=False, default=1)
+    max_order_quantity_product = models.IntegerField(blank=False, null=False, default=1)
 
     mrp_baseprice = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False)
+    gross_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False)
     cost_price_product = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False, default=0)
     # discount_percent = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False)
 
@@ -24,12 +31,14 @@ class Item(models.Model):
     # igst_percent = models.DecimalField(max_digits=5, decimal_places=2, blank=False, null=False)
     # cess_percent = models.DecimalField(max_digits=5, decimal_places=2, blank=False, null=False)
     gst_percent = models.DecimalField(max_digits=5, decimal_places=2, blank=False, null=False)
+    includes_gst = models.BooleanField(blank=False, null=False, default=False)
 
     min_stock_product = models.IntegerField(default=0)
     
     customer_view = models.CharField(max_length=10, default='Special')
     availability_status_service = models.CharField(max_length=10, default='NA')
     area = models.CharField(max_length=150, blank=False, null=False)
+    isShow = models.BooleanField(blank=False, null=False, default=False)
 
     def __str__(self):
         return self.item_name

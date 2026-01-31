@@ -8,14 +8,10 @@ const CartDrawer = ({ isOpen, onClose, slug }) => {
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
-  
-  // Track which specific item is currently updating to show a spinner on just that item
   const [updatingId, setUpdatingId] = useState(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
-  // const API_BASE = 
 
-  // Helper for Auth Headers
   const getHeaders = () => {
     const token = localStorage.getItem('customer_token');
     return token ? { headers: { Authorization: `Bearer ${token}` } } : null;
@@ -24,9 +20,7 @@ const CartDrawer = ({ isOpen, onClose, slug }) => {
   const fetchCart = async () => {
     const config = getHeaders();
     if (!config) return; 
-
     try {
-      // Don't set full loading on refresh to prevent flickering
       if (!cart) setLoading(true); 
       const res = await axios.get(`${API_BASE_URL}/api/v1/customer/cart/`, config);
       setCart(res.data);
@@ -37,28 +31,22 @@ const CartDrawer = ({ isOpen, onClose, slug }) => {
     }
   };
 
-  // --- NEW: UPDATE QUANTITY HANDLER ---
   const handleUpdateQuantity = async (itemId, action) => {
     const config = getHeaders();
     if (!config) return;
-
     try {
-      setUpdatingId(itemId); // Lock buttons for this item
-      
+      setUpdatingId(itemId); 
       await axios.post(
         `${API_BASE_URL}/api/v1/customer/cart/update/`,
         { item: itemId, action: action },
         config
       );
-
-      // Refresh cart to get updated totals/subtotals from backend
       await fetchCart();
-      
     } catch (err) {
       console.error("Update failed", err);
       alert("Failed to update cart");
     } finally {
-      setUpdatingId(null); // Unlock buttons
+      setUpdatingId(null); 
     }
   };
 
@@ -88,44 +76,79 @@ const CartDrawer = ({ isOpen, onClose, slug }) => {
             </div>
           ) : (
             <div className="cart-items-list">
-              {cart.items.map((item) => (
-                <div key={item.id} className="cart-item">
-                   
-                   {/* Left: Info */}
-                   <div className="item-info">
-                     <h4>{item.item_name}</h4>
-                     <p className="item-unit-price">₹{item.price} / unit</p>
-                     
-                     {/* QUANTITY CONTROLS */}
-                     <div className="qty-controls">
-                        <button 
-                          className="qty-btn" 
-                          disabled={updatingId === item.item}
-                          onClick={() => handleUpdateQuantity(item.item, 'decrease')}
-                        >
-                          <Minus size={14} />
-                        </button>
-                        
-                        <span className="qty-val">
-                            {updatingId === item.item ? <Loader2 size={12} className="animate-spin"/> : item.quantity}
-                        </span>
-                        
-                        <button 
-                          className="qty-btn"
-                          disabled={updatingId === item.item}
-                          onClick={() => handleUpdateQuantity(item.item, 'increase')}
-                        >
-                          <Plus size={14} />
-                        </button>
-                     </div>
-                   </div>
+              {cart.items.map((item) => {
+                 // --- PRICE LOGIC ---
+                 // Use gross_amount as selling price (fallback to price)
+                 console.log(item)
+                 const sellingPrice = item.gross_amount ? parseFloat(item.gross_amount) : parseFloat(item.mrp_baseprice);
+                 // Use mrp_baseprice as MRP (fallback to sellingPrice if no MRP exists)
+                 const mrp = item.mrp_baseprice ? parseFloat(item.mrp_baseprice) : sellingPrice;
+                 const hasDiscount = mrp > sellingPrice;
 
-                   {/* Right: Price */}
-                   <div className="item-price">
-                     ₹{item.subtotal}
-                   </div>
-                </div>
-              ))}
+                 return (
+                    <div key={item.id} className="cart-item-card">
+                        
+                        {/* 1. LEFT: IMAGE */}
+                        <div className="cart-item-image">
+                            {item.item_image ? (
+                                <img src={item.item_image} alt={item.item_name} />
+                            ) : (
+                                <div className="placeholder-cart-img">{item.item_name ? item.item_name.charAt(0) : 'P'}</div>
+                            )}
+                        </div>
+
+                        {/* 2. RIGHT: DETAILS */}
+                        <div className="cart-item-details">
+                            
+                            {/* TOP ROW: Title & Delete */}
+                            <div className="cart-item-top">
+                                <h4 className="cart-item-title">{item.item_name}</h4>
+                                <button 
+                                    className="delete-item-btn" 
+                                    onClick={() => handleUpdateQuantity(item.item, 'remove')} 
+                                    disabled={updatingId === item.item}
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+
+                            {/* BOTTOM ROW: Price & Quantity */}
+                            <div className="cart-item-bottom">
+                                {/* Price Section */}
+                                <div className="cart-price-group">
+                                    <span className="cart-price-selling">₹{sellingPrice}</span>
+                                    {hasDiscount && (
+                                        <span className="cart-price-mrp">₹{mrp}</span>
+                                    )}
+                                </div>
+
+                                {/* Quantity Control (Pill Style) */}
+                                <div className="cart-qty-wrapper">
+                                    <button 
+                                        className="qty-btn-sm" 
+                                        disabled={updatingId === item.item}
+                                        onClick={() => handleUpdateQuantity(item.item, 'decrease')}
+                                    >
+                                        <Minus size={14} />
+                                    </button>
+                                    
+                                    <span className="qty-val-sm">
+                                        {updatingId === item.item ? <Loader2 size={12} className="animate-spin"/> : item.quantity}
+                                    </span>
+                                    
+                                    <button 
+                                        className="qty-btn-sm" 
+                                        disabled={updatingId === item.item}
+                                        onClick={() => handleUpdateQuantity(item.item, 'increase')}
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                 );
+              })}
             </div>
           )}
         </div>

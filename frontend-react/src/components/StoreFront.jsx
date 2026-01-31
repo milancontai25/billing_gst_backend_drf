@@ -32,7 +32,22 @@ const StoreFront = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
 
-  const categories = ["All", "Cosmetics", "Grocery", "Fashion", "Electronics", "Home Decor", "Furniture"];
+  const toTitleCase = (str) => {
+    if (!str) return '';
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  
+  const categories = ['All', ...new Set(products
+      .map(p => p.category)
+      .filter(c => c)
+      .map(c => toTitleCase(c))
+  )];
+
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
   const PRODUCT_API_URL = `${API_BASE_URL}/api/v1/business/${slug}/items/`;
 
@@ -137,11 +152,18 @@ const StoreFront = () => {
 
   const filteredProducts = products.filter(p => {
     const pName = p.item_name ? p.item_name.toLowerCase() : "";
-    const pCat = p.category ? p.category.toLowerCase() : "";
+    const rawCat = p.category ? p.category.toLowerCase() : ""; // For Search
+    const displayCat = p.category ? toTitleCase(p.category) : ""; // For Filter button match
+
     const search = searchTerm.toLowerCase();
-    return (pName.includes(search) || pCat.includes(search)) && (selectedCategory === 'All' ? true : pCat === selectedCategory.toLowerCase());
+    
+    const matchesSearch = pName.includes(search) || rawCat.includes(search);
+    const matchesCategory = selectedCategory === 'All' ? true : displayCat === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
   });
 
+  
   const getStockBadge = (qty, minStock) => {
     if (qty <= 0) return <span className="stock-badge out">Out of Stock</span>;
     if (qty <= minStock) return <span className="stock-badge low">Low Stock</span>;
@@ -249,27 +271,51 @@ const StoreFront = () => {
         ) : (
           <div className="product-grid">
             {filteredProducts.map(product => {
-               const isOutOfStock = product.quantity_product <= 0;
-               return (
-                  <div key={product.id} className="product-card">
-                    <div className="product-image-box">
+              const isOutOfStock = product.quantity_product <= 0;
+              const mrp = parseFloat(product.mrp_baseprice);
+              const sellingPrice = parseFloat(product.gross_amount); // Assuming gross_amount is the selling price
+              const hasDiscount = mrp > sellingPrice;
+              const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+
+              return (
+                <div key={product.id} className="product-card">
+                  {/* ... (Image Box remains same) ... */}
+                  <div className="product-image-box">
                       {getStockBadge(product.quantity_product, product.min_stock_product)}
                       {product.item_image_url ? (
-                        <img src={product.item_image_url} alt={product.item_name} className={`product-img ${isOutOfStock ? 'grayscale' : ''}`} />
+                      <img src={product.item_image_url} alt={product.item_name} className={`product-img ${isOutOfStock ? 'grayscale' : ''}`} />
                       ) : ( <span className="placeholder-img">{product.item_name.charAt(0)}</span> )}
+                  </div>
+                  
+                  <div className="product-details">
+                    <div className="product-cat">{product.category}</div>
+                    <h3 className="product-name" title={product.item_name}>{product.item_name}</h3>
+                    
+                    {/* --- NEW PRICE SECTION --- */}
+                    <div className="price-row">
+                      {hasDiscount && (
+                          <span className="price-mrp">₹{mrp}</span>
+                      )}
+                      <span className="price-selling">₹{sellingPrice}</span>
+                      
+                      {hasDiscount && discountPercent > 0 && (
+                          <span className="discount-tag">{discountPercent}% OFF</span>
+                      )}
                     </div>
-                    <div className="product-details">
-                      <div className="product-cat">{product.category}</div>
-                      <h3 className="product-name" title={product.item_name}>{product.item_name}</h3>
-                      <div className="product-footer">
-                        <div className="price">₹{product.mrp_baseprice}</div>
-                        <button className={`add-btn ${isOutOfStock ? 'disabled' : ''}`} disabled={isOutOfStock} onClick={() => handleAddToCart(product.id)}>
-                            {isOutOfStock ? 'Sold Out' : 'Add to Cart'}
-                        </button>
-                      </div>
+
+                    <div className="product-actions">
+                      <button 
+                          className={`add-btn ${isOutOfStock ? 'disabled' : ''}`} 
+                          disabled={isOutOfStock}
+                          onClick={() => handleAddToCart(product.id)}
+                      >
+                          {isOutOfStock ? 'Sold Out' : 'Add to Cart'}
+                      </button>
                     </div>
                   </div>
-               );
+                </div>
+              );
+
             })}
           </div>
         )}
