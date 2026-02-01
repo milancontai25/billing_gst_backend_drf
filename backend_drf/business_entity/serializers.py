@@ -9,7 +9,6 @@ class BusinessEntitySerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'created_at']
 
     def update(self, instance, validated_data):
-        # ❌ Block KYC updates
         validated_data.pop("kyc_doc_type", None)
         validated_data.pop("kyc_pan_id", None)
         validated_data.pop("kyc_bucket_url", None)

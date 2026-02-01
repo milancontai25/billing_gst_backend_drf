@@ -1,5 +1,7 @@
 from django.db import models
 from business_entity.models import BusinessEntity
+from django.utils.text import slugify
+
 
 class Item(models.Model):
     business = models.ForeignKey(BusinessEntity, on_delete=models.CASCADE, related_name="items")
@@ -10,6 +12,7 @@ class Item(models.Model):
     item_image_2 = models.URLField(blank=True, null=True)
     item_image_3 = models.URLField(blank=True, null=True)
     item_video_link = models.URLField(blank=True, null=True)
+    slug = models.SlugField(max_length=200, blank=True, null=True)
     item_name = models.CharField(max_length=150, blank=False, null=False)
     brand_product = models.CharField(max_length=150, blank=False, null=False, default='NA')
     hsn_sac_code_product = models.CharField(max_length=20, blank=True, null=True, default='NA')
@@ -43,3 +46,19 @@ class Item(models.Model):
     def __str__(self):
         return self.item_name
 
+    class Meta:
+        unique_together = ('business', 'slug')
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.item_name)
+            slug = base_slug
+            counter = 1
+
+            while Item.objects.filter(business=self.business, slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)

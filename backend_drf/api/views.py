@@ -53,17 +53,21 @@ class ItemListView(generics.ListAPIView):
             business__slug=business_slug,
             isShow=True
         ).order_by('-created_date')
+    
 
+class ItemDetailBySlugView(generics.RetrieveAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [AllowAny]
+    lookup_field = 'slug'
+    lookup_url_kwarg = 'item_slug'   
 
-        
-    # serializer_class = ProductSerializer
-    # authentication_classes = [CustomerJWTAuthentication]
-    # permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        business_slug = self.kwargs.get('business_slug')
 
-    # def get_queryset(self):
-    #     customer = self.request.user  # now correctly a Customer
-    #     return Item.objects.filter(business=customer.business)
-
+        return Item.objects.filter(
+            business__slug=business_slug,
+            isShow=True
+        )
 
 
 # class ItemDetailView(generics.RetrieveAPIView):

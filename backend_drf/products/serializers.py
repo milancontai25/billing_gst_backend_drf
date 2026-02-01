@@ -28,7 +28,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
         for field, image in images.items():
             if image:
-                item.__dict__[field] = save_file_to_server(image, "items")
+                setattr(item, field, save_file_to_server(image, "items"))
 
         item.save()
         return item
@@ -46,12 +46,26 @@ class ProductSerializer(serializers.ModelSerializer):
 
         for field, image in images.items():
             if image:
-                instance.__dict__[field] = save_file_to_server(image, "items")
+                setattr(instance, field, save_file_to_server(image, "items"))
+
 
         instance.save()
         return instance
 
-    def validate_item_image(self, image):
+    def _validate_image(self, image):
         if image.size > 5 * 1024 * 1024:
             raise serializers.ValidationError("Image size must be under 5MB")
         return image
+
+    def validate_item_image(self, image):
+        return self._validate_image(image)
+
+    def validate_image_1(self, image):
+        return self._validate_image(image)
+
+    def validate_image_2(self, image):
+        return self._validate_image(image)
+
+    def validate_image_3(self, image):
+        return self._validate_image(image)
+

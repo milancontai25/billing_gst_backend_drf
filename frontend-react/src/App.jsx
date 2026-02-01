@@ -14,6 +14,7 @@ import OrderHistory from './components/OrderHistory'
 import Layout from './components/Layout'
 import Orders from './components/Orders';
 import LandingPage from './components/LandingPage';
+import StoreProductDetail from './components/StoreProductDetail';
 
 
 function App() {
@@ -47,6 +48,7 @@ function App() {
           </Route>
           <Route path="/forgot-password" element={<ForgotPassword /> } />
           <Route path="/:slug" element={<StoreFront />} />
+          <Route path="/:slug/item/:itemSlug" element={<StoreProductDetail />} />
           <Route path="/:slug/checkout" element={<Checkout />} />
           <Route path="/:slug/orders" element={<OrderHistory />} />
         </Routes>
