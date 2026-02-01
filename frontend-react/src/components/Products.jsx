@@ -31,7 +31,7 @@ const Products = () => {
     item_type: 'Goods',
     item_name: '',
     item_image: null, 
-    item_image_1: null, item_image_2: null, item_image_3: null, item_video_link: '',
+    image_1: null, image_2: null, image_3: null, item_video_link: '',
     brand_product: '', hsn_sac_code_product: '', unit_product: 'Pcs',
     quantity_product: 0, cost_price_product: 0, min_stock_product: 0,
     min_order_quantity_product: 1,
@@ -220,15 +220,21 @@ const Products = () => {
 
   const openEditModal = (item) => {
     setFormData({
-        ...initialFormState,
-        ...item,
-        mrp_baseprice: item.mrp_baseprice || 0,
-        gross_amount: item.gross_amount || 0,
-        gst_percent: item.gst_percent || 0,
-        includes_gst: item.includes_gst || false,
-        min_order_quantity_product: item.min_order_quantity_product || 1,
-        max_order_quantity_product: item.max_order_quantity_product || 1,
-        isShow: item.isShow || false
+      ...initialFormState,
+      ...item,
+
+      // IMPORTANT: reset file fields
+      image_1: null,
+      image_2: null,
+      image_3: null,
+
+      mrp_baseprice: item.mrp_baseprice || 0,
+      gross_amount: item.gross_amount || 0,
+      gst_percent: item.gst_percent || 0,
+      includes_gst: item.includes_gst || false,
+      min_order_quantity_product: item.min_order_quantity_product || 1,
+      max_order_quantity_product: item.max_order_quantity_product || 1,
+      isShow: item.isShow || false
     });
     setEditId(item.id);
     setIsEditing(true);
@@ -267,7 +273,7 @@ const Products = () => {
     });
 
     // Images
-    ['item_image', 'item_image_1', 'item_image_2', 'item_image_3'].forEach(imgKey => {
+    ['item_image', 'image_1', 'image_2', 'image_3'].forEach(imgKey => {
         if (formData[imgKey] instanceof File) {
             submitData.append(imgKey, formData[imgKey]);
         }
@@ -603,15 +609,15 @@ const Products = () => {
               <div className="form-row">
                  <div className="form-group" style={{flex:1}}>
                     <label style={{fontSize:'12px'}}>Image 1</label>
-                    <input type="file" onChange={(e) => handleFileChange(e, 'item_image_1')} accept="image/*" className="file-input-small"/>
+                    <input type="file" onChange={(e) => handleFileChange(e, 'image_1')} accept="image/*" className="file-input-small"/>
                  </div>
                  <div className="form-group" style={{flex:1}}>
                     <label style={{fontSize:'12px'}}>Image 2</label>
-                    <input type="file" onChange={(e) => handleFileChange(e, 'item_image_2')} accept="image/*" className="file-input-small"/>
+                    <input type="file" onChange={(e) => handleFileChange(e, 'image_2')} accept="image/*" className="file-input-small"/>
                  </div>
                  <div className="form-group" style={{flex:1}}>
                     <label style={{fontSize:'12px'}}>Image 3</label>
-                    <input type="file" onChange={(e) => handleFileChange(e, 'item_image_3')} accept="image/*" className="file-input-small"/>
+                    <input type="file" onChange={(e) => handleFileChange(e, 'image_3')} accept="image/*" className="file-input-small"/>
                  </div>
               </div>
               <div className="form-group">
