@@ -15,7 +15,15 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = '__all__'
-        read_only_fields = ['business', 'slug']  # 🔥 IMPORTANT
+        read_only_fields = [
+            'business',
+            'slug',
+            'item_image_url',
+            'item_image_1',
+            'item_image_2',
+            'item_image_3',
+        ]
+
 
     def create(self, validated_data):
         images = {
