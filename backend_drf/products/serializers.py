@@ -3,6 +3,7 @@ from .models import Item
 from business_entity.serializers import BusinessEntitySerializer
 from api.utils.file_upload import save_file_to_server
 
+
 class ProductSerializer(serializers.ModelSerializer):
     business = BusinessEntitySerializer(read_only=True)
 
@@ -14,7 +15,7 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = '__all__'
-        read_only_fields = ['business']
+        read_only_fields = ['business', 'slug']  # 🔥 IMPORTANT
 
     def create(self, validated_data):
         images = {
@@ -41,17 +42,19 @@ class ProductSerializer(serializers.ModelSerializer):
             "item_image_3": validated_data.pop("image_3", None),
         }
 
+        # Update normal fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
+        # Update only provided images
         for field, image in images.items():
             if image:
                 setattr(instance, field, save_file_to_server(image, "items"))
 
-
         instance.save()
         return instance
 
+    # ---------- Image Validation ----------
     def _validate_image(self, image):
         if image.size > 5 * 1024 * 1024:
             raise serializers.ValidationError("Image size must be under 5MB")
@@ -68,4 +71,3 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def validate_image_3(self, image):
         return self._validate_image(image)
-

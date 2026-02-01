@@ -242,15 +242,22 @@ const Products = () => {
 
     const fields = [
         'item_type', 'item_name', 'category', 'description', 
-        'mrp_baseprice', 'gross_amount', 'gst_percent', 'includes_gst', 'area', 'customer_view',
-        'item_video_link', 'isShow'
+        'mrp_baseprice', 'gross_amount', 'gst_percent', 
+        'area', 'customer_view', 'item_video_link'
     ];
+
+    // Explicitly handle Booleans for FormData
+    submitData.append('includes_gst', formData.includes_gst ? 'true' : 'false');
+    submitData.append('isShow', formData.isShow ? 'true' : 'false');
 
     if (isService) {
         fields.push('availability_status_service');
+        // Ideally, for Service, we might want to send 0/NA for hidden fields 
+        // to keep data clean, but PATCH handles omission.
     } else {
         fields.push('brand_product', 'hsn_sac_code_product', 'unit_product', 
-                    'quantity_product', 'cost_price_product', 'min_stock_product', 'min_order_quantity_product', 'max_order_quantity_product');
+                    'quantity_product', 'cost_price_product', 'min_stock_product',
+                    'min_order_quantity_product', 'max_order_quantity_product');
     }
 
     fields.forEach(key => {
@@ -259,6 +266,7 @@ const Products = () => {
         submitData.append(key, value);
     });
 
+    // Images
     ['item_image', 'item_image_1', 'item_image_2', 'item_image_3'].forEach(imgKey => {
         if (formData[imgKey] instanceof File) {
             submitData.append(imgKey, formData[imgKey]);
@@ -267,8 +275,10 @@ const Products = () => {
 
     try {
       const config = { headers: { 'Content-Type': 'multipart/form-data' } };
+      
       if (isEditing) {
-        await api.put(`/products/${editId}/`, submitData, config);
+        // --- FIX IS HERE: USE PATCH ---
+        await api.patch(`/products/${editId}/`, submitData, config); 
         alert("Inventory Updated!");
       } else {
         await api.post('/products/', submitData, config);
@@ -278,7 +288,12 @@ const Products = () => {
       fetchInventory(); 
     } catch (err) {
       console.error(err);
-      alert("Error saving item.");
+      // Helpful alert showing the actual error from backend
+      if (err.response && err.response.data) {
+          alert(`Error: ${JSON.stringify(err.response.data)}`);
+      } else {
+          alert("Error saving item.");
+      }
     }
   };
 
