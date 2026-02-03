@@ -14,15 +14,50 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = '__all__'
+        fields = [
+            # Core
+            'id', 'business', 'slug',
+            'item_type', 'item_name', 'category', 'description',
+
+            # Pricing
+            'mrp_baseprice', 'gross_amount', 'gst_percent', 'includes_gst',
+
+            # Goods
+            'brand_product', 'hsn_sac_code_product',
+            'unit_product', 'quantity_product',
+            'min_stock_product',
+            'min_order_quantity_product',
+            'max_order_quantity_product',
+            'cost_price_product',
+
+            # Service
+            'availability_status_service',
+
+            # Media URLs (read-only)
+            'item_image_url',
+            'item_image_1',
+            'item_image_2',
+            'item_image_3',
+            'item_video_link',
+
+            # Write-only upload fields
+            'item_image',
+            'image_1',
+            'image_2',
+            'image_3',
+
+            # Other
+            'area', 'customer_view', 'isShow', 'created_date',
+        ]
+
         read_only_fields = [
-            'business',
-            'slug',
+            'business', 'slug',
             'item_image_url',
             'item_image_1',
             'item_image_2',
             'item_image_3',
         ]
+
 
 
     def create(self, validated_data):

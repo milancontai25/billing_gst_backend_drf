@@ -28,7 +28,7 @@ const Layout = () => {
     country: 'India', state: '', district: '', pin: '',
     kyc_doc_type: 'Pan', 
     // Files
-    logo_file: null, kyc_file: null,
+    logo_file: null, kyc_file: null, upi_qrcode: null,
     banner_1: null, banner_2: null, banner_3: null, // New Banners
     // Social Media Fields
     facebook_url: '', instagram_url: '', youtube_url: '', x_url: ''
@@ -86,7 +86,7 @@ const Layout = () => {
         kyc_doc_type: biz.kyc_doc_type || 'Pan',
         kyc_pan_id: biz.kyc_pan_id,
         // Files reset on edit
-        logo_file: null, kyc_file: null,
+        logo_file: null, kyc_file: null, upi_qrcode: null,
         banner_1: null, banner_2: null, banner_3: null,
         // Socials
         facebook_url: biz.facebook_url || '',
@@ -118,7 +118,7 @@ const Layout = () => {
     // Append Fields
     Object.keys(setupForm).forEach(key => {
         // Skip file fields if they are null (don't overwrite existing images with null)
-        const isFileField = ['logo_file', 'kyc_file', 'banner_1', 'banner_2', 'banner_3'].includes(key);
+        const isFileField = ['logo_file', 'kyc_file', 'upi_qrcode', 'banner_1', 'banner_2', 'banner_3'].includes(key);
         if (isFileField && !setupForm[key]) return;
 
         // Skip null values
@@ -228,6 +228,14 @@ const Layout = () => {
                   <label>Business Logo</label>
                   <input type="file" name="logo_file" onChange={handleFileChange} className="file-input" />
                 </div>
+              </div>
+
+              {/* --- SECTION 2: PAYMENT SETUP (NEW) --- */}
+              <div className="form-section-title">Payment Setup</div>
+              <div className="form-group">
+                 <label>Upload UPI QR Code</label>
+                 <input type="file" name="upi_qrcode" onChange={handleFileChange} className="file-input" accept="image/*" />
+                 <p style={{fontSize: '11px', color: '#6b7280', marginTop: '4px'}}>Upload your shop's UPI QR Code image to accept payments online.</p>
               </div>
 
               {/* --- SECTION 2: BANNERS (NEW) --- */}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Star, Share2, Heart, Minus, Plus, Loader2, Copy, PlayCircle } from 'lucide-react'; // Added PlayCircle
+import { Star, Share2, Heart, Minus, Plus, Loader2, Copy, PlayCircle } from 'lucide-react';
 import customerApi from '../api/customerAxios'; 
 import StoreHeader from './StoreHeader';
 import StoreFooter from './StoreFooter';
@@ -20,7 +20,7 @@ const StoreProductDetail = () => {
 
   // --- MEDIA STATE ---
   const [mediaList, setMediaList] = useState([]);
-  const [activeMedia, setActiveMedia] = useState(null); // { type: 'image'|'video', url: '' }
+  const [activeMedia, setActiveMedia] = useState(null); 
 
   // Global State
   const [businessName, setBusinessName] = useState('');
@@ -49,13 +49,33 @@ const StoreProductDetail = () => {
     return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
-  // Helper to detect if video is YouTube (for embedding)
-  const isYoutube = (url) => url && (url.includes('youtube.com') || url.includes('youtu.be'));
+  // --- VIDEO HELPERS (UPDATED) ---
 
+  // 1. Detect Platform
+  const isYoutube = (url) => url && (url.includes('youtube.com') || url.includes('youtu.be'));
+  const isInstagram = (url) => url && (url.includes('instagram.com/reel') || url.includes('instagram.com/p'));
+
+  // 2. Get YouTube Embed (Handles Standard + Shorts)
   const getYoutubeEmbed = (url) => {
+    // Handle Shorts
+    if (url.includes('/shorts/')) {
+        const videoId = url.split('/shorts/')[1].split('?')[0];
+        return `https://www.youtube.com/embed/${videoId}`;
+    }
+    // Handle Standard
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : url;
+  };
+
+  // 3. Get Instagram Embed
+  const getInstagramEmbed = (url) => {
+    // Ensure URL ends with /embed/ caption
+    // Remove query params first
+    const cleanUrl = url.split('?')[0]; 
+    // Remove trailing slash if present
+    const base = cleanUrl.endsWith('/') ? cleanUrl.slice(0, -1) : cleanUrl;
+    return `${base}/embed`;
   };
 
   useEffect(() => {
@@ -81,7 +101,7 @@ const StoreProductDetail = () => {
         if (data.item_video_link) media.push({ type: 'video', url: data.item_video_link });
 
         setMediaList(media);
-        setActiveMedia(media[0]); // Default to first item
+        setActiveMedia(media[0]); 
 
         // Business Info
         if (data.business) {
@@ -94,7 +114,10 @@ const StoreProductDetail = () => {
                 youtube: biz.youtube_url,
                 twitter: biz.x_url
             });
-            setContactInfo({ email: `contact@${slug}.com`, phone: '+91-9876543210' });
+            setContactInfo({
+                 email: biz.user.email, 
+                 phone: `+91 ${biz.user.phone}`
+             });
         } else {
             setBusinessName(slug.toUpperCase());
         }
@@ -201,11 +224,20 @@ const StoreProductDetail = () => {
                     isYoutube(activeMedia.url) ? (
                         <iframe 
                             src={getYoutubeEmbed(activeMedia.url)} 
-                            title="Product Video"
+                            title="YouTube Video"
                             frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                             className="main-video-embed"
+                        ></iframe>
+                    ) : isInstagram(activeMedia.url) ? (
+                        <iframe 
+                            src={getInstagramEmbed(activeMedia.url)} 
+                            title="Instagram Video"
+                            frameBorder="0"
+                            allowFullScreen
+                            className="main-video-embed instagram-embed" // Add specific class if needed
+                            scrolling="no"
                         ></iframe>
                     ) : (
                         <video controls autoPlay className="main-video-file">
@@ -230,7 +262,6 @@ const StoreProductDetail = () => {
             </div>
 
             <div className="tag-row">
-                {/* <span className="gi-tag">GI Tag</span> */}
                 <span className="sub-text">Natural | {toTitleCase(product.category)}</span>
             </div>
 
@@ -240,8 +271,6 @@ const StoreProductDetail = () => {
                 </div>
                 <span className="review-text">2 Reviews</span>
             </div>
-
-            {/* <div className="unit-box">{product.unit_product || "Standard Unit"}</div> */}
 
             <div className="detail-price-section">
                 <span className="d-selling-price">₹{sellingPrice.toFixed(2)}</span>
@@ -265,14 +294,6 @@ const StoreProductDetail = () => {
                 </button>
                 <button className="btn-buy-now-big">BUY NOW</button>
             </div>
-
-            {/* <div className="offers-container">
-                <h4>Best offers for you</h4>
-                <div className="coupon-item">
-                    <span className="offer-text">FLAT 10% Off on First Order</span>
-                    <div className="coupon-code">FIRST10 <Copy size={14} style={{marginLeft: 6}}/></div>
-                </div>
-            </div> */}
 
             <div className="description-box">
                 <h3>Description</h3>

@@ -3,6 +3,7 @@ from users.serializers import UserSerializer
 from rest_framework import serializers
 
 class BusinessEntitySerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
     class Meta:
         model = BusinessEntity
         fields = '__all__'

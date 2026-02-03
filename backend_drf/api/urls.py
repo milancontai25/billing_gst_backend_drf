@@ -1,5 +1,5 @@
 from django.urls import path
-from order.views import AddToCartView, CancelOrderView, CashCheckoutView, CheckoutPreviewView, CustomerOrderHistoryView, OrderDetailView, OrderItemListView, OrderListView, UpdateCartItemView, UpdateOrderStatusView, ViewCartView
+from order.views import AddToCartView, CancelOrderView, CheckoutPreviewView, CheckoutView, CustomerOrderHistoryView, OrderDetailView, OrderItemListView, OrderListView, UpdateCartItemView, UpdateOrderStatusView, ViewCartView
 from invoice.views import CustomerDetailByNameView, CustomerSearchListView, InvoiceDetailView, InvoiceItemListView, InvoiceListCreateView, ItemDetailByNameView, ItemSearchListView
 from products.views import ItemDetailView, ItemListCreateView
 from customers.views import CustomerAddressUpdateView, CustomerDetailView, CustomerForgotPasswordView, CustomerListCreateView, CustomerLoginOtpRequestView, CustomerLoginOtpVerifyView, CustomerLoginView, CustomerResetPasswordView, CustomerSignupView, CustomerTokenRefreshView
@@ -60,11 +60,10 @@ urlpatterns = [
     path('customer/cart/add/', AddToCartView.as_view()),
     path('customer/cart/', ViewCartView.as_view()),
     path('customer/cart/checkout/preview/', CheckoutPreviewView.as_view(), name="customer-order-preview"),
-    path('customer/cart/checkout/cash/', CashCheckoutView.as_view(), name="customer-order-cash"),
+    path('customer/cart/checkout/process/', CheckoutView.as_view(), name="customer-order-cash"),
     path('customer/orders/', CustomerOrderHistoryView.as_view(), name='customer-order-history'),
     path('customer/order/<str:order_number>/cancel/', CancelOrderView.as_view(), name='cancel-order'),
     path('customer/cart/update/', UpdateCartItemView.as_view(), name='update-cart'),
     path('customer/profile/address/', CustomerAddressUpdateView.as_view(), name='customer-address-update'),
-
 
 ]

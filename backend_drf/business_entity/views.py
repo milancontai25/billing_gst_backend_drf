@@ -73,6 +73,10 @@ class BusinessSetupView(APIView):
         # ---------- File Upload Handling ----------
         logo_file = request.FILES.get("logo_file")
         kyc_file = request.FILES.get("kyc_file")
+        banner_1 = request.FILES.get("banner_1")
+        banner_2 = request.FILES.get("banner_2")
+        banner_3 = request.FILES.get("banner_3")
+        upi_qrcode = request.FILES.get("upi_qrcode")
 
         # Assuming 'save_file_to_hostinger' is a method defined in this class or a mixin
         if logo_file:
@@ -82,6 +86,22 @@ class BusinessSetupView(APIView):
         if kyc_file:
             kyc_url = self.save_file_to_hostinger(request, kyc_file, "kyc_docs")
             data["kyc_bucket_url"] = kyc_url
+
+        if banner_1:
+            banner_1_url = self.save_file_to_hostinger(request, banner_1, "business_banners")
+            data["banner_1_url"] = banner_1_url
+
+        if banner_2:
+            banner_2_url = self.save_file_to_hostinger(request, banner_2, "business_banners")
+            data["banner_2_url"] = banner_2_url
+
+        if banner_3:
+            banner_3_url = self.save_file_to_hostinger(request, banner_3, "business_banners")
+            data["banner_3_url"] = banner_3_url
+
+        if upi_qrcode:
+            upi_qrcode_url = self.save_file_to_hostinger(request, upi_qrcode, "upi_qrcode")
+            data["upi_qrcode_url"] = upi_qrcode_url
 
         serializer = BusinessEntitySerializer(data=data)
 
@@ -136,7 +156,7 @@ class BusinessUpdateView(APIView):
 
         data = request.data.copy()
 
-        # 🔒 Extra safety: strip KYC
+        
         data.pop("kyc_doc_type", None)
         data.pop("kyc_bucket_url", None)
 
@@ -158,6 +178,11 @@ class BusinessUpdateView(APIView):
         if "banner_3" in request.FILES:
             data["banner_3_url"] = save_file_to_server(
                 request.FILES["banner_3"], "business_banners"
+            )
+
+        if "upi_qrcode" in request.FILES:
+            data["upi_qrcode_url"] = save_file_to_server(
+                request.FILES["upi_qrcode"], "upi_qrcode"
             )
 
         serializer = BusinessEntitySerializer(

@@ -316,8 +316,8 @@ const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView }) => {
           onChange={(e) => onPaymentUpdate(order.order_number, e.target.value)}
           style={{ paddingRight: '20px' }} // Add space for dropdown arrow
         >
-          <option value="Paid">Paid</option>
           <option value="Unpaid">Unpaid</option>
+          <option value="Paid">Paid</option>
         </select>
       </td>
 

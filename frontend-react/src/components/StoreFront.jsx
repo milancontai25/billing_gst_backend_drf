@@ -475,8 +475,8 @@ const StoreFront = () => {
                 twitter: biz.x_url
              });
              setContactInfo({
-                 email: `contact@${biz.slug}.com`, 
-                 phone: '+91-9876543210' 
+                 email: biz.user.email, 
+                 phone: `+91 ${biz.user.phone}`
              });
         } else {
              const formattedSlug = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');

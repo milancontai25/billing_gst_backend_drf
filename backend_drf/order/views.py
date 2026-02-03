@@ -206,11 +206,77 @@ class CheckoutPreviewView(APIView):
                 "address": customer.address
             },
             "items": items,
-            "total_amount": total
+            "total_amount": total,
+            "upi_qrcode_url": business.upi_qrcode_url
         })
 
 
-class CashCheckoutView(APIView):
+# class CashCheckoutView(APIView):
+#     authentication_classes = [CustomerJWTAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     @transaction.atomic
+#     def post(self, request):
+#         customer = request.user
+#         business = customer.business
+
+#         if request.data.get("payment_method") != "CASH":
+#             return Response({"error": "Invalid payment method"}, status=400)
+
+#         cart = Cart.objects.select_for_update().get(
+#             customer=customer,
+#             business=business
+#         )
+
+#         cart_items = cart.items.select_related('item').select_for_update()
+
+#         if not cart_items.exists():
+#             return Response({"error": "Cart empty"}, status=400)
+
+#         total = 0
+#         for ci in cart_items:
+#             if ci.item.quantity_product < ci.quantity:
+#                 raise serializers.ValidationError(
+#                     f"Not enough stock for {ci.item.item_name}"
+#                 )
+#             total += ci.item.gross_amount * ci.quantity
+
+#         # CREATE ORDER (ONLY NOW)
+#         order = Order.objects.create(
+#             business=business,
+#             customer=customer,
+#             order_number=f"ORD-{date.today().year}-{uuid.uuid4().hex[:8].upper()}",
+#             total_amount=total,
+#             payment_method="CASH",
+#             payment_status="unpaid",
+#             status="CONFIRMED"
+#         )
+
+#         for ci in cart_items:
+#             item = ci.item
+#             item.quantity_product -= ci.quantity
+#             item.save(update_fields=['quantity_product'])
+
+#             OrderItem.objects.create(
+#                 order=order,
+#                 item=item,
+#                 product_name=item.item_name,
+#                 quantity=ci.quantity,
+#                 price=item.gross_amount
+#             )
+
+#         cart_items.delete()
+
+#         return Response(
+#             {
+#                 "message": "Order placed successfully",
+#                 "order": OrderSerializer(order).data
+#             },
+#             status=status.HTTP_201_CREATED
+#         )
+
+
+class CheckoutView(APIView):
     authentication_classes = [CustomerJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -219,8 +285,13 @@ class CashCheckoutView(APIView):
         customer = request.user
         business = customer.business
 
-        if request.data.get("payment_method") != "CASH":
-            return Response({"error": "Invalid payment method"}, status=400)
+        payment_method = request.data.get("payment_method")
+
+        if payment_method not in ["CASH", "ONLINE"]:
+            return Response(
+                {"error": "Invalid payment method"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         cart = Cart.objects.select_for_update().get(
             customer=customer,
@@ -240,17 +311,24 @@ class CashCheckoutView(APIView):
                 )
             total += ci.item.gross_amount * ci.quantity
 
-        # CREATE ORDER (ONLY NOW)
+        # 🔹 Set payment status based on method
+        if payment_method == "CASH":
+            payment_status = "unpaid"
+        else:  # ONLINE
+            payment_status = "paid"   # will become "paid" after gateway success
+
+        # 🔹 CREATE ORDER
         order = Order.objects.create(
             business=business,
             customer=customer,
             order_number=f"ORD-{date.today().year}-{uuid.uuid4().hex[:8].upper()}",
             total_amount=total,
-            payment_method="CASH",
-            payment_status="unpaid",
+            payment_method=payment_method,
+            payment_status=payment_status,
             status="CONFIRMED"
         )
 
+        # 🔹 Reduce stock + create order items
         for ci in cart_items:
             item = ci.item
             item.quantity_product -= ci.quantity
