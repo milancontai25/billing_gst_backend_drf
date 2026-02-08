@@ -327,7 +327,7 @@ class CheckoutView(APIView):
             total_amount=total,
             payment_method=payment_method,
             payment_status=payment_status,
-            status="CONFIRMED"
+            status="PENDING"
         )
 
         # 🔹 Create order items + reduce stock only for GOODS

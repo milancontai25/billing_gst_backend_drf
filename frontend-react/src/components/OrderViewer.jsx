@@ -52,7 +52,7 @@ const OrderViewer = ({ order, onClose }) => {
   };
 
   // Status Logic (Green for Paid, Red for Unpaid)
-  const isPaid = ['paid', 'completed', 'received', 'shipped', 'confirmed'].includes(order.status.toLowerCase());
+  const isPaid = ['paid'].includes(order.payment_status.toLowerCase());
   const statusColor = isPaid ? '#16A34A' : '#DC2626'; 
   const statusText = isPaid ? 'PAID' : 'UNPAID';
 
