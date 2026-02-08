@@ -305,17 +305,19 @@ class CheckoutView(APIView):
 
         total = 0
         for ci in cart_items:
-            if ci.item.quantity_product < ci.quantity:
-                raise serializers.ValidationError(
-                    f"Not enough stock for {ci.item.item_name}"
-                )
-            total += ci.item.gross_amount * ci.quantity
+            item = ci.item
 
-        # 🔹 Set payment status based on method
-        if payment_method == "CASH":
-            payment_status = "unpaid"
-        else:  # ONLINE
-            payment_status = "paid"   # will become "paid" after gateway success
+            # 🔹 Only check stock for GOODS
+            if item.item_type == "Goods":
+                if item.quantity_product < ci.quantity:
+                    raise serializers.ValidationError(
+                        f"Not enough stock for {item.item_name}"
+                    )
+
+            total += item.gross_amount * ci.quantity
+
+        # 🔹 Set payment status
+        payment_status = "unpaid" if payment_method == "CASH" else "paid"
 
         # 🔹 CREATE ORDER
         order = Order.objects.create(
@@ -328,11 +330,14 @@ class CheckoutView(APIView):
             status="CONFIRMED"
         )
 
-        # 🔹 Reduce stock + create order items
+        # 🔹 Create order items + reduce stock only for GOODS
         for ci in cart_items:
             item = ci.item
-            item.quantity_product -= ci.quantity
-            item.save(update_fields=['quantity_product'])
+
+            # Reduce stock ONLY for GOODS
+            if item.item_type == "Goods":
+                item.quantity_product -= ci.quantity
+                item.save(update_fields=['quantity_product'])
 
             OrderItem.objects.create(
                 order=order,

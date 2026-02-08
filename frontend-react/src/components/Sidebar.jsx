@@ -36,6 +36,14 @@ const Sidebar = ({
     }
   };
 
+  const openMarketplace = () => {
+    if (data) {
+      window.open(`/store/marketplace`, '_blank');
+    } else {
+      alert("Store is not active.");
+    }
+  };
+
   const handleNavigation = (path) => {
     navigate(path);
     setIsMobileOpen(false);
@@ -80,6 +88,13 @@ const Sidebar = ({
               <span className="nav-text">My Store</span>
            </div>
         </div>
+
+        {/* <div style={{ marginTop: '20px', borderTop: '1px solid #374151', paddingTop: '10px' }}> */}
+           <div className="nav-item" onClick={openMarketplace} style={{ color: '#60A5FA' }} title="Marketplace">
+  <Store size={20} style={{ minWidth: '20px' }} /> 
+  <span className="nav-text">Marketplace</span>
+</div>
+        {/* </div> */}
       </nav>
       
       {/* 4. Footer / Business Switcher */}

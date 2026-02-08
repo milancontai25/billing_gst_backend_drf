@@ -15,6 +15,7 @@ import Layout from './components/Layout'
 import Orders from './components/Orders';
 import LandingPage from './components/LandingPage';
 import StoreProductDetail from './components/StoreProductDetail';
+import MarketplaceList from './components/MarketplaceList';
 
 
 function App() {
@@ -51,6 +52,8 @@ function App() {
           <Route path="/:slug/item/:itemSlug" element={<StoreProductDetail />} />
           <Route path="/:slug/checkout" element={<Checkout />} />
           <Route path="/:slug/orders" element={<OrderHistory />} />
+
+          <Route path='/store/marketplace' element={<MarketplaceList />} />
         </Routes>
       </BrowserRouter>
       

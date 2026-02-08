@@ -5,7 +5,7 @@ from products.views import ItemDetailView, ItemListCreateView
 from customers.views import CustomerAddressUpdateView, CustomerDetailView, CustomerForgotPasswordView, CustomerListCreateView, CustomerLoginOtpRequestView, CustomerLoginOtpVerifyView, CustomerLoginView, CustomerResetPasswordView, CustomerSignupView, CustomerTokenRefreshView
 from business_entity.views import BusinessSetupView, BusinessUpdateView, SwitchBusinessView
 from users import views as UserViews
-from .views import DashboardView, ItemListView, AppRunView, ItemDetailBySlugView
+from .views import DashboardView, ItemAllListView, ItemListView, AppRunView, ItemDetailBySlugView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 urlpatterns = [
@@ -65,5 +65,7 @@ urlpatterns = [
     path('customer/order/<str:order_number>/cancel/', CancelOrderView.as_view(), name='cancel-order'),
     path('customer/cart/update/', UpdateCartItemView.as_view(), name='update-cart'),
     path('customer/profile/address/', CustomerAddressUpdateView.as_view(), name='customer-address-update'),
+
+    path('marketplace/items/', ItemAllListView.as_view(), name="marketplace"),
 
 ]

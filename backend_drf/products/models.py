@@ -20,7 +20,7 @@ class Item(models.Model):
     description = models.TextField(blank=True, null=True)
 
     unit_product = models.CharField(max_length=50, blank=False, null=False, default='NA')
-    quantity_product = models.IntegerField(blank=False, null=False, default=1)
+    quantity_product = models.IntegerField(blank=False, null=False, default=100)
     min_order_quantity_product = models.IntegerField(blank=False, null=False, default=1)
     max_order_quantity_product = models.IntegerField(blank=False, null=False, default=1)
 

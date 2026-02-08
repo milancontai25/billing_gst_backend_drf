@@ -54,6 +54,13 @@ class ItemListView(generics.ListAPIView):
             isShow=True
         ).order_by('-created_date')
     
+    
+class ItemAllListView(generics.ListAPIView):
+    queryset = Item.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [AllowAny]
+
+    
 
 class ItemDetailBySlugView(generics.RetrieveAPIView):
     serializer_class = ProductSerializer
