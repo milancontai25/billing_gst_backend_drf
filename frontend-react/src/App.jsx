@@ -40,7 +40,7 @@ function App() {
           <Route path='/register' element={<Register />} />
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<DashboardHome lineData={lineData} pieData={pieData} />} />
-            <Route path="/products" element={<Products />} />
+            <Route path="/inventory" element={<Products />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/orders" element={<Orders />} />

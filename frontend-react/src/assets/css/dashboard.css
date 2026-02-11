@@ -530,22 +530,23 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+/* Find this existing block */
+.custom-table td {
+  padding: 14px 20px;     /* You can also reduce padding to 12px 15px if you want it more compact */
+  font-size: 9px;        /* <--- CHANGE THIS (Was 14px, try 13px or 12px) */
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
 .custom-table th {
   text-align: left;
-  padding: 14px 20px;
-  font-size: 12px;
+  padding: 12px 20px;
+  font-size: 10px;        /* <--- CHANGE THIS (Was 12px) */
   font-weight: 600;
   color: var(--text-gray);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.custom-table td {
-  padding: 16px 20px;
-  font-size: 14px;
-  color: var(--text-main);
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
 }
 
 .custom-table tbody tr:last-child td { border-bottom: none; }

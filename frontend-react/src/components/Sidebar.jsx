@@ -3,26 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import logoImage from '../assets/images/statgrow-logo.png';
 import logo from '../assets/images/logo.png';
 import { 
-  LayoutDashboard, ShoppingCart, Users, FileText, Package, 
+  LayoutDashboard, ShoppingCart, Users, FileText, Boxes, 
   BarChart2, ChevronDown, ChevronUp, PlusCircle, Settings, Store,
-  ChevronLeft, ChevronRight, Edit // Import Edit icon
+  ChevronLeft, ChevronRight, Edit, ShoppingBag // <--- Added ShoppingBag for Marketplace
 } from 'lucide-react';
 
 const Sidebar = ({ 
   data, activeTab, 
   showSwitcher, setShowSwitcher, 
   handleSwitchBusiness, 
-  handleAddNewBusiness, // New Prop
-  handleEditBusiness,   // New Prop
+  handleAddNewBusiness, 
+  handleEditBusiness,   
   isCollapsed, setIsCollapsed,
   isMobileOpen, setIsMobileOpen
 }) => {
   const navigate = useNavigate();
 
-  // ... (keep menuItems, openMyStore, handleNavigation same) ...
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { id: 'products', icon: Package, label: 'Products', path: '/products' },
+    { id: 'inventory', icon: Boxes, label: 'Inventory', path: '/inventory' },
     { id: 'customers', icon: Users, label: 'Customers', path: '/customers' },
     { id: 'orders', icon: ShoppingCart, label: 'Orders', path: '/orders' },
     { id: 'invoices', icon: FileText, label: 'Invoices', path: '/invoices' },
@@ -37,11 +36,8 @@ const Sidebar = ({
   };
 
   const openMarketplace = () => {
-    if (data) {
-      window.open(`/store/marketplace`, '_blank');
-    } else {
-      alert("Store is not active.");
-    }
+    // You can adjust this path if your marketplace route is different
+    window.open(`/store/marketplace`, '_blank');
   };
 
   const handleNavigation = (path) => {
@@ -82,19 +78,22 @@ const Sidebar = ({
           </div>
         ))}
 
+        {/* EXTERNAL LINKS SECTION */}
         <div style={{ marginTop: '20px', borderTop: '1px solid #374151', paddingTop: '10px' }}>
+           
+           {/* My Store Link */}
            <div className="nav-item" onClick={openMyStore} style={{ color: '#60A5FA' }} title="My Online Store">
               <Store size={20} style={{ minWidth: '20px' }} /> 
               <span className="nav-text">My Store</span>
            </div>
-        </div>
 
-        {/* <div style={{ marginTop: '20px', borderTop: '1px solid #374151', paddingTop: '10px' }}> */}
-           <div className="nav-item" onClick={openMarketplace} style={{ color: '#60A5FA' }} title="Marketplace">
-  <Store size={20} style={{ minWidth: '20px' }} /> 
-  <span className="nav-text">Marketplace</span>
-</div>
-        {/* </div> */}
+           {/* Marketplace Link */}
+           <div className="nav-item" onClick={openMarketplace} style={{ color: '#A78BFA' }} title="Marketplace">
+              <ShoppingBag size={20} style={{ minWidth: '20px' }} /> 
+              <span className="nav-text">Marketplace</span>
+           </div>
+
+        </div>
       </nav>
       
       {/* 4. Footer / Business Switcher */}
@@ -106,7 +105,6 @@ const Sidebar = ({
             <div className={`biz-dropdown ${showSwitcher ? 'show' : ''}`}>
                 <div className="dropdown-header">All Business Profiles</div>
                 
-                {/* List Businesses */}
                 {data?.businesses?.map(biz => (
                   <div key={biz.id} className="dropdown-item" onClick={() => handleSwitchBusiness(biz.id)}>
                       {biz.business_name}
@@ -115,12 +113,10 @@ const Sidebar = ({
                 
                 <div className="dropdown-divider"></div>
                 
-                {/* Edit Current Business (NEW) */}
                 <div className="dropdown-item" onClick={handleEditBusiness}>
                    <Edit size={14}/> Edit Current Business
                 </div>
 
-                {/* Add New Business */}
                 <div className="dropdown-action" onClick={handleAddNewBusiness}>
                    <PlusCircle size={16}/> Add New Business
                 </div>

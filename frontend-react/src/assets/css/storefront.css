@@ -917,6 +917,82 @@ body { margin: 0; padding: 0; }
   }
 }
 
+/* --- CHECKOUT FORM ELEMENTS --- */
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label, .upload-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.req { color: #EF4444; }
+
+.checkout-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  resize: vertical;
+  font-family: inherit;
+}
+.checkout-textarea:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+/* Custom File Input Styling */
+.custom-file-input {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.custom-file-input input[type="file"] {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.file-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background-color: #F9FAFB;
+  border: 1px dashed #D1D5DB;
+  border-radius: 8px;
+  color: #4B5563;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.custom-file-input:hover .file-display {
+  background-color: #EFF6FF;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.file-upload-box {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.hint-text {
+  font-size: 11px;
+  color: #9CA3AF;
+  margin-top: 4px;
+  display: block;
+}
+
 
 /* --- ORDER HISTORY --- */
 .history-page {

@@ -1,5 +1,6 @@
 import uuid
 from api.views import CustomerJWTAuthentication
+from api.utils.file_upload import save_file_to_server
 from users.permissions import IsUserOrAdmin
 from business_entity.models import BusinessEntity
 from rest_framework import generics, status, serializers
@@ -276,9 +277,12 @@ class CheckoutPreviewView(APIView):
 #         )
 
 
+from rest_framework.parsers import MultiPartParser, FormParser
+
 class CheckoutView(APIView):
     authentication_classes = [CustomerJWTAuthentication]
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     @transaction.atomic
     def post(self, request):
@@ -286,11 +290,39 @@ class CheckoutView(APIView):
         business = customer.business
 
         payment_method = request.data.get("payment_method")
+        special_notes = request.data.get("special_notes")
 
         if payment_method not in ["CASH", "ONLINE"]:
             return Response(
                 {"error": "Invalid payment method"},
                 status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 🔹 Files
+        payment_method = (request.data.get("payment_method") or "").upper().strip()
+        attachment_file = request.FILES.get("attachment")        # BOTH
+
+        payment_proof_url = None
+        attachment_url = None
+
+        # ✅ Save attachment for BOTH
+        if attachment_file:
+            attachment_url = save_file_to_server(
+                attachment_file,
+                folder_name="order_attachments"
+            )
+
+        # ✅ Save payment proof ONLY for ONLINE
+        if payment_method == "ONLINE":
+            if not payment_proof_file:
+                return Response(
+                    {"error": "Payment proof is required for online payment"},
+                    status=400
+                )
+
+            payment_proof_url = save_file_to_server(
+                payment_proof_file,
+                folder_name="payment_proofs"
             )
 
         cart = Cart.objects.select_for_update().get(
@@ -307,7 +339,6 @@ class CheckoutView(APIView):
         for ci in cart_items:
             item = ci.item
 
-            # 🔹 Only check stock for GOODS
             if item.item_type == "Goods":
                 if item.quantity_product < ci.quantity:
                     raise serializers.ValidationError(
@@ -316,10 +347,9 @@ class CheckoutView(APIView):
 
             total += item.gross_amount * ci.quantity
 
-        # 🔹 Set payment status
         payment_status = "unpaid" if payment_method == "CASH" else "paid"
 
-        # 🔹 CREATE ORDER
+        # ✅ CREATE ORDER with all fields
         order = Order.objects.create(
             business=business,
             customer=customer,
@@ -327,14 +357,17 @@ class CheckoutView(APIView):
             total_amount=total,
             payment_method=payment_method,
             payment_status=payment_status,
-            status="PENDING"
+            status="PENDING",
+
+            special_notes=special_notes,
+            attachment_url=attachment_url,
+            payment_proof_url=payment_proof_url
         )
 
-        # 🔹 Create order items + reduce stock only for GOODS
+        # 🔹 Order Items + Stock
         for ci in cart_items:
             item = ci.item
 
-            # Reduce stock ONLY for GOODS
             if item.item_type == "Goods":
                 item.quantity_product -= ci.quantity
                 item.save(update_fields=['quantity_product'])

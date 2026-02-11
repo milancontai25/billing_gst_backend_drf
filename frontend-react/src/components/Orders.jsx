@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 import { 
-  Search, Eye, X, Download, Filter, FileSpreadsheet 
+  Search, Eye, X, Download, Filter, FileSpreadsheet, Image as ImageIcon, FileText, ExternalLink 
 } from 'lucide-react';
 import OrderViewer from './OrderViewer';
 
@@ -20,9 +20,12 @@ const Orders = () => {
   const [paymentFilter, setPaymentFilter] = useState('All');
   const [showFilter, setShowFilter] = useState(false);
 
-  // Modal
+  // Modals
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  
+  // Image Preview State
+  const [previewImage, setPreviewImage] = useState(null); // URL of image to preview
 
   // --- API CALLS ---
   const fetchOrders = async () => {
@@ -77,14 +80,15 @@ const Orders = () => {
   const handleExport = () => {
     if (filteredOrders.length === 0) return alert("No data to export");
     
-    const headers = ["Order #", "Customer", "Date", "Amount", "Payment", "Status"];
+    const headers = ["Order #", "Customer", "Date", "Amount", "Payment", "Status", "Notes"];
     const rows = filteredOrders.map(o => [
       o.order_number,
       o.customer_name,
       new Date(o.date).toLocaleDateString(),
       o.total_amount,
       o.payment_status,
-      o.status
+      o.status,
+      `"${o.special_notes || ''}"`
     ]);
 
     const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -95,49 +99,23 @@ const Orders = () => {
     link.click();
   };
 
-  // --- HANDLE STATUS UPDATE ---
+  // --- HANDLE UPDATES ---
   const handleStatusUpdate = async (orderNumber, newStatus) => {
-  try {
-    await api.patch(`/orders/${orderNumber}/update-status/`, {
-      status: newStatus
-    });
+    try {
+      await api.patch(`/orders/${orderNumber}/update-status/`, { status: newStatus });
+      const updatedOrders = orders.map(o => o.order_number === orderNumber ? { ...o, status: newStatus } : o);
+      setOrders(updatedOrders);
+      calculateStats(updatedOrders);
+    } catch (err) { alert("Failed to update status"); fetchOrders(); }
+  };
 
-    // Update state only AFTER success
-    const updatedOrders = orders.map(o =>
-      o.order_number === orderNumber ? { ...o, status: newStatus } : o
-    );
-
-    setOrders(updatedOrders);
-    calculateStats(updatedOrders);
-
-  } catch (err) {
-    alert("Failed to update status");
-    fetchOrders();
-  }
-};
-
-
-  // --- HANDLE PAYMENT UPDATE (NEW) ---
   const handlePaymentUpdate = async (orderNumber, newPaymentStatus) => {
-  try {
-    await api.patch(`/orders/${orderNumber}/update-status/`, {
-      payment_status: newPaymentStatus
-    });
-
-    const updatedOrders = orders.map(o =>
-      o.order_number === orderNumber
-        ? { ...o, payment_status: newPaymentStatus }
-        : o
-    );
-
-    setOrders(updatedOrders);
-
-  } catch (err) {
-    alert("Failed to update payment status");
-    fetchOrders();
-  }
-};
-
+    try {
+      await api.patch(`/orders/${orderNumber}/update-status/`, { payment_status: newPaymentStatus });
+      const updatedOrders = orders.map(o => o.order_number === orderNumber ? { ...o, payment_status: newPaymentStatus } : o);
+      setOrders(updatedOrders);
+    } catch (err) { alert("Failed to update payment status"); fetchOrders(); }
+  };
 
   const openOrderDetails = async (orderNumber) => {
     try {
@@ -171,7 +149,7 @@ const Orders = () => {
           <p className="text-sm text-gray-500">Manage and track all customer orders</p>
         </div>
 
-        {/* TOOLBAR (Search & Actions) */}
+        {/* TOOLBAR */}
         <div className="table-toolbar">
           <div className="search-box">
             <Search size={18} className="text-gray-400" />
@@ -236,21 +214,27 @@ const Orders = () => {
                 <th>Date</th>
                 <th>Amount</th>
                 <th>Payment</th>
+                {/* NEW COLUMNS */}
+                <th>Proof</th>
+                <th>Attach</th>
+                <th>Notes</th>
+                {/* END NEW COLUMNS */}
                 <th>Status</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrders.length === 0 ? (
-                 <tr><td colSpan="7" className="text-center p-6 text-gray-500">No orders found.</td></tr>
+                 <tr><td colSpan="10" className="text-center p-6 text-gray-500">No orders found.</td></tr>
               ) : (
                  filteredOrders.map((order) => (
                    <OrderRow 
                      key={order.order_number} 
                      order={order} 
                      onStatusUpdate={handleStatusUpdate} 
-                     onPaymentUpdate={handlePaymentUpdate} // Pass the new handler
+                     onPaymentUpdate={handlePaymentUpdate}
                      onView={openOrderDetails} 
+                     onPreviewImage={(url) => setPreviewImage(url)} // Pass preview handler
                    />
                  ))
               )}
@@ -261,11 +245,14 @@ const Orders = () => {
 
       {/* 3. ORDER VIEWER */}
       {showModal && selectedOrder && (
-        <OrderViewer 
-            order={selectedOrder} 
-            onClose={() => setShowModal(false)} 
-        />
+        <OrderViewer order={selectedOrder} onClose={() => setShowModal(false)} />
       )}
+
+      {/* 4. IMAGE PREVIEW MODAL (NEW) */}
+      {previewImage && (
+        <ImagePreviewModal imageUrl={previewImage} onClose={() => setPreviewImage(null)} />
+      )}
+
     </div>
   );
 };
@@ -281,10 +268,9 @@ const StatBox = ({ title, value, color }) => (
   </div>
 );
 
-// Updated OrderRow to include Payment Dropdown
-const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView }) => {
+// Updated OrderRow with New Columns
+const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView, onPreviewImage }) => {
   
-  // Style helpers
   const getStatusColor = (s) => {
     const status = s.toLowerCase();
     if (status === 'pending') return 'bg-yellow-100 text-yellow-800';
@@ -308,20 +294,63 @@ const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView }) => {
       <td>{new Date(order.date).toLocaleDateString()}</td>
       <td className="font-bold">₹{order.total_amount}</td>
       
-      {/* Payment Dropdown */}
       <td>
         <select 
           className={`status-select ${getPaymentColor(order.payment_status)}`}
           value={order.payment_status}
           onChange={(e) => onPaymentUpdate(order.order_number, e.target.value)}
-          style={{ paddingRight: '20px' }} // Add space for dropdown arrow
+          style={{ paddingRight: '20px' }} 
         >
           <option value="Unpaid">Unpaid</option>
           <option value="Paid">Paid</option>
         </select>
       </td>
 
-      {/* Status Dropdown */}
+      {/* --- NEW COLUMNS START --- */}
+      
+      {/* 1. Payment Proof */}
+      <td className="text-center">
+        {order.payment_proof_url ? (
+            <div 
+                className="cursor-pointer hover:opacity-80 inline-flex items-center justify-center bg-blue-50 text-blue-600 p-2 rounded-md"
+                onClick={() => onPreviewImage(order.payment_proof_url)}
+                title="View Payment Proof"
+            >
+                <ImageIcon size={18} />
+            </div>
+        ) : (
+            <span className="text-gray-300">-</span>
+        )}
+      </td>
+
+      {/* 2. Attachment */}
+      <td className="text-center">
+        {order.attachment_url ? (
+            <div 
+                className="cursor-pointer hover:opacity-80 inline-flex items-center justify-center bg-purple-50 text-purple-600 p-2 rounded-md"
+                onClick={() => onPreviewImage(order.attachment_url)}
+                title="View Attachment"
+            >
+                <ImageIcon size={18} />
+            </div>
+        ) : (
+            <span className="text-gray-300">-</span>
+        )}
+      </td>
+
+      {/* 3. Special Notes */}
+      <td style={{ maxWidth: '150px' }}>
+        {order.special_notes ? (
+            <div className="truncate text-xs text-gray-600" title={order.special_notes}>
+                {order.special_notes}
+            </div>
+        ) : (
+            <span className="text-gray-300 text-xs">-</span>
+        )}
+      </td>
+      
+      {/* --- NEW COLUMNS END --- */}
+
       <td>
         <select 
           className={`status-select ${getStatusColor(order.status)}`}
@@ -344,6 +373,65 @@ const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView }) => {
       </td>
     </tr>
   );
+};
+
+// --- IMAGE PREVIEW MODAL COMPONENT ---
+const ImagePreviewModal = ({ imageUrl, onClose }) => {
+    if (!imageUrl) return null;
+
+    const handleDownload = () => {
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.target = "_blank";
+        link.download = "Order_Attachment";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose} style={{zIndex: 2000}}>
+            <div 
+                className="bg-white rounded-lg p-4 shadow-xl relative flex flex-col items-center gap-4"
+                style={{ maxWidth: '90vw', maxHeight: '90vh' }}
+                onClick={(e) => e.stopPropagation()} // Prevent close on clicking content
+            >
+                <button 
+                    onClick={onClose} 
+                    className="absolute top-2 right-2 text-gray-500 hover:text-red-500 bg-white rounded-full p-1 shadow-md"
+                >
+                    <X size={24} />
+                </button>
+
+                <h3 className="text-lg font-semibold text-gray-700">Image Preview</h3>
+
+                <div style={{ overflow: 'auto', maxHeight: '70vh', maxWidth: '100%', border: '1px solid #eee' }}>
+                    <img 
+                        src={imageUrl} 
+                        alt="Proof" 
+                        style={{ maxWidth: '100%', height: 'auto', display: 'block' }} 
+                    />
+                </div>
+
+                <div className="flex gap-4 mt-2">
+                    <a 
+                        href={imageUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn btn-outline flex items-center gap-2"
+                    >
+                        <ExternalLink size={16} /> Open in New Tab
+                    </a>
+                    <button 
+                        onClick={handleDownload} 
+                        className="btn btn-primary flex items-center gap-2"
+                    >
+                        <Download size={16} /> Download
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default Orders;

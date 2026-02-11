@@ -13,6 +13,8 @@ class Order(models.Model):
     payment_method = models.CharField(max_length=10)
     payment_status = models.CharField(max_length=10, default="unpaid")
     status = models.CharField(max_length=20, default="Pending")
+    payment_proof_url = models.URLField(blank=True, null=True)
+    attachment_url = models.URLField(blank=True, null=True)
     special_notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

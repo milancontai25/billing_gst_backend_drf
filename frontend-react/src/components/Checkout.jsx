@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, CreditCard, Loader2, CheckCircle, User, Phone, Mail, QrCode } from 'lucide-react';
+import { ArrowLeft, CreditCard, Loader2, CheckCircle, User, Phone, Mail, Upload, FileText } from 'lucide-react';
 import '../assets/css/storefront.css';
 
 const Checkout = () => {
@@ -10,7 +10,12 @@ const Checkout = () => {
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('CASH'); // 'CASH' or 'ONLINE'
+  
+  // Form State
+  const [paymentMethod, setPaymentMethod] = useState('CASH'); 
+  const [specialNotes, setSpecialNotes] = useState('');
+  const [attachment, setAttachment] = useState(null);
+  const [paymentProof, setPaymentProof] = useState(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
@@ -26,7 +31,6 @@ const Checkout = () => {
 
       try {
         setLoading(true);
-        // Ensure your backend returns 'upi_qrcode_url' in this response
         const res = await axios.get(`${API_BASE_URL}/api/v1/customer/cart/checkout/preview/`, config);
         setPreview(res.data);
         setLoading(false);
@@ -40,24 +44,47 @@ const Checkout = () => {
   }, [slug, navigate]);
 
   const handlePlaceOrder = async () => {
-    const config = getHeaders();
-    try {
-      setPlacingOrder(true);
-      
-      // Using a generic 'process' endpoint. Ensure your backend supports this URL
-      // or allows the 'payment_method' field to dictate logic.
-      await axios.post(
-        `${API_BASE_URL}/api/v1/customer/cart/checkout/process/`, 
-        { payment_method: paymentMethod },
-        config
-      );
-      
-      alert("Order Placed Successfully!");
-      navigate(`/${slug}/orders`);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to place order. Please try again.");
-      setPlacingOrder(false);
+  const token = localStorage.getItem('customer_token');
+  if (!token) return;
+
+  try {
+    setPlacingOrder(true);
+    
+    const formData = new FormData();
+    formData.append('payment_method', paymentMethod);
+    formData.append('special_notes', specialNotes);
+    
+    if (attachment) {
+      formData.append('attachment', attachment);   // ✅ FIXED
+    }
+    
+    if (paymentMethod === 'ONLINE' && paymentProof) {
+      formData.append('payment_proof', paymentProof);  // ✅ FIXED
+    }
+
+    await axios.post(
+      `${API_BASE_URL}/api/v1/customer/cart/checkout/process/`, 
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    
+    alert("Order Placed Successfully!");
+    navigate(`/${slug}/orders`);
+  } catch (err) {
+    console.error(err.response?.data || err);
+    alert("Failed to place order. Please check your inputs.");
+    setPlacingOrder(false);
+  }
+};
+
+
+  const handleFileChange = (e, setFile) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
     }
   };
 
@@ -67,7 +94,6 @@ const Checkout = () => {
     <div className="checkout-page">
       <div className="checkout-container">
         
-        {/* Header */}
         <div className="checkout-header">
            <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={20}/></button>
            <h2>Checkout</h2>
@@ -75,22 +101,16 @@ const Checkout = () => {
 
         <div className="checkout-grid">
            
-           {/* LEFT: Details & Payment */}
+           {/* LEFT COLUMN: Customer & Payment */}
            <div className="checkout-main">
               
               {/* Customer Details */}
               <div className="section-card">
                  <div className="card-header"><User size={18} /> Customer Details</div>
                  <div className="card-body">
-                    <p className="info-row">
-                      <User size={16} color="#6B7280" /> <strong>{preview?.customer?.name}</strong>
-                    </p>
-                    <p className="info-row">
-                      <Phone size={16} color="#6B7280" /> {preview?.customer?.phone}
-                    </p>
-                    <p className="info-row">
-                      <Mail size={16} color="#6B7280" /> {preview?.customer?.email}
-                    </p>
+                    <p className="info-row"><User size={16} color="#6B7280" /> <strong>{preview?.customer?.name}</strong></p>
+                    <p className="info-row"><Phone size={16} color="#6B7280" /> {preview?.customer?.phone}</p>
+                    <p className="info-row"><Mail size={16} color="#6B7280" /> {preview?.customer?.email}</p>
                  </div>
               </div>
 
@@ -99,29 +119,17 @@ const Checkout = () => {
                  <div className="card-header"><CreditCard size={18} /> Payment Method</div>
                  <div className="card-body">
                     
-                    {/* Option 1: Pay at Store */}
                     <label className={`payment-option ${paymentMethod === 'CASH' ? 'active' : ''}`}>
-                       <input 
-                         type="radio" 
-                         name="payment" 
-                         checked={paymentMethod === 'CASH'} 
-                         onChange={() => setPaymentMethod('CASH')} 
-                       />
+                       <input type="radio" name="payment" checked={paymentMethod === 'CASH'} onChange={() => setPaymentMethod('CASH')} />
                        <span>Payment at Store (Cash/UPI)</span>
                     </label>
 
-                    {/* Option 2: Online Payment */}
                     <label className={`payment-option ${paymentMethod === 'ONLINE' ? 'active' : ''}`}>
-                       <input 
-                         type="radio" 
-                         name="payment" 
-                         checked={paymentMethod === 'ONLINE'} 
-                         onChange={() => setPaymentMethod('ONLINE')} 
-                       />
+                       <input type="radio" name="payment" checked={paymentMethod === 'ONLINE'} onChange={() => setPaymentMethod('ONLINE')} />
                        <span>Online Payment (UPI QR)</span>
                     </label>
 
-                    {/* QR Code Display Area */}
+                    {/* QR Code & Proof Upload */}
                     {paymentMethod === 'ONLINE' && (
                         <div className="qr-payment-box">
                             {preview?.upi_qrcode_url ? (
@@ -129,23 +137,66 @@ const Checkout = () => {
                                     <div className="qr-wrapper">
                                         <img src={preview.upi_qrcode_url} alt="Pay via UPI" className="upi-qr-img" />
                                     </div>
-                                    <p className="qr-instruction">Scan this QR code with any UPI App (GPay, PhonePe, Paytm) to pay <strong>₹{preview.total_amount}</strong></p>
-                                    <div className="qr-note">
-                                        <CheckCircle size={14} /> Click "Confirm Order" after payment.
+                                    <p className="qr-instruction">Scan to pay <strong>₹{preview.total_amount}</strong></p>
+                                    
+                                    <div className="file-upload-box">
+                                        <label className="upload-label">Upload Payment Screenshot <span className="req">*</span></label>
+                                        <div className="custom-file-input">
+                                            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setPaymentProof)} />
+                                            <div className="file-display">
+                                                <Upload size={16} /> 
+                                                <span>{paymentProof ? paymentProof.name : "Choose File"}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </>
                             ) : (
-                                <p className="error-text">QR Code not available. Please select Payment at Store.</p>
+                                <p className="error-text">QR Code unavailable.</p>
                             )}
                         </div>
                     )}
+                 </div>
+              </div>
+
+           </div>
+
+           {/* RIGHT COLUMN: Additional Info & Summary */}
+           <div className="checkout-sidebar">
+              
+              {/* 1. Additional Info (MOVED HERE) */}
+              <div className="section-card" style={{ marginBottom: '24px' }}>
+                 <div className="card-header"><FileText size={18} /> Additional Information</div>
+                 <div className="card-body">
+                    
+                    {/* Special Notes */}
+                    <div className="form-group">
+                        <label>Special Notes (Optional)</label>
+                        <textarea 
+                            className="checkout-textarea" 
+                            placeholder="Any instructions for your order..." 
+                            rows="3"
+                            value={specialNotes}
+                            onChange={(e) => setSpecialNotes(e.target.value)}
+                        ></textarea>
+                    </div>
+
+                    {/* General Attachment */}
+                    <div className="form-group">
+                        <label>Attach Document (Optional)</label>
+                        <div className="custom-file-input">
+                            <input type="file" onChange={(e) => handleFileChange(e, setAttachment)} />
+                            <div className="file-display">
+                                <Upload size={16} /> 
+                                <span>{attachment ? attachment.name : "Upload File"}</span>
+                            </div>
+                        </div>
+                        <small className="hint-text">Any prescription or reference document.</small>
+                    </div>
 
                  </div>
               </div>
-           </div>
 
-           {/* RIGHT: Order Summary */}
-           <div className="checkout-sidebar">
+              {/* 2. Order Summary */}
               <div className="summary-card">
                  <h3>Order Summary</h3>
                  <div className="summary-items">

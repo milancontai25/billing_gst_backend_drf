@@ -7,7 +7,7 @@ const UserProfile = ({ user, handleLogout, activeTab }) => {
   // Define titles for each tab
   const pageTitles = {
     dashboard: 'Dashboard Overview',
-    products: 'Inventory Management',
+    inventory: 'Inventory Management',
     customers: 'Customer List',
     orders: 'Order History',
     invoices: 'Invoices',
