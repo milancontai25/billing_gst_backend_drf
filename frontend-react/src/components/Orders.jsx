@@ -390,43 +390,41 @@ const ImagePreviewModal = ({ imageUrl, onClose }) => {
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose} style={{zIndex: 2000}}>
+        <div className="modal-overlay" onClick={onClose}>
+            {/* Updated ClassName: preview-modal-box */}
             <div 
-                className="bg-white rounded-lg p-4 shadow-xl relative flex flex-col items-center gap-4"
-                style={{ maxWidth: '90vw', maxHeight: '90vh' }}
-                onClick={(e) => e.stopPropagation()} // Prevent close on clicking content
+                className="preview-modal-box"
+                onClick={(e) => e.stopPropagation()} 
             >
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-2 right-2 text-gray-500 hover:text-red-500 bg-white rounded-full p-1 shadow-md"
-                >
-                    <X size={24} />
+                {/* Updated ClassName: preview-close-btn */}
+                <button onClick={onClose} className="preview-close-btn">
+                    <X size={20} />
                 </button>
 
-                <h3 className="text-lg font-semibold text-gray-700">Image Preview</h3>
+                {/* Updated ClassName: preview-title */}
+                <h3 className="preview-title">Image Preview</h3>
 
-                <div style={{ overflow: 'auto', maxHeight: '70vh', maxWidth: '100%', border: '1px solid #eee' }}>
+                {/* Updated ClassName: preview-image-container */}
+                <div className="preview-image-container">
                     <img 
                         src={imageUrl} 
-                        alt="Proof" 
-                        style={{ maxWidth: '100%', height: 'auto', display: 'block' }} 
+                        alt="Preview" 
+                        className="preview-image-full"
                     />
                 </div>
 
-                <div className="flex gap-4 mt-2">
+                {/* Updated ClassName: preview-actions */}
+                <div className="preview-actions">
                     <a 
                         href={imageUrl} 
                         target="_blank" 
                         rel="noopener noreferrer" 
-                        className="btn btn-outline flex items-center gap-2"
+                        className="btn btn-outline"
                     >
-                        <ExternalLink size={16} /> Open in New Tab
+                        <ExternalLink size={16} style={{marginRight:'8px'}} /> Open in New Tab
                     </a>
-                    <button 
-                        onClick={handleDownload} 
-                        className="btn btn-primary flex items-center gap-2"
-                    >
-                        <Download size={16} /> Download
+                    <button onClick={handleDownload} className="btn btn-primary">
+                        <Download size={16} style={{marginRight:'8px'}} /> Download
                     </button>
                 </div>
             </div>

@@ -39,6 +39,8 @@ class OrderSerializer(serializers.ModelSerializer):
             'customer_address',
             'order_items',
             'total_amount',
+            'payment_proof_url',
+            'attachment_url',
             'special_notes',
             'created_at',
             'updated_at'
