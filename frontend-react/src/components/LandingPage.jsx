@@ -23,9 +23,9 @@ const LandingPage = () => {
             <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2563eb', margin: '20px 0', display: 'block' }}>
                 statgrowinfo@gmail.com
             </span>
-            <p style={{ fontWeight: 600, color: '#111827' }}>Call Us: +91-7477686079</p>
+            <p style={{ fontWeight: 600, color: '#111827' }}>Call Us: +91-7477673060</p>
             {/* ... Address details ... */}
-            <a href="mailto:contact@statgrow.com" className="btn btn-primary" style={{ marginTop: '20px', width: '100%', display:'flex' }}>
+            <a href="mailto:statgrowinfo@gmail.com" className="btn btn-primary" style={{ marginTop: '20px', width: '100%', display:'flex' }}>
                 Send Email Now
             </a>
           </div>
@@ -123,11 +123,11 @@ const LandingPage = () => {
                     
                     <div className="stats-row">
                         <div className="stat-item">
-                            <div className="stat-number">10k+</div>
-                            <div className="stat-label">Businesses</div>
+                            <div className="stat-number">10+</div>
+                            <div className="stat-label">Business Types</div>
                         </div>
                         <div className="stat-item">
-                            <div className="stat-number">25+</div>
+                            <div className="stat-number">20+</div>
                             <div className="stat-label">Cities</div>
                         </div>
                         <div className="stat-item">
@@ -179,9 +179,9 @@ const LandingPage = () => {
             <p>See what our customers have to say</p>
           </div>
           <div className="testimonial-grid">
-            <TestimonialCard name="Rajesh Kumar" role="Kumar Electronics, Mumbai" text="StatGrow has transformed how we manage our business. The inventory tracking alone has saved us thousands." />
-            <TestimonialCard name="Priya Sharma" role="Sharma Boutique, Delhi" text="The online store feature helped us reach customers across India. Our sales increased by 40%!" />
-            <TestimonialCard name="Ankit Patel" role="Patel Groceries, Ahmedabad" text="Simple, powerful, and affordable. StatGrow gives us the tools of large corporations at a fraction of the cost." />
+            <TestimonialCard name="Gautam Kumar Panda" role="G P BALL PEN & REFILL" text="StatGrow has transformed how we manage our business. The inventory tracking alone has saved us thousands." />
+            <TestimonialCard name="Sumit Chodnekar" role="Sumit Empire, Maharashtra" text="The online store feature helped us reach customers across India. Our sales increased by 40%!" />
+            <TestimonialCard name="Mridul Kumar Deb" role="ISKC Society, Tripura" text="Simple, powerful, and affordable. StatGrow gives us the tools of large corporations at a fraction of the cost." />
           </div>
         </div>
       </section>
