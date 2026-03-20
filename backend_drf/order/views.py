@@ -132,11 +132,9 @@ class AddToCartView(generics.GenericAPIView):
         new_quantity = cart_item.quantity + quantity
 
         # 🔥 REAL STOCK CHECK
-        if item.quantity_product < new_quantity:
-            return Response(
-                {"error": "Not enough stock"},
-                status=400
-            )
+        if item.item_type == "Goods" and item.quantity_product < new_quantity:
+            return Response({"error": "Not enough stock"}, status=400)
+            
 
         cart_item.quantity = new_quantity
         cart_item.save()
@@ -160,6 +158,14 @@ class ViewCartView(generics.RetrieveAPIView):
 
 
 
+from decimal import Decimal, ROUND_HALF_UP
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from api.views import CustomerJWTAuthentication
+from .models import Cart
+
+
 class CheckoutPreviewView(APIView):
     authentication_classes = [CustomerJWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -168,36 +174,72 @@ class CheckoutPreviewView(APIView):
         customer = request.user
         business = customer.business
 
-        # if not customer.address or not customer.state or not customer.pin:
-        #     return Response(
-        #         {"error": "Please update address before checkout"},
-        #         status=400
-        #     )
-
         try:
             cart = Cart.objects.get(customer=customer, business=business)
         except Cart.DoesNotExist:
             return Response({"error": "Cart is empty"}, status=400)
 
-        cart_items = cart.items.select_related('item')
+        cart_items = cart.items.select_related("item")
 
         if not cart_items.exists():
             return Response({"error": "Cart is empty"}, status=400)
 
-        total = 0
+        total_base = Decimal("0.00")
+        total_discount = Decimal("0.00")
+        total_taxable = Decimal("0.00")
+        total_gst = Decimal("0.00")
+        total_final = Decimal("0.00")
+
         items = []
 
         for ci in cart_items:
-            line_total = ci.item.gross_amount * ci.quantity
-            total += line_total
+            item = ci.item
+            qty = Decimal(ci.quantity)
+
+            price = Decimal(str(item.mrp_baseprice if item.mrp_baseprice is not None else item.gross_amount))
+            discount_percent = Decimal(str(getattr(item, "discount_percent", 0) or 0))
+            gst_percent = Decimal(str(getattr(item, "gst_percent", 0) or 0))
+
+            base_amount = price * qty
+            discount_amount = (base_amount * discount_percent) / Decimal("100")
+            taxable_amount = base_amount - discount_amount
+            gst_amount = (taxable_amount * gst_percent) / Decimal("100")
+            total_value = taxable_amount + gst_amount
+
+            base_amount = base_amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            discount_amount = discount_amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            taxable_amount = taxable_amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            gst_amount = gst_amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            total_value = total_value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
             items.append({
-                "item_id": ci.item.id,
-                "name": ci.item.item_name,
+                "item_id": item.id,
+                "name": item.item_name,
                 "qty": ci.quantity,
-                "price": ci.item.gross_amount,
-                "subtotal": line_total
+                "price": price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+                "discount_percent": discount_percent.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+                "discount_amount": discount_amount,
+                "gst_percent": gst_percent.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+                "base_amount": base_amount,
+                "taxable_amount": taxable_amount,
+                "gst_amount": gst_amount,
+                "total_value": total_value,
             })
+
+            total_base += base_amount
+            total_discount += discount_amount
+            total_taxable += taxable_amount
+            total_gst += gst_amount
+            total_final += total_value
+
+        total_base = total_base.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        total_discount = total_discount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        total_taxable = total_taxable.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        total_gst = total_gst.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        total_final = total_final.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        net_payable = total_final.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        round_off = (net_payable - total_final).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
         return Response({
             "customer": {
@@ -207,7 +249,13 @@ class CheckoutPreviewView(APIView):
                 "address": customer.address
             },
             "items": items,
-            "total_amount": total,
+            "total_base_amount": total_base,
+            "discount_amount": total_discount,
+            "total_taxable_amount": total_taxable,
+            "total_gst": total_gst,
+            "total_amount": total_final,
+            "round_off": round_off,
+            "net_payable": net_payable,
             "upi_qrcode_url": business.upi_qrcode_url
         })
 
@@ -279,6 +327,9 @@ class CheckoutPreviewView(APIView):
 
 from rest_framework.parsers import MultiPartParser, FormParser
 
+from decimal import Decimal, ROUND_HALF_UP
+
+
 class CheckoutView(APIView):
     authentication_classes = [CustomerJWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -289,35 +340,32 @@ class CheckoutView(APIView):
         customer = request.user
         business = customer.business
 
-        payment_method = request.data.get("payment_method")
+        payment_method = (request.data.get("payment_method") or "").upper().strip()
         special_notes = request.data.get("special_notes")
 
         if payment_method not in ["CASH", "ONLINE"]:
             return Response(
-                {"error": "Invalid payment method"},
+                {"error": "Invalid payment method", "received": payment_method},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 🔹 Files
-        payment_method = (request.data.get("payment_method") or "").upper().strip()
-        attachment_file = request.FILES.get("attachment")        # BOTH
+        attachment_file = request.FILES.get("attachment")
+        payment_proof_file = request.FILES.get("payment_proof")
 
-        payment_proof_url = None
         attachment_url = None
+        payment_proof_url = None
 
-        # ✅ Save attachment for BOTH
         if attachment_file:
             attachment_url = save_file_to_server(
                 attachment_file,
                 folder_name="order_attachments"
             )
 
-        # ✅ Save payment proof ONLY for ONLINE
         if payment_method == "ONLINE":
             if not payment_proof_file:
                 return Response(
                     {"error": "Payment proof is required for online payment"},
-                    status=400
+                    status=status.HTTP_400_BAD_REQUEST
                 )
 
             payment_proof_url = save_file_to_server(
@@ -325,19 +373,33 @@ class CheckoutView(APIView):
                 folder_name="payment_proofs"
             )
 
-        cart = Cart.objects.select_for_update().get(
-            customer=customer,
-            business=business
-        )
+        try:
+            cart = Cart.objects.select_for_update().get(
+                customer=customer,
+                business=business
+            )
+        except Cart.DoesNotExist:
+            return Response({"error": "Cart empty"}, status=status.HTTP_400_BAD_REQUEST)
 
-        cart_items = cart.items.select_related('item').select_for_update()
+        cart_items = cart.items.select_related("item").select_for_update()
 
         if not cart_items.exists():
-            return Response({"error": "Cart empty"}, status=400)
+            return Response({"error": "Cart empty"}, status=status.HTTP_400_BAD_REQUEST)
 
-        total = 0
+        total_base = Decimal("0.00")
+        total_discount = Decimal("0.00")
+        total_taxable = Decimal("0.00")
+        total_gst = Decimal("0.00")
+        total_final = Decimal("0.00")
+
+        order_items_data = []
+
         for ci in cart_items:
             item = ci.item
+            qty = Decimal(ci.quantity)
+            price = Decimal(str(item.mrp_baseprice if item.mrp_baseprice is not None else ci.item.gross_amount))
+            discount_percent = Decimal(str(getattr(item, "discount_percent", 0) or 0))
+            gst_percent = Decimal(str(getattr(item, "gst_percent", 0) or 0))
 
             if item.item_type == "Goods":
                 if item.quantity_product < ci.quantity:
@@ -345,39 +407,90 @@ class CheckoutView(APIView):
                         f"Not enough stock for {item.item_name}"
                     )
 
-            total += item.gross_amount * ci.quantity
+            base_amount = price * qty
+            discount_amount = (base_amount * discount_percent) / Decimal("100")
+            taxable_amount = base_amount - discount_amount
+            gst_amount = (taxable_amount * gst_percent) / Decimal("100")
+            total_value = taxable_amount + gst_amount
 
-        payment_status = "unpaid" if payment_method == "CASH" else "paid"
+            base_amount = base_amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            discount_amount = discount_amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            taxable_amount = taxable_amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            gst_amount = gst_amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            total_value = total_value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-        # ✅ CREATE ORDER with all fields
+            order_items_data.append({
+                "item": item,
+                "product_name": item.item_name,
+                "quantity": ci.quantity,
+                "price": price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+                "discount_percent": discount_percent.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+                "discount_amount": discount_amount,
+                "gst_percent": gst_percent.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+                "gst_amount": gst_amount,
+                "base_amount": base_amount,
+                "taxable_amount": taxable_amount,
+                "total_value": total_value,
+            })
+
+            total_base += base_amount
+            total_discount += discount_amount
+            total_taxable += taxable_amount
+            total_gst += gst_amount
+            total_final += total_value
+
+        total_base = total_base.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        total_discount = total_discount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        total_taxable = total_taxable.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        total_gst = total_gst.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        total_final = total_final.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        net_payable = total_final.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        round_off = (net_payable - total_final).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        payment_status = "Unpaid" if payment_method == "CASH" else "Paid"
+
         order = Order.objects.create(
             business=business,
             customer=customer,
+            customer_name=customer.name,
             order_number=f"ORD-{date.today().year}-{uuid.uuid4().hex[:8].upper()}",
-            total_amount=total,
+            invoice_id=f"INV-{uuid.uuid4().hex[:8].upper()}",
+            total_base_amount=total_base,
+            discount_amount=total_discount,
+            total_taxable_amount=total_taxable,
+            total_gst=total_gst,
+            total_amount=total_final,
+            round_off=round_off,
+            net_payable=net_payable,
             payment_method=payment_method,
             payment_status=payment_status,
-            status="PENDING",
-
+            status="Pending",
             special_notes=special_notes,
             attachment_url=attachment_url,
             payment_proof_url=payment_proof_url
         )
 
-        # 🔹 Order Items + Stock
-        for ci in cart_items:
-            item = ci.item
+        for row in order_items_data:
+            item = row["item"]
 
             if item.item_type == "Goods":
-                item.quantity_product -= ci.quantity
-                item.save(update_fields=['quantity_product'])
+                item.quantity_product -= row["quantity"]
+                item.save(update_fields=["quantity_product"])
 
             OrderItem.objects.create(
                 order=order,
                 item=item,
-                product_name=item.item_name,
-                quantity=ci.quantity,
-                price=item.gross_amount
+                product_name=row["product_name"],
+                quantity=row["quantity"],
+                price=row["price"],
+                discount_percent=row["discount_percent"],
+                discount_amount=row["discount_amount"],
+                gst_percent=row["gst_percent"],
+                gst_amount=row["gst_amount"],
+                base_amount=row["base_amount"],
+                taxable_amount=row["taxable_amount"],
+                total_value=row["total_value"],
             )
 
         cart_items.delete()
@@ -389,6 +502,7 @@ class CheckoutView(APIView):
             },
             status=status.HTTP_201_CREATED
         )
+    
 
 
 class CancelOrderView(APIView):

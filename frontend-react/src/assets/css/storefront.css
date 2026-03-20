@@ -2339,3 +2339,31 @@ body { margin: 0; padding: 0; }
   .coupon-item { flex-direction: column; align-items: flex-start; gap: 8px; }
   .coupon-code { align-self: flex-end; }
 }
+
+
+/* --- ORDER SUMMARY BREAKDOWN STYLES --- */
+
+.summary-breakdown {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #4B5563; /* Gray */
+}
+
+.summary-row.text-success {
+  color: #16A34A; /* Green for discounts */
+  font-weight: 500;
+}
+
+.summary-row.text-muted {
+  color: #9CA3AF; /* Light gray for round off */
+  font-size: 13px;
+}

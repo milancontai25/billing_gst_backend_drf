@@ -7,7 +7,19 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ['product_name', 'quantity', 'price', 'subtotal']
+        fields = [
+            'product_name',
+            'quantity',
+            'price',
+            'discount_percent',
+            'discount_amount',
+            'gst_percent',
+            'base_amount',
+            'taxable_amount',
+            'gst_amount',
+            'total_value',
+            'subtotal',
+        ]
 
     def get_subtotal(self, obj):
         return obj.quantity * obj.price
@@ -16,7 +28,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     order_items = OrderItemSerializer(many=True, read_only=True)
     business = BusinessEntitySerializer(read_only=True)
-    customer_name = serializers.CharField(source='customer.name', read_only=True)
+    customer_name_display = serializers.CharField(source='customer.name', read_only=True)
     customer_email = serializers.EmailField(source='customer.email', read_only=True)
     customer_phone = serializers.CharField(source='customer.phone', read_only=True)
     customer_district = serializers.CharField(source='customer.district', read_only=True)
@@ -28,23 +40,33 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = [
             'business',
             'order_number',
+            'invoice_id',
             'date',
-            'status',
-            'payment_status',
             'customer_name',
+            'customer_name_display',
             'customer_email',
             'customer_phone',
             'customer_district',
             'customer_state',
             'customer_address',
-            'order_items',
+            'payment_method',
+            'payment_status',
+            'status',
+            'total_base_amount',
+            'discount_amount',
+            'total_taxable_amount',
+            'total_gst',
             'total_amount',
+            'round_off',
+            'net_payable',
+            'order_items',
             'payment_proof_url',
             'attachment_url',
             'special_notes',
             'created_at',
             'updated_at'
         ]
+
 
 class OrderStatusUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(

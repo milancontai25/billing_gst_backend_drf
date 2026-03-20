@@ -140,6 +140,23 @@ class DashboardView(APIView):
         active_business = user.active_business
 
         # Fetch business-specific stats
+        from django.db.models import Sum
+        from decimal import Decimal
+
+        invoice_taxable = Invoice.objects.filter(
+            business=active_business
+        ).aggregate(
+            total=Sum("total_taxable_amount")
+        )["total"] or Decimal("0.00")
+
+        order_taxable = Order.objects.filter(
+            business=active_business
+        ).aggregate(
+            total=Sum("total_taxable_amount")
+        )["total"] or Decimal("0.00")
+
+        total_revenue = invoice_taxable + order_taxable
+
         total_customers = Customer.objects.filter(business=active_business).count()
         total_products = Item.objects.filter(business=active_business).count()
         total_orders = Order.objects.filter(business=active_business).count()
@@ -158,7 +175,7 @@ class DashboardView(APIView):
                 "total_products": total_products,
                 "total_orders": total_orders,
                 "total_invoices": total_invoices,
-                "total_expenses": 0
+                "total_revenue": total_revenue
             }
         }, status=200)
 

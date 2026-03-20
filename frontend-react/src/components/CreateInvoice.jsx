@@ -12,7 +12,7 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     discount_percent: 0,
     gst_percent: 0,
     payment_mode: 'Cash',
-    status: 'Unpaid',
+    status: 'Paid',
   });
 
   const [selectedCustomer, setSelectedCustomer] = useState(null); 

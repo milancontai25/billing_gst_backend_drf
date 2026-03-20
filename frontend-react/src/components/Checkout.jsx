@@ -44,43 +44,42 @@ const Checkout = () => {
   }, [slug, navigate]);
 
   const handlePlaceOrder = async () => {
-  const token = localStorage.getItem('customer_token');
-  if (!token) return;
+    const token = localStorage.getItem('customer_token');
+    if (!token) return;
 
-  try {
-    setPlacingOrder(true);
-    
-    const formData = new FormData();
-    formData.append('payment_method', paymentMethod);
-    formData.append('special_notes', specialNotes);
-    
-    if (attachment) {
-      formData.append('attachment', attachment);   // ✅ FIXED
-    }
-    
-    if (paymentMethod === 'ONLINE' && paymentProof) {
-      formData.append('payment_proof', paymentProof);  // ✅ FIXED
-    }
-
-    await axios.post(
-      `${API_BASE_URL}/api/v1/customer/cart/checkout/process/`, 
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+    try {
+      setPlacingOrder(true);
+      
+      const formData = new FormData();
+      formData.append('payment_method', paymentMethod);
+      formData.append('special_notes', specialNotes);
+      
+      if (attachment) {
+        formData.append('attachment', attachment); 
       }
-    );
-    
-    alert("Order Placed Successfully!");
-    navigate(`/${slug}/orders`);
-  } catch (err) {
-    console.error(err.response?.data || err);
-    alert("Failed to place order. Please check your inputs.");
-    setPlacingOrder(false);
-  }
-};
+      
+      if (paymentMethod === 'ONLINE' && paymentProof) {
+        formData.append('payment_proof', paymentProof); 
+      }
 
+      await axios.post(
+        `${API_BASE_URL}/api/v1/customer/cart/checkout/process/`, 
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      
+      alert("Order Placed Successfully!");
+      navigate(`/${slug}/orders`);
+    } catch (err) {
+      console.error(err.response?.data || err);
+      alert("Failed to place order. Please check your inputs.");
+      setPlacingOrder(false);
+    }
+  };
 
   const handleFileChange = (e, setFile) => {
     if (e.target.files && e.target.files[0]) {
@@ -104,7 +103,6 @@ const Checkout = () => {
            {/* LEFT COLUMN: Customer & Payment */}
            <div className="checkout-main">
               
-              {/* Customer Details */}
               <div className="section-card">
                  <div className="card-header"><User size={18} /> Customer Details</div>
                  <div className="card-body">
@@ -114,7 +112,6 @@ const Checkout = () => {
                  </div>
               </div>
 
-              {/* Payment Method */}
               <div className="section-card">
                  <div className="card-header"><CreditCard size={18} /> Payment Method</div>
                  <div className="card-body">
@@ -129,7 +126,6 @@ const Checkout = () => {
                        <span>Online Payment (UPI QR)</span>
                     </label>
 
-                    {/* QR Code & Proof Upload */}
                     {paymentMethod === 'ONLINE' && (
                         <div className="qr-payment-box">
                             {preview?.upi_qrcode_url ? (
@@ -137,7 +133,7 @@ const Checkout = () => {
                                     <div className="qr-wrapper">
                                         <img src={preview.upi_qrcode_url} alt="Pay via UPI" className="upi-qr-img" />
                                     </div>
-                                    <p className="qr-instruction">Scan to pay <strong>₹{preview.total_amount}</strong></p>
+                                    <p className="qr-instruction">Scan to pay <strong>₹{preview.net_payable || preview.total_amount}</strong></p>
                                     
                                     <div className="file-upload-box">
                                         <label className="upload-label">Upload Payment Screenshot <span className="req">*</span></label>
@@ -157,18 +153,15 @@ const Checkout = () => {
                     )}
                  </div>
               </div>
-
            </div>
 
            {/* RIGHT COLUMN: Additional Info & Summary */}
            <div className="checkout-sidebar">
               
-              {/* 1. Additional Info (MOVED HERE) */}
               <div className="section-card" style={{ marginBottom: '24px' }}>
                  <div className="card-header"><FileText size={18} /> Additional Information</div>
                  <div className="card-body">
                     
-                    {/* Special Notes */}
                     <div className="form-group">
                         <label>Special Notes (Optional)</label>
                         <textarea 
@@ -180,7 +173,6 @@ const Checkout = () => {
                         ></textarea>
                     </div>
 
-                    {/* General Attachment */}
                     <div className="form-group">
                         <label>Attach Document (Optional)</label>
                         <div className="custom-file-input">
@@ -196,21 +188,62 @@ const Checkout = () => {
                  </div>
               </div>
 
-              {/* 2. Order Summary */}
+              {/* --- 2. DETAILED ORDER SUMMARY --- */}
               <div className="summary-card">
                  <h3>Order Summary</h3>
+                 
+                 {/* Item List */}
                  <div className="summary-items">
                     {preview?.items?.map((item, idx) => (
                       <div key={idx} className="summary-item">
                         <span>{item.qty || item.quantity} x {item.name || item.item_name}</span>
-                        <span>₹{item.subtotal}</span>
+                        {/* Fallback to subtotal or price if total_value isn't present */}
+                        <span>₹{item.total_value || item.subtotal || item.price}</span>
                       </div>
                     ))}
                  </div>
+                 
                  <div className="summary-divider"></div>
+
+                 {/* Calculations Breakdown */}
+                 <div className="summary-breakdown">
+                    {/* Item Total */}
+                    <div className="summary-row">
+                        <span>Item Total</span>
+                        <span>₹{preview?.total_base_amount || preview?.total_amount}</span>
+                    </div>
+
+                    {/* Discount */}
+                    {preview?.discount_amount && parseFloat(preview.discount_amount) > 0 && (
+                        <div className="summary-row text-success">
+                            <span>Discount</span>
+                            <span>- ₹{preview.discount_amount}</span>
+                        </div>
+                    )}
+
+                    {/* GST/Taxes */}
+                    {preview?.total_gst && parseFloat(preview.total_gst) > 0 && (
+                        <div className="summary-row">
+                            <span>Taxes (GST)</span>
+                            <span>+ ₹{preview.total_gst}</span>
+                        </div>
+                    )}
+
+                    {/* Round Off */}
+                    {preview?.round_off && parseFloat(preview.round_off) !== 0 && (
+                        <div className="summary-row text-muted">
+                            <span>Round Off</span>
+                            <span>{parseFloat(preview.round_off) > 0 ? '+' : ''} ₹{preview.round_off}</span>
+                        </div>
+                    )}
+                 </div>
+
+                 <div className="summary-divider"></div>
+                 
+                 {/* Final Total */}
                  <div className="summary-total">
-                    <span>Total Amount</span>
-                    <span>₹{preview?.total_amount}</span>
+                    <span>Net Payable</span>
+                    <span>₹{preview?.net_payable || preview?.total_amount}</span>
                  </div>
                  
                  <button className="place-order-btn" onClick={handlePlaceOrder} disabled={placingOrder}>

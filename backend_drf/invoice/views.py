@@ -87,35 +87,32 @@ class CustomerDetailByNameView(APIView):
         return Response(CustomerSerializer(customer).data)
 
 
+
+from rest_framework.exceptions import ValidationError
+
 class InvoiceListCreateView(generics.ListCreateAPIView):
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
-        return Invoice.objects.filter(business=user.active_business).order_by('-date')
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context.update({"request": self.request})
-        return context
+        return Invoice.objects.filter(
+            business=self.request.user.active_business
+        ).order_by("-date")
 
     def perform_create(self, serializer):
-        user = self.request.user
-        business = user.active_business
-        serializer.save(business=business)
+        if not self.request.user.active_business:
+            raise ValidationError("No active business selected.")
+        serializer.save()
 
-        
+
 class InvoiceDetailView(generics.RetrieveAPIView):
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        business = self.request.user.active_business
-        if business is None:
-            return Invoice.objects.none()
-
-        return Invoice.objects.filter(business=business)
+        return Invoice.objects.filter(
+            business=self.request.user.active_business
+        )
 
 
 class InvoiceItemListView(generics.ListAPIView):
@@ -123,6 +120,9 @@ class InvoiceItemListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        invoice_id = self.kwargs.get('invoice_id')
-        return InvoiceItem.objects.filter(invoice_id=invoice_id)
+        invoice_id = self.kwargs.get("invoice_id")
 
+        return InvoiceItem.objects.filter(
+            invoice_id=invoice_id,
+            invoice__business=self.request.user.active_business
+        )
