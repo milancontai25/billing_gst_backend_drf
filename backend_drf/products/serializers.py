@@ -11,6 +11,7 @@ class ProductSerializer(serializers.ModelSerializer):
     image_1 = serializers.ImageField(write_only=True, required=False)
     image_2 = serializers.ImageField(write_only=True, required=False)
     image_3 = serializers.ImageField(write_only=True, required=False)
+    category_image = serializers.ImageField(write_only=True, required=False)
 
     class Meta:
         model = Item
@@ -39,12 +40,14 @@ class ProductSerializer(serializers.ModelSerializer):
             'item_image_2',
             'item_image_3',
             'item_video_link',
+            'category_image_url',
 
             # Write-only upload fields
             'item_image',
             'image_1',
             'image_2',
             'image_3',
+            'category_image',
 
             # Other
             'area', 'customer_view', 'isShow', 'created_date',
@@ -56,6 +59,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'item_image_1',
             'item_image_2',
             'item_image_3',
+            'category_image_url',
         ]
 
 
@@ -66,6 +70,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "item_image_1": validated_data.pop("image_1", None),
             "item_image_2": validated_data.pop("image_2", None),
             "item_image_3": validated_data.pop("image_3", None),
+            "category_image_url": validated_data.pop("category_image", None),
         }
 
         item = Item.objects.create(**validated_data)
@@ -83,6 +88,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "item_image_1": validated_data.pop("image_1", None),
             "item_image_2": validated_data.pop("image_2", None),
             "item_image_3": validated_data.pop("image_3", None),
+            "category_image_url": validated_data.pop("category_image", None),
         }
 
         # Update normal fields
@@ -113,4 +119,7 @@ class ProductSerializer(serializers.ModelSerializer):
         return self._validate_image(image)
 
     def validate_image_3(self, image):
+        return self._validate_image(image)
+    
+    def validate_category_image(self, image):
         return self._validate_image(image)

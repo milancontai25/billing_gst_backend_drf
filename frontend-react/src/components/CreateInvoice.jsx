@@ -17,8 +17,9 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
 
   const [selectedCustomer, setSelectedCustomer] = useState(null); 
 
+  // ✅ FIXED: Changed 'discount' to 'discount_percent' here
   const [items, setItems] = useState([
-    { item_id: null, name: '', hsn: '', qty: 1, rate: 0, discount: 0, gst: 0, amount: 0 }
+    { item_id: null, name: '', hsn: '', qty: 1, rate: 0, discount_percent: 0, gst: 0, amount: 0 }
   ]);
 
   // Search States
@@ -103,7 +104,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
 
   const selectProduct = (prod, index) => {
     const newItems = [...items];
-    // Default values to prevent NaN
     const rate = parseFloat(prod.mrp_baseprice) || 0;
     const gst = parseFloat(prod.gst_percent) || 0;
     const disc = parseFloat(prod.discount_percent) || 0;
@@ -115,7 +115,7 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
       hsn: prod.hsn_sac_code || '',
       rate: rate,
       gst: gst,
-      discount: disc,
+      discount_percent: disc, // ✅ FIXED key
       amount: calculateRowTotal(newItems[index].qty, rate, disc, gst)
     };
     setItems(newItems);
@@ -127,39 +127,40 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     const newItems = [...items];
     newItems[index][field] = value;
     const item = newItems[index];
-    newItems[index].amount = calculateRowTotal(item.qty, item.rate, item.discount, item.gst);
+    
+    // ✅ FIXED: Pass item.discount_percent to calculation
+    newItems[index].amount = calculateRowTotal(item.qty, item.rate, item.discount_percent, item.gst);
+    
     setItems(newItems);
   };
 
-  const addItem = () => setItems([...items, { item_id: null, name: '', qty: 1, rate: 0, discount: 0, gst: 0, amount: 0 }]);
+  // ✅ FIXED: Changed 'discount' to 'discount_percent' here
+  const addItem = () => setItems([...items, { item_id: null, name: '', qty: 1, rate: 0, discount_percent: 0, gst: 0, amount: 0 }]);
   const removeItem = (index) => setItems(items.filter((_, i) => i !== index));
 
   // --- SUBMIT LOGIC ---
   const handleSubmit = async () => {
-    // 1. Basic Validation
     if (!formData.customer_id) return alert("Please select a customer first.");
     
-    // 2. Filter out invalid rows
     const validItems = items.filter(item => item.item_id !== null);
     
     if (validItems.length === 0) {
         return alert("Please add at least one valid product to the invoice.");
     }
 
-    // 3. Construct Payload
     const payload = {
       customer: formData.customer_id,
-      customer_name: formData.customer_name, // <--- ADD THIS LINE HERE
+      customer_name: formData.customer_name, 
       invoice_id: formData.invoice_id,
-      date: formData.date,                   // <--- Make sure Date is also sent
+      date: formData.date,                   
       discount_percent: parseFloat(formData.discount_percent) || 0,
       payment_mode: formData.payment_mode,
       status: formData.status,
-      // Map valid items to API structure
       invoice_items: validItems.map(item => ({
         item: item.item_id,
         quantity: parseInt(item.qty) || 1,
         rate: parseFloat(item.rate).toFixed(2),
+        discount_percent: parseFloat(item.discount_percent).toFixed(2), // ✅ Send discount to backend
         gst_percent: parseFloat(item.gst).toFixed(2),
         total_value: parseFloat(item.amount).toFixed(2)
       }))
@@ -265,7 +266,10 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                         </td>
                         <td><input type="number" value={item.qty} onChange={(e) => handleItemChange(index, 'qty', e.target.value)} style={{width:'50px'}}/></td>
                         <td><input type="number" value={item.rate} onChange={(e) => handleItemChange(index, 'rate', e.target.value)} style={{width:'70px'}}/></td>
-                        <td><input type="number" value={item.discount} onChange={(e) => handleItemChange(index, 'discount', e.target.value)} style={{width:'50px'}}/></td>
+                        
+                        {/* ✅ Uses item.discount_percent correctly now */}
+                        <td><input type="number" value={item.discount_percent} onChange={(e) => handleItemChange(index, 'discount_percent', e.target.value)} style={{width:'50px'}}/></td>
+                        
                         <td><input type="number" value={item.gst} onChange={(e) => handleItemChange(index, 'gst', e.target.value)} style={{width:'50px'}}/></td>
                         <td>{item.amount}</td>
                         <td><button onClick={() => removeItem(index)} className="text-red"><Trash2 size={16}/></button></td>

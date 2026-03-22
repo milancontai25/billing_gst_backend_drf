@@ -394,14 +394,10 @@
 
 // export default StoreFront;
 
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios'; 
 import { useParams, Link } from 'react-router-dom'; 
-import { Loader2 } from 'lucide-react';
+import { Loader2, Image as ImageIcon } from 'lucide-react';
 import StoreHeader from './StoreHeader';
 import StoreFooter from './StoreFooter';
 import AuthCustomer from './AuthCustomer';
@@ -448,6 +444,7 @@ const StoreFront = () => {
     return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
+  // 1. Fetch Data
   useEffect(() => {
     checkLoginStatus();
     const fetchStoreData = async () => {
@@ -475,8 +472,8 @@ const StoreFront = () => {
                 twitter: biz.x_url
              });
              setContactInfo({
-                 email: biz.user.email, 
-                 phone: `+91 ${biz.user.phone}`
+                 email: biz.user?.email || `contact@${slug}.com`, 
+                 phone: biz.user?.phone ? `+91 ${biz.user.phone}` : ''
              });
         } else {
              const formattedSlug = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -492,8 +489,47 @@ const StoreFront = () => {
     fetchStoreData();
   }, [slug]);
 
-  // Categories
-  const categories = ['All', ...new Set(products.map(p => p.category).filter(c => c).map(c => toTitleCase(c)))];
+  // --- CATEGORY EXTRACTION ---
+  const categoryMap = new Map();
+  products.forEach(p => {
+    if (p.category) {
+      const catName = toTitleCase(p.category);
+      if (!categoryMap.has(catName)) {
+        categoryMap.set(catName, p.category_image || null);
+      }
+    }
+  });
+
+  const categories = [{ name: 'All', image: null }];
+  categoryMap.forEach((image, name) => {
+    categories.push({ name, image });
+  });
+
+  // --- URL HASH ROUTING LOGIC ---
+  // Read hash on initial load or when products finish fetching
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash && products.length > 0) {
+      const decodedHash = decodeURIComponent(hash);
+      // Find matching category ignoring case
+      const matchedCategory = categories.find(c => c.name.toLowerCase() === decodedHash.toLowerCase());
+      if (matchedCategory) {
+        setSelectedCategory(matchedCategory.name);
+      }
+    }
+  }, [products]); // Re-run once products are loaded so categories exist
+
+  // Update hash when a category is clicked
+  const handleCategorySelect = (catName) => {
+    setSelectedCategory(catName);
+    if (catName === 'All') {
+        // Remove hash from URL for 'All'
+        window.history.pushState("", document.title, window.location.pathname + window.location.search);
+    } else {
+        // Add category name to hash (e.g., #Honey)
+        window.location.hash = encodeURIComponent(catName);
+    }
+  };
 
   // Banner Slide
   useEffect(() => {
@@ -527,6 +563,8 @@ const StoreFront = () => {
     } catch (err) { console.error(err); alert("Failed to add item to cart."); }
   };
 
+  // --- DATA LOGIC ---
+
   const filteredProducts = products.filter(p => {
     const pName = p.item_name ? p.item_name.toLowerCase() : "";
     const rawCat = p.category ? p.category.toLowerCase() : ""; 
@@ -540,10 +578,67 @@ const StoreFront = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const getTrendingProducts = () => {
+    const totalItems = products.length;
+    if (totalItems <= 2) return products;
+    const itemsToShow = Math.ceil(totalItems * 0.5); 
+    const startIdx = Math.floor((totalItems - itemsToShow) / 2);
+    return products.slice(startIdx, startIdx + itemsToShow);
+  };
+  const trendingProducts = getTrendingProducts();
+
   const getStockBadge = (qty, minStock) => {
-    if (qty <= 0) return <span className="stock-badge out">Out of Stock</span>;
-    if (qty <= minStock) return <span className="stock-badge low">Low Stock</span>;
+    if (qty <= 0) return <div className="card-badge out-of-stock">SOLD OUT</div>;
+    if (qty > minStock + 10) return <div className="card-badge best-seller">BEST SELLER</div>; 
     return null;
+  };
+
+  // --- REUSABLE PRODUCT CARD RENDERER ---
+  const renderProductCard = (product) => {
+    const isOutOfStock = product.quantity_product <= 0;
+    const mrp = parseFloat(product.mrp_baseprice || 0);
+    const sellingPrice = parseFloat(product.gross_amount || 0);
+    const hasDiscount = mrp > sellingPrice;
+    const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+
+    return (
+      <div key={product.id} className="product-card">
+        {getStockBadge(product.quantity_product, product.min_stock_product)}
+
+        <Link to={`/${slug}/item/${product.slug}`} style={{ textDecoration: 'none' }}>
+            <div className="product-image-box">
+                {product.item_image_url ? (
+                <img src={product.item_image_url} alt={product.item_name} className={`product-img ${isOutOfStock ? 'grayscale' : ''}`} />
+                ) : ( <span className="placeholder-img">{product.item_name.charAt(0)}</span> )}
+            </div>
+        </Link>
+        
+        <div className="product-details">
+          <Link to={`/${slug}/item/${product.slug}`} style={{textDecoration:'none', color:'inherit'}}>
+              <h3 className="product-name" title={product.item_name}>{product.item_name}</h3>
+          </Link>
+          
+          <div className="price-row">
+             <span className="price-selling">₹{sellingPrice}</span>
+             {hasDiscount && <span className="price-mrp">₹{mrp}</span>}
+             {hasDiscount && discountPercent > 0 && <span className="discount-tag">{discountPercent}% OFF</span>}
+          </div>
+
+          <div className="product-card-footer">
+             <div className="unit-pill">
+                {product.unit_product || '1 Unit'}
+             </div>
+             <button 
+                className={`add-btn ${isOutOfStock ? 'disabled' : ''}`} 
+                disabled={isOutOfStock} 
+                onClick={() => handleAddToCart(product.id)}
+             >
+                {isOutOfStock ? 'SOLD OUT' : 'ADD TO CART'}
+             </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) return <div className="loading-container"><Loader2 size={40} className="animate-spin" /><p>Loading...</p></div>;
@@ -551,7 +646,6 @@ const StoreFront = () => {
   return (
     <div className="store-body">
       
-      {/* HEADER COMPONENT */}
       <StoreHeader 
         slug={slug}
         businessName={businessName}
@@ -567,94 +661,85 @@ const StoreFront = () => {
         setIsDropdownOpen={setIsDropdownOpen}
       />
 
-      {/* HERO SECTION */}
-      <div className="hero-wrapper">
-          {banners.length > 0 ? (
-            <div className="hero-slider">
-                {banners.map((banner, index) => (
-                    <div key={index} className={`hero-slide ${index === currentBannerIndex ? 'active' : ''}`} style={{ backgroundImage: `url(${banner})` }}></div>
-                ))}
-                {banners.length > 1 && (
-                    <div className="slider-dots">
-                        {banners.map((_, idx) => (
-                            <span key={idx} className={`dot ${idx === currentBannerIndex ? 'active' : ''}`} onClick={() => setCurrentBannerIndex(idx)}></span>
-                        ))}
-                    </div>
-                )}
-            </div>
-          ) : (
-             <div className="store-hero-fallback">
-                 <div className="hero-content">
-                     <h1>Welcome to <br/><span>{businessName}</span></h1>
-                     <p>Quality products, honest savings. Delivered to your door.</p>
+      <div className="top-section-bg">
+          <div className="hero-wrapper">
+              {banners.length > 0 ? (
+                <div className="hero-slider">
+                    {banners.map((banner, index) => (
+                        <div key={index} className={`hero-slide ${index === currentBannerIndex ? 'active' : ''}`} style={{ backgroundImage: `url(${banner})` }}></div>
+                    ))}
+                    {banners.length > 1 && (
+                        <div className="slider-dots">
+                            {banners.map((_, idx) => (
+                                <span key={idx} className={`dot ${idx === currentBannerIndex ? 'active' : ''}`} onClick={() => setCurrentBannerIndex(idx)}></span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+              ) : (
+                 <div className="store-hero-fallback">
+                     <div className="hero-content">
+                         <h1>Welcome to <br/><span>{businessName}</span></h1>
+                         <p>Quality products, honest savings. Delivered to your door.</p>
+                     </div>
                  </div>
-             </div>
+              )}
+          </div>
+
+          <section className="explore-section">
+            <h2 className="explore-title">EXPLORE OUR RANGE</h2>
+            
+            <div className="category-scroll-container">
+                {categories.map((cat) => (
+                    <div 
+                      key={cat.name} 
+                      className={`cat-card ${selectedCategory === cat.name ? 'active' : ''}`} 
+                      onClick={() => handleCategorySelect(cat.name)}
+                    >
+                        <div className="cat-img-box">
+                            {cat.image ? (
+                                <img src={cat.image} alt={cat.name} className="cat-img" />
+                            ) : (
+                                <ImageIcon size={32} color="#94A3B8" /> 
+                            )}
+                        </div>
+                        <div className="cat-label">{cat.name}</div>
+                    </div>
+                ))}
+            </div>
+
+            {filteredProducts.length === 0 ? (
+              <div className="no-products" style={{ marginTop: '40px' }}>
+                <h3>No products found</h3>
+                <p>Try adjusting your search or category filter.</p>
+              </div>
+            ) : (
+              <div className="product-grid" style={{ marginTop: '40px' }}>
+                {filteredProducts.map(product => renderProductCard(product))}
+              </div>
+            )}
+
+            {filteredProducts.length > 0 && selectedCategory !== 'All' && (
+                <div className="view-all-container">
+                    <button className="btn-view-all" onClick={() => handleCategorySelect('All')}>VIEW ALL PRODUCTS</button>
+                </div>
+            )}
+          </section>
+      </div>
+
+      <div className="bottom-section-bg">
+          {trendingProducts.length > 0 && (
+            <section className="store-main">
+                <div className="grid-header">
+                    <h2 className="explore-title" style={{ textTransform: 'none', marginBottom: 0 }}>Trending Now</h2>
+                </div>
+                <div className="product-grid">
+                    {trendingProducts.map(product => renderProductCard(product))}
+                </div>
+            </section>
           )}
       </div>
 
-      {/* CATEGORY BAR */}
-      <div className="category-bar-wrapper">
-        <div className="category-list">
-            {categories.map((cat) => (
-            <button key={cat} className={`category-chip ${selectedCategory === cat ? 'active' : ''}`} onClick={() => setSelectedCategory(cat)}>{cat}</button>
-            ))}
-        </div>
-      </div>
-
-      {/* PRODUCT GRID */}
-      <main className="store-main">
-        <h2 className="section-title">{selectedCategory === 'All' ? 'All Products' : selectedCategory}</h2>
-        {filteredProducts.length === 0 ? (
-          <div className="no-products">
-            <h3>No products found</h3>
-            <p>Try adjusting your search or category filter.</p>
-          </div>
-        ) : (
-          <div className="product-grid">
-            {filteredProducts.map(product => {
-               const isOutOfStock = product.quantity_product <= 0;
-               const mrp = parseFloat(product.mrp_baseprice || 0);
-               const sellingPrice = parseFloat(product.gross_amount || 0);
-               const hasDiscount = mrp > sellingPrice;
-               const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
-
-               return (
-                  <div key={product.id} className="product-card">
-                    <Link to={`/${slug}/item/${product.slug}`}>
-                        <div className="product-image-box">
-                            {getStockBadge(product.quantity_product, product.min_stock_product)}
-                            {product.item_image_url ? (
-                            <img src={product.item_image_url} alt={product.item_name} className={`product-img ${isOutOfStock ? 'grayscale' : ''}`} />
-                            ) : ( <span className="placeholder-img">{product.item_name.charAt(0)}</span> )}
-                        </div>
-                    </Link>
-                    
-                    <div className="product-details">
-                      <div className="product-cat">{product.category}</div>
-                      <Link to={`/${slug}/item/${product.slug}`} style={{textDecoration:'none', color:'inherit'}}>
-                          <h3 className="product-name" title={product.item_name}>{product.item_name}</h3>
-                      </Link>
-                      
-                      <div className="price-row">
-                         {hasDiscount && <span className="price-mrp">₹{mrp}</span>}
-                         <span className="price-selling">₹{sellingPrice}</span>
-                         {hasDiscount && discountPercent > 0 && <span className="discount-tag">{discountPercent}% OFF</span>}
-                      </div>
-
-                      <div className="product-actions">
-                        <button className={`add-btn ${isOutOfStock ? 'disabled' : ''}`} disabled={isOutOfStock} onClick={() => handleAddToCart(product.id)}>
-                            {isOutOfStock ? 'Sold Out' : 'Add to Cart'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-               );
-            })}
-          </div>
-        )}
-      </main>
-
-      {/* FOOTER COMPONENT */}
       <StoreFooter 
         slug={slug}
         businessName={businessName}
@@ -663,7 +748,6 @@ const StoreFront = () => {
         contactInfo={contactInfo}
       />
 
-      {/* MODALS */}
       <AuthCustomer isOpen={showAuthCustomer} onClose={() => setShowAuthCustomer(false)} onLoginSuccess={checkLoginStatus} />
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} slug={slug} />
     </div>

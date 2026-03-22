@@ -14,12 +14,10 @@ const Products = () => {
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [importing, setImporting] = useState(false); // New State for Import Loading
+  const [importing, setImporting] = useState(false); 
   
-  // Refs
-  const fileInputRef = useRef(null); // Ref for hidden file input
+  const fileInputRef = useRef(null); 
 
-  // ... (Modal, Filter, Form states remain same) ...
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -27,6 +25,7 @@ const Products = () => {
   const [typeFilter, setTypeFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
 
+  // --- 1. ADDED category_image TO INITIAL STATE ---
   const initialFormState = {
     item_type: 'Goods',
     item_name: '',
@@ -37,14 +36,14 @@ const Products = () => {
     min_order_quantity_product: 1,
     max_order_quantity_product: 1,
     availability_status_service: 'Available',
-    category: '', description: '', mrp_baseprice: 0, gross_amount: 0, 
+    category: '', category_image: null, // <--- Added here
+    description: '', mrp_baseprice: 0, gross_amount: 0, 
     gst_percent: 0, includes_gst: false,
     area: '', customer_view: 'Special', isShow: false,
   };
   
   const [formData, setFormData] = useState(initialFormState);
 
-  // --- API CALLS ---
   const fetchInventory = async () => {
     try {
       setLoading(true);
@@ -60,7 +59,6 @@ const Products = () => {
 
   useEffect(() => { fetchInventory(); }, []);
 
-  // --- FILTER LOGIC (Same as before) ---
   useEffect(() => {
     let result = items;
     if (typeFilter !== 'All') result = result.filter(item => item.item_type === typeFilter);
@@ -70,11 +68,9 @@ const Products = () => {
 
   const categories = ['All', ...new Set(items.map(item => item.category).filter(Boolean))];
 
-  // --- EXPORT FUNCTION ---
   const handleExport = () => {
     if (filteredItems.length === 0) return alert("No items to export.");
 
-    // Define CSV Headers
     const headers = [
         "Item Type", "Name", "Category", "Brand", "HSN Code", 
         "Price", "Gross", "GST%", "Cost Price", 
@@ -82,12 +78,11 @@ const Products = () => {
         "Area", "Description"
     ];
 
-    // Map Data to CSV Rows
     const rows = filteredItems.map(item => {
         const isService = item.item_type === 'Service';
         return [
             item.item_type,
-            `"${item.item_name}"`, // Quote to handle commas in name
+            `"${item.item_name}"`,
             item.category,
             isService ? 'NA' : (item.brand_product || '-'),
             isService ? 'NA' : (item.hsn_sac_code_product || '-'),
@@ -104,7 +99,6 @@ const Products = () => {
         ].join(",");
     });
 
-    // Create File
     const csvContent = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -114,7 +108,6 @@ const Products = () => {
     link.click();
   };
 
-  // --- IMPORT FUNCTION ---
   const handleImportClick = () => {
     fileInputRef.current.click();
   };
@@ -128,25 +121,18 @@ const Products = () => {
 
     reader.onload = async (evt) => {
         const text = evt.target.result;
-        // Split by new line, remove header row (index 0)
         const rows = text.split("\n").slice(1).filter(r => r.trim() !== '');
         
         let successCount = 0;
         let errors = [];
 
-        // Loop through rows and create items
         for (let i = 0; i < rows.length; i++) {
-            const cols = rows[i].split(","); // Simple split (Production apps should use a CSV parser lib)
+            const cols = rows[i].split(","); 
             
-            // Basic Mapping (Assuming order matches Export headers)
-            // 0:Type, 1:Name, 2:Cat, 3:Brand, 4:HSN, 5:Price, 6:Gross, 7:GST, 
-            // 8:Cost, 9:Qty, 10:Unit, 11:MinStock, 12:Status, 13:Area, 14:Desc
-
-            // Clean quotes from Name/Desc
             const name = cols[1]?.replace(/"/g, "").trim();
             const type = cols[0]?.trim();
 
-            if (!name || !type) continue; // Skip invalid rows
+            if (!name || !type) continue; 
 
             const isService = type === 'Service';
 
@@ -159,12 +145,10 @@ const Products = () => {
             payload.append('gst_percent', cols[7] || 0);
             payload.append('area', cols[13] || 'Store');
             payload.append('description', cols[14]?.replace(/"/g, "") || '');
-            payload.append('customer_view', 'Special'); // Default
+            payload.append('customer_view', 'Special'); 
 
-            // CONDITIONAL FIELDS LOGIC
             if (isService) {
                 payload.append('availability_status_service', cols[12] || 'Available');
-                // Goods fields can be empty or 0
                 payload.append('quantity_product', 0);
                 payload.append('brand_product', 'NA');
             } else {
@@ -177,7 +161,6 @@ const Products = () => {
             }
 
             try {
-                // Post one by one
                 await api.post('/products/', payload, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
@@ -191,18 +174,17 @@ const Products = () => {
         setImporting(false);
         alert(`Import Finished.\nSuccess: ${successCount}\nFailed: ${errors.length}`);
         fetchInventory();
-        e.target.value = null; // Reset input
+        e.target.value = null; 
     };
 
     reader.readAsText(file);
   };
 
-  // ... (Handlers: handleInputChange, handleFileChange, openAddModal, openEditModal, handleSubmit, handleDelete same as previous) ...
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({ 
         ...formData, 
-        [name]: type === 'checkbox' ? checked : value // <--- UPDATED LOGIC
+        [name]: type === 'checkbox' ? checked : value
     });
   };
 
@@ -222,11 +204,11 @@ const Products = () => {
     setFormData({
       ...initialFormState,
       ...item,
-
-      // IMPORTANT: reset file fields
+      // --- 2. RESET ALL FILE FIELDS ON EDIT ---
       image_1: null,
       image_2: null,
       image_3: null,
+      category_image: null, // <--- Resetting here so it doesn't try to send string path
 
       mrp_baseprice: item.mrp_baseprice || 0,
       gross_amount: item.gross_amount || 0,
@@ -252,14 +234,11 @@ const Products = () => {
         'area', 'customer_view', 'item_video_link'
     ];
 
-    // Explicitly handle Booleans for FormData
     submitData.append('includes_gst', formData.includes_gst ? 'true' : 'false');
     submitData.append('isShow', formData.isShow ? 'true' : 'false');
 
     if (isService) {
         fields.push('availability_status_service');
-        // Ideally, for Service, we might want to send 0/NA for hidden fields 
-        // to keep data clean, but PATCH handles omission.
     } else {
         fields.push('brand_product', 'hsn_sac_code_product', 'unit_product', 
                     'quantity_product', 'cost_price_product', 'min_stock_product',
@@ -272,8 +251,8 @@ const Products = () => {
         submitData.append(key, value);
     });
 
-    // Images
-    ['item_image', 'image_1', 'image_2', 'image_3'].forEach(imgKey => {
+    // --- 3. APPEND category_image FILE TO PAYLOAD ---
+    ['item_image', 'image_1', 'image_2', 'image_3', 'category_image'].forEach(imgKey => {
         if (formData[imgKey] instanceof File) {
             submitData.append(imgKey, formData[imgKey]);
         }
@@ -283,7 +262,6 @@ const Products = () => {
       const config = { headers: { 'Content-Type': 'multipart/form-data' } };
       
       if (isEditing) {
-        // --- FIX IS HERE: USE PATCH ---
         await api.patch(`/products/${editId}/`, submitData, config); 
         alert("Inventory Updated!");
       } else {
@@ -294,7 +272,6 @@ const Products = () => {
       fetchInventory(); 
     } catch (err) {
       console.error(err);
-      // Helpful alert showing the actual error from backend
       if (err.response && err.response.data) {
           alert(`Error: ${JSON.stringify(err.response.data)}`);
       } else {
@@ -312,10 +289,8 @@ const Products = () => {
     }
   };
 
-  // Helper Variables
   const isService = formData.item_type === 'Service';
 
-  // Clear Filter Helper
   const clearFilters = () => {
     setTypeFilter('All');
     setCategoryFilter('All');
@@ -324,7 +299,6 @@ const Products = () => {
 
   return (
     <div className="page-content">
-      {/* Hidden File Input for Import */}
       <input 
         type="file" 
         accept=".csv" 
@@ -337,7 +311,6 @@ const Products = () => {
         <h2 className="section-title">Inventory Management</h2>
         
         <div className="action-buttons">
-          {/* IMPORT/EXPORT BUTTONS */}
           <button className="btn btn-gray" onClick={handleExport}>
              <Download size={16} /> Export
           </button>
@@ -349,7 +322,6 @@ const Products = () => {
             <Plus size={16} /> Add Inventory
           </button>
           
-          {/* FILTER DROPDOWN */}
           <div style={{ position: 'relative' }}>
             <button 
                 className={`btn btn-outline ${typeFilter !== 'All' || categoryFilter !== 'All' ? 'text-blue-600 border-blue-200 bg-blue-50' : ''}`}
@@ -439,14 +411,13 @@ const Products = () => {
                         <button className="action-btn delete" onClick={() => handleDelete(row.id)}><Trash2 size={16} /></button>
                       </td>
                     </tr>
-                  ))
+                ))
               )}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* MODAL SECTION (Same logic as before, just kept for context) */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-box extended-modal product-edit-modal">
@@ -477,7 +448,6 @@ const Products = () => {
                   </select>
               </div>
 
-              {/* ... Rest of the form remains identical to previous version ... */}
               <div className="form-row">
                 <div className="form-group half-width">
                   <label>Item Name*</label>
@@ -487,6 +457,14 @@ const Products = () => {
                   <label>Category*</label>
                   <input type="text" name="category" value={formData.category} onChange={handleInputChange} required />
                 </div>
+              </div>
+
+              {/* --- 4. NEW ROW FOR CATEGORY IMAGE --- */}
+              <div className="form-row" style={{ borderBottom: '1px dashed #e5e7eb', paddingBottom: '15px', marginBottom: '15px' }}>
+                 <div className="form-group">
+                     <label style={{ fontSize:'13px', color: '#6b7280' }}>Upload Category Image (Optional)</label>
+                     <input type="file" onChange={(e) => handleFileChange(e, 'category_image')} accept="image/*" className="file-input-small"/>
+                 </div>
               </div>
 
               <div className="form-row">
@@ -514,10 +492,8 @@ const Products = () => {
                  )}
               </div>
 
-              {/* 4. Pricing & Tax (UPDATED) */}
               <div className="form-section-title">Pricing & Tax</div>
               
-              {/* Row 1: Base Price & GST % */}
               <div className="form-row">
                 <div className="form-group half-width">
                   <label>{isService ? 'Base Price (Fees)*' : 'MRP (Base Price)*'}</label>
@@ -529,19 +505,17 @@ const Products = () => {
                 </div>
               </div>
 
-              {/* Row 2: Gross Amount & Includes GST? */}
               <div className="form-row">
                  <div className="form-group half-width">
                     <label>Gross Amount*</label>
                     <input type="number" name="gross_amount" value={formData.gross_amount} onChange={handleInputChange} required />
                  </div>
                  
-                 {/* --- NEW DROPDOWN --- */}
                  <div className="form-group half-width">
                     <label>GA includes GST?</label>
                     <select 
                         name="includes_gst" 
-                        value={String(formData.includes_gst)} // Cast to string to match options
+                        value={String(formData.includes_gst)} 
                         onChange={handleInputChange}
                     >
                         <option value="false">No</option>
@@ -550,18 +524,16 @@ const Products = () => {
                  </div>
               </div>
 
-              {/* Row 3: Cost Price (Only for Goods) */}
               {!isService && (
                   <div className="form-row">
                     <div className="form-group half-width">
                         <label>Cost Price*</label>
                         <input type="number" name="cost_price_product" value={formData.cost_price_product} onChange={handleInputChange} required />
                     </div>
-                    <div className="half-width"></div> {/* Spacer */}
+                    <div className="half-width"></div> 
                   </div>
               )}
 
-              {/* 5. Inventory (Only for Goods) */}
               {!isService && (
                   <>
                     <div className="form-section-title">Inventory Details</div>
@@ -582,7 +554,6 @@ const Products = () => {
                         </div>
                     </div>
 
-                    {/* --- NEW ROW FOR ORDER LIMITS --- */}
                     <div className="form-row">
                         <div className="form-group half-width">
                             <label>Min Order Qty*</label>
@@ -658,6 +629,5 @@ const Products = () => {
     </div>
   );
 };
-
 
 export default Products;

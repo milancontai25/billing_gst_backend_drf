@@ -17,6 +17,7 @@ class Item(models.Model):
     brand_product = models.CharField(max_length=150, blank=False, null=False, default='NA')
     hsn_sac_code_product = models.CharField(max_length=20, blank=True, null=True, default='NA')
     category = models.CharField(max_length=100, blank=False, null=False)
+    category_image_url = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
     unit_product = models.CharField(max_length=50, blank=False, null=False, default='NA')

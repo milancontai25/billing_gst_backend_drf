@@ -1,4 +1,5 @@
 from decimal import Decimal, ROUND_HALF_UP
+from business_entity.serializers import BusinessEntitySerializer
 from rest_framework import serializers
 from .models import Invoice, InvoiceItem
 from products.models import Item
@@ -13,6 +14,7 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
 class InvoiceSerializer(serializers.ModelSerializer):
     invoice_items = InvoiceItemSerializer(many=True, write_only=True)
     items_details = InvoiceItemSerializer(source="invoice_items", many=True, read_only=True)
+    business = BusinessEntitySerializer(read_only=True)
 
     class Meta:
         model = Invoice

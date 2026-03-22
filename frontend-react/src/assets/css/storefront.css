@@ -285,10 +285,67 @@ body { margin: 0; padding: 0; }
   transform: scale(1.2);
 }
 
-/* --- 5. PRODUCT GRID --- */
+/* ==========================================================================
+   NEW LAYOUT WRAPPERS (Two-Tone Backgrounds)
+   ========================================================================== */
+
+/* The top section containing the Hero and first category grid */
+.top-section-bg {
+  background-color: #F8FAFC; /* Light Slate/Blue Tint */
+  width: 100%;
+  padding-bottom: 60px; /* Spacing before the white section starts */
+}
+
+/* The bottom section containing "Trending Now" */
+.bottom-section-bg {
+  background-color: #FFFFFF; /* Pure White */
+  width: 100%;
+  padding-top: 60px;
+  padding-bottom: 80px;
+}
+
+/* --- EXPLORE OUR RANGE (Categories) --- */
+.explore-section {
+  max-width: 1280px;
+  margin: 40px auto 0;
+  padding: 0 24px;
+}
+
+/* Force Left Alignment for all section titles */
+.explore-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 24px;
+  text-align: left; /* Forces alignment to the start */
+  width: 100%;
+}
+
+.grid-header {
+  display: flex;
+  justify-content: space-between; /* Pushes Title Left, "See All" Right */
+  align-items: baseline;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.see-all-link {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+/* Make sure store-main behaves properly in the new white wrapper */
 .store-main {
   max-width: 1280px;
-  margin: 40px auto;
+  margin: 0 auto;
   padding: 0 24px;
   width: 100%;
   flex: 1;
@@ -2367,3 +2424,238 @@ body { margin: 0; padding: 0; }
   color: #9CA3AF; /* Light gray for round off */
   font-size: 13px;
 }
+
+/* ==========================================================================
+   NEW UI UPDATES (Explore Range & Recommended)
+   ========================================================================== */
+
+/* --- EXPLORE OUR RANGE (Categories) --- */
+.explore-section {
+  max-width: 1280px;
+  margin: 40px auto 0;
+  padding: 0 24px;
+}
+
+.explore-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 24px;
+}
+
+.category-scroll-container {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 20px; /* Space for the overlapping label and scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #E2E8F0 transparent;
+}
+.category-scroll-container::-webkit-scrollbar { height: 6px; }
+.category-scroll-container::-webkit-scrollbar-thumb { background-color: #E2E8F0; border-radius: 10px; }
+
+/* Visual Category Cards (Matching Screenshot Style) */
+.cat-card {
+  width: 130px;
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cat-img-box {
+  width: 100%;
+  height: 130px;
+  background: #F8FAFC;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+/* NEW CLASS: Ensures category image covers the box perfectly */
+.cat-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Crop to fit cleanly */
+}
+
+/* Hover & Active Border (Light Blue Theme) */
+.cat-card:hover .cat-img-box {
+  border-color: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+.cat-card.active .cat-img-box {
+  border-color: var(--primary);
+  box-shadow: 0 4px 10px rgba(56, 189, 248, 0.2);
+}
+
+/* Overlapping Label */
+.cat-label {
+  position: absolute;
+  bottom: 0; /* Sits perfectly intersecting the bottom of the image box */
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.cat-card.active .cat-label {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+/* --- PRODUCT GRID CARD UPDATES --- */
+
+.product-card {
+  background: white;
+  border-radius: 8px; 
+  overflow: hidden;
+  border: 1px solid #E5E7EB; 
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.product-card:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.card-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  z-index: 10;
+  letter-spacing: 0.5px;
+  border-bottom-left-radius: 8px; 
+}
+
+.card-badge.best-seller { background-color: #FDE047; color: #854D0E; }
+.card-badge.out-of-stock { background-color: #FEE2E2; color: #991B1B; }
+
+.product-image-box {
+  height: 240px; 
+  background: #F8FAFC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.product-details {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.product-name {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.4;
+  height: 42px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.product-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.unit-pill {
+  flex: 0 0 auto;
+  min-width: 70px;
+  text-align: center;
+  padding: 8px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 50px; 
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: white;
+}
+
+.add-btn {
+  flex: 1;
+  background: var(--primary); 
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 50px; 
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.add-btn:hover { background: var(--primary-dark); }
+.add-btn.disabled { background: #F1F5F9; color: #9CA3AF; cursor: not-allowed; }
+
+/* View All Button Wrapper (Light Blue Theme) */
+.view-all-container {
+  display: flex;
+  justify-content: center; /* Button stays centered */
+  margin-top: 50px;
+}
+
+.btn-view-all {
+  background: #E0F2FE; /* Light blue */
+  color: var(--primary-dark);
+  border: 1px solid var(--primary-light);
+  padding: 12px 32px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-view-all:hover {
+  background: #BAE6FD;
+}
+
+@media (max-width: 768px) {
+  .explore-section { padding: 0 16px; margin-top: 20px; }
+  .explore-title { font-size: 18px; }
+  .cat-card { width: 100px; }
+  .cat-img-box { height: 100px; }
+  .cat-label { font-size: 11px; padding: 4px 10px; }
+  
+  .product-card-footer { flex-direction: column; gap: 8px; }
+  .unit-pill { width: 100%; }
+  .add-btn { width: 100%; }
+}
+
