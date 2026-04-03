@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 class BusinessEntitySerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+
     class Meta:
         model = BusinessEntity
         fields = '__all__'
@@ -15,3 +16,4 @@ class BusinessEntitySerializer(serializers.ModelSerializer):
         validated_data.pop("kyc_bucket_url", None)
 
         return super().update(instance, validated_data)
+

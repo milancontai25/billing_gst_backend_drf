@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'invoice',
     'django_filters',
     'order',
+    'payments'
 ]
 
 SITE_ID = 1

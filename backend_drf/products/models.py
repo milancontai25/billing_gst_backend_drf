@@ -34,9 +34,20 @@ class Item(models.Model):
     # sgst_percent = models.DecimalField(max_digits=5, decimal_places=2, blank=False, null=False)
     # igst_percent = models.DecimalField(max_digits=5, decimal_places=2, blank=False, null=False)
     # cess_percent = models.DecimalField(max_digits=5, decimal_places=2, blank=False, null=False)
-    gst_percent = models.DecimalField(max_digits=5, decimal_places=2, blank=False, null=False)
-    includes_gst = models.BooleanField(blank=False, null=False, default=False)
+    tax_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    price_includes_tax = models.BooleanField(default=False)
+    tax_type = models.CharField(
+        max_length=20,
+        choices=[
+            ("GST", "GST"),
+            ("VAT", "VAT"),
+            ("SALES_TAX", "Sales Tax"),
+            ("NONE", "No Tax"),
+        ],
+        default="GST"
+    )
 
+    
     min_stock_product = models.IntegerField(default=0)
     
     customer_view = models.CharField(max_length=10, default='Special')

@@ -495,7 +495,7 @@ const StoreFront = () => {
     if (p.category) {
       const catName = toTitleCase(p.category);
       if (!categoryMap.has(catName)) {
-        categoryMap.set(catName, p.category_image || null);
+        categoryMap.set(catName, p.category_image_url || null);
       }
     }
   });

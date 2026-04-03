@@ -76,7 +76,7 @@ class BusinessSetupView(APIView):
         banner_1 = request.FILES.get("banner_1")
         banner_2 = request.FILES.get("banner_2")
         banner_3 = request.FILES.get("banner_3")
-        upi_qrcode = request.FILES.get("upi_qrcode")
+        # upi_qrcode = request.FILES.get("upi_qrcode")
 
         # Assuming 'save_file_to_hostinger' is a method defined in this class or a mixin
         if logo_file:
@@ -99,9 +99,9 @@ class BusinessSetupView(APIView):
             banner_3_url = self.save_file_to_hostinger(request, banner_3, "business_banners")
             data["banner_3_url"] = banner_3_url
 
-        if upi_qrcode:
-            upi_qrcode_url = self.save_file_to_hostinger(request, upi_qrcode, "upi_qrcode")
-            data["upi_qrcode_url"] = upi_qrcode_url
+        # if upi_qrcode:
+        #     upi_qrcode_url = self.save_file_to_hostinger(request, upi_qrcode, "upi_qrcode")
+        #     data["upi_qrcode_url"] = upi_qrcode_url
 
         serializer = BusinessEntitySerializer(data=data)
 
@@ -180,10 +180,10 @@ class BusinessUpdateView(APIView):
                 request.FILES["banner_3"], "business_banners"
             )
 
-        if "upi_qrcode" in request.FILES:
-            data["upi_qrcode_url"] = save_file_to_server(
-                request.FILES["upi_qrcode"], "upi_qrcode"
-            )
+        # if "upi_qrcode" in request.FILES:
+        #     data["upi_qrcode_url"] = save_file_to_server(
+        #         request.FILES["upi_qrcode"], "upi_qrcode"
+        #     )
 
         serializer = BusinessEntitySerializer(
             business, data=data, partial=True

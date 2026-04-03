@@ -8,11 +8,9 @@ const Invoices = () => {
   const [invoices, setInvoices] = useState([]);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   
-  // --- MODAL STATES ---
   const [showCreate, setShowCreate] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null); 
   
-  // --- FILTER STATES ---
   const [filterStatus, setFilterStatus] = useState('All');
   const [showFilter, setShowFilter] = useState(false);
 
@@ -28,7 +26,6 @@ const Invoices = () => {
 
   useEffect(() => { fetchInvoices(); }, []);
 
-  // --- FILTER LOGIC ---
   useEffect(() => {
     if (filterStatus === 'All') {
       setFilteredInvoices(invoices);
@@ -37,7 +34,6 @@ const Invoices = () => {
     }
   }, [filterStatus, invoices]);
 
-  // --- EXPORT LOGIC ---
   const handleExport = () => {
     if (filteredInvoices.length === 0) return alert("No data to export");
     
@@ -49,8 +45,8 @@ const Invoices = () => {
       inv.customer_name || `Customer ID: ${inv.customer}`, 
       inv.payment_mode || 'N/A',
       inv.status,
-      inv.net_payable, // Using backend value directly
-      `"${inv.note || ''}"` 
+      inv.net_payable, 
+      `"${(inv.note || '').substring(0, 50)}"` 
     ]);
     
     const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -63,16 +59,13 @@ const Invoices = () => {
 
   return (
     <div className="page-content">
-      
       <div className="action-bar">
         <h2 className="section-title">Invoices & Bills</h2>
         <div className="action-buttons">
-           {/* Export */}
            <button className="btn btn-gray" onClick={handleExport}>
              <FileSpreadsheet size={16} /> Export
            </button>
 
-           {/* Filter */}
            <div style={{position: 'relative'}}>
              <button className="btn btn-outline" onClick={() => setShowFilter(!showFilter)}>
                <Filter size={16} /> {filterStatus === 'All' ? 'Filter' : filterStatus}
@@ -86,7 +79,6 @@ const Invoices = () => {
              )}
            </div>
 
-           {/* Create New */}
            <button className="btn btn-blue" onClick={() => setShowCreate(true)}>
              <Plus size={16}/> New Invoice
            </button>
@@ -131,19 +123,10 @@ const Invoices = () => {
                   <td className="font-bold">₹{inv.net_payable}</td>
                   
                   <td className="action-cells">
-                     <button 
-                       className="action-btn" 
-                       onClick={() => setSelectedInvoiceId(inv.id || inv.invoice_id)}
-                       title="View Details"
-                     >
+                     <button className="action-btn" onClick={() => setSelectedInvoiceId(inv.id || inv.invoice_id)} title="View Details">
                        <Eye size={16} color="#64748b"/>
                      </button>
-                     
-                     <button 
-                       className="action-btn" 
-                       onClick={() => setSelectedInvoiceId(inv.id || inv.invoice_id)}
-                       title="Open & Print"
-                     >
+                     <button className="action-btn" onClick={() => setSelectedInvoiceId(inv.id || inv.invoice_id)} title="Open & Print">
                        <Printer size={16} color="#3b82f6"/>
                      </button>
                   </td>
@@ -155,17 +138,11 @@ const Invoices = () => {
       </div>
 
       {showCreate && (
-        <CreateInvoice 
-            onClose={() => setShowCreate(false)} 
-            onSuccess={() => { setShowCreate(false); fetchInvoices(); }} 
-        />
+        <CreateInvoice onClose={() => setShowCreate(false)} onSuccess={() => { setShowCreate(false); fetchInvoices(); }} />
       )}
 
       {selectedInvoiceId && (
-        <InvoiceViewer 
-            invoiceId={selectedInvoiceId} 
-            onClose={() => setSelectedInvoiceId(null)} 
-        />
+        <InvoiceViewer invoiceId={selectedInvoiceId} onClose={() => setSelectedInvoiceId(null)} />
       )}
 
     </div>

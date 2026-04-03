@@ -1,4 +1,5 @@
 from django.urls import path
+from payments.views import BusinessPaymentConfigView
 from order.views import AddToCartView, CancelOrderView, CheckoutPreviewView, CheckoutView, CustomerOrderHistoryView, OrderDetailView, OrderItemListView, OrderListView, UpdateCartItemView, UpdateOrderStatusView, ViewCartView
 from invoice.views import CustomerDetailByNameView, CustomerSearchListView, InvoiceDetailView, InvoiceItemListView, InvoiceListCreateView, ItemDetailByNameView, ItemSearchListView
 from products.views import ItemDetailView, ItemListCreateView
@@ -24,6 +25,7 @@ urlpatterns = [
     path('business/setup/', BusinessSetupView.as_view(), name='business-setup'),
     path('business/<int:pk>/update/', BusinessUpdateView.as_view(), name='business-setup-update'),
     path("business/switch/", SwitchBusinessView.as_view(), name="switch-business"),
+    path("business/payment-config/", BusinessPaymentConfigView.as_view(), name="business-payment-config"),
     
     path('products/', ItemListCreateView.as_view(), name='item-list-create'),
     path('products/<int:pk>/', ItemDetailView.as_view(), name='item-detail'),

@@ -1,8 +1,12 @@
 from django.db import models
-from users.models import User
 from django.conf import settings
 
 class BusinessEntity(models.Model):
+    CURRENCY_CHOICES = [
+        ("INR", "Indian Rupee"),
+        ("USD", "US Dollar"),
+    ]
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -13,13 +17,11 @@ class BusinessEntity(models.Model):
 
     logo_bucket_url = models.CharField(blank=True, null=True)
 
-    # 
     facebook_url = models.CharField(max_length=255, blank=True, null=True)
     instagram_url = models.CharField(max_length=255, blank=True, null=True)
     youtube_url = models.CharField(max_length=255, blank=True, null=True)
     x_url = models.CharField(max_length=255, blank=True, null=True)
 
-    # Banners
     banner_1_url = models.CharField(blank=True, null=True)
     banner_2_url = models.CharField(blank=True, null=True)
     banner_3_url = models.CharField(blank=True, null=True)
@@ -43,8 +45,13 @@ class BusinessEntity(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
-    upi_qrcode_url = models.CharField(blank=True, null=True)
+    # upi_qrcode_url = models.CharField(blank=True, null=True)
 
+    currency = models.CharField(
+        max_length=10,
+        choices=CURRENCY_CHOICES,
+        default="INR"
+    )
 
     def __str__(self):
         return self.business_name

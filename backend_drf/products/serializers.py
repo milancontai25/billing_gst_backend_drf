@@ -6,6 +6,8 @@ from api.utils.file_upload import save_file_to_server
 
 class ProductSerializer(serializers.ModelSerializer):
     business = BusinessEntitySerializer(read_only=True)
+    currency_symbol = serializers.SerializerMethodField()
+    currency_code = serializers.SerializerMethodField()
 
     item_image = serializers.ImageField(write_only=True, required=False)
     image_1 = serializers.ImageField(write_only=True, required=False)
@@ -19,9 +21,11 @@ class ProductSerializer(serializers.ModelSerializer):
             # Core
             'id', 'business', 'slug',
             'item_type', 'item_name', 'category', 'description',
+            'currency_symbol',
+            'currency_code',
 
             # Pricing
-            'mrp_baseprice', 'gross_amount', 'gst_percent', 'includes_gst',
+            'mrp_baseprice', 'gross_amount', 'tax_percent', 'price_includes_tax', 'tax_type',
 
             # Goods
             'brand_product', 'hsn_sac_code_product',
@@ -62,7 +66,15 @@ class ProductSerializer(serializers.ModelSerializer):
             'category_image_url',
         ]
 
+    def get_currency_symbol(self, obj):
+        symbols = {
+            "INR": "₹",
+            "USD": "$",
+        }
+        return symbols.get(obj.business.currency, "") if obj.business else ""
 
+    def get_currency_code(self, obj):
+        return obj.business.currency if obj.business else ""
 
     def create(self, validated_data):
         images = {
@@ -91,17 +103,34 @@ class ProductSerializer(serializers.ModelSerializer):
             "category_image_url": validated_data.pop("category_image", None),
         }
 
-        # Update normal fields
+        # ✅ Handle boolean explicitly
+        if "price_includes_tax" in validated_data:
+            instance.price_includes_tax = validated_data.pop("price_includes_tax")
+
+        # Update other fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        # Update only provided images
+        # Update images
         for field, image in images.items():
             if image:
                 setattr(instance, field, save_file_to_server(image, "items"))
 
         instance.save()
         return instance
+
+    def validate(self, data):
+        gross_amount = data.get("gross_amount", getattr(self.instance, "gross_amount", None))
+        tax_percent = data.get("tax_percent", getattr(self.instance, "tax_percent", 0))
+        includes_tax = data.get("price_includes_tax", getattr(self.instance, "price_includes_tax", False))
+
+        if gross_amount is None:
+            raise serializers.ValidationError("gross_amount is required")
+
+        if tax_percent < 0:
+            raise serializers.ValidationError("tax_percent cannot be negative")
+
+        return data
 
     # ---------- Image Validation ----------
     def _validate_image(self, image):

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../api/axiosConfig';
 import { Plus, Filter, Edit, Trash2, X, Save, UploadCloud, Film, Download, Upload } from 'lucide-react';
 
-// Helper to fix image paths (from backend relative path to full URL)
+// Helper to fix image paths
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   if (imagePath.startsWith('http')) return imagePath; 
@@ -25,7 +25,6 @@ const Products = () => {
   const [typeFilter, setTypeFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
 
-  // --- 1. ADDED category_image TO INITIAL STATE ---
   const initialFormState = {
     item_type: 'Goods',
     item_name: '',
@@ -36,9 +35,9 @@ const Products = () => {
     min_order_quantity_product: 1,
     max_order_quantity_product: 1,
     availability_status_service: 'Available',
-    category: '', category_image: null, // <--- Added here
+    category: '', category_image: null, 
     description: '', mrp_baseprice: 0, gross_amount: 0, 
-    gst_percent: 0, includes_gst: false,
+    tax_percent: 0, price_includes_tax: false, tax_type: 'GST',
     area: '', customer_view: 'Special', isShow: false,
   };
   
@@ -68,12 +67,14 @@ const Products = () => {
 
   const categories = ['All', ...new Set(items.map(item => item.category).filter(Boolean))];
 
+  // --- UPDATED EXPORT LOGIC ---
   const handleExport = () => {
     if (filteredItems.length === 0) return alert("No items to export.");
 
+    // ✅ FIXED: Added "Includes Tax" to match your row data lengths
     const headers = [
         "Item Type", "Name", "Category", "Brand", "HSN Code", 
-        "Price", "Gross", "GST%", "Cost Price", 
+        "Price", "Gross", "Includes Tax", "Tax %", "Tax Type", "Cost Price", 
         "Quantity", "Unit", "Min Stock", "Service Status", 
         "Area", "Description"
     ];
@@ -88,7 +89,9 @@ const Products = () => {
             isService ? 'NA' : (item.hsn_sac_code_product || '-'),
             item.mrp_baseprice,
             item.gross_amount,
-            item.gst_percent,
+            item.price_includes_tax ? 'Yes' : 'No', // Format boolean nicely for Excel
+            item.tax_percent || item.gst_percent || 0,
+            item.tax_type || 'GST',
             isService ? 0 : item.cost_price_product,
             isService ? 0 : item.quantity_product,
             isService ? 'NA' : item.unit_product,
@@ -142,22 +145,27 @@ const Products = () => {
             payload.append('category', cols[2] || 'General');
             payload.append('mrp_baseprice', cols[5] || 0);
             payload.append('gross_amount', cols[6] || 0);
-            payload.append('gst_percent', cols[7] || 0);
-            payload.append('area', cols[13] || 'Store');
-            payload.append('description', cols[14]?.replace(/"/g, "") || '');
+            
+            // Note: Update these indices if your import CSV changes shape from the export
+            payload.append('tax_percent', cols[8] || 0);
+            payload.append('tax_type', 'GST');
+            payload.append('price_includes_tax', 'false');
+
+            payload.append('area', cols[15] || 'Store'); 
+            payload.append('description', cols[16]?.replace(/"/g, "") || '');
             payload.append('customer_view', 'Special'); 
 
             if (isService) {
-                payload.append('availability_status_service', cols[12] || 'Available');
+                payload.append('availability_status_service', cols[14] || 'Available');
                 payload.append('quantity_product', 0);
                 payload.append('brand_product', 'NA');
             } else {
                 payload.append('brand_product', cols[3] || 'Generic');
                 payload.append('hsn_sac_code_product', cols[4] || '');
-                payload.append('cost_price_product', cols[8] || 0);
-                payload.append('quantity_product', cols[9] || 0);
-                payload.append('unit_product', cols[10] || 'Pcs');
-                payload.append('min_stock_product', cols[11] || 5);
+                payload.append('cost_price_product', cols[10] || 0);
+                payload.append('quantity_product', cols[11] || 0);
+                payload.append('unit_product', cols[12] || 'Pcs');
+                payload.append('min_stock_product', cols[13] || 5);
             }
 
             try {
@@ -182,11 +190,21 @@ const Products = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({ 
-        ...formData, 
-        [name]: type === 'checkbox' ? checked : value
-    });
-  };
+
+    let finalValue;
+
+    if (type === 'checkbox') {
+      finalValue = checked;
+    } else if (name === 'price_includes_tax') {
+      finalValue = value === 'true';  
+    } else {
+      finalValue = value;
+    }
+    setFormData({
+    ...formData,
+    [name]: finalValue
+  });
+};
 
   const handleFileChange = (e, fieldName) => {
     if (e.target.files && e.target.files[0]) {
@@ -204,16 +222,18 @@ const Products = () => {
     setFormData({
       ...initialFormState,
       ...item,
-      // --- 2. RESET ALL FILE FIELDS ON EDIT ---
       image_1: null,
       image_2: null,
       image_3: null,
-      category_image: null, // <--- Resetting here so it doesn't try to send string path
+      category_image: null, 
 
       mrp_baseprice: item.mrp_baseprice || 0,
       gross_amount: item.gross_amount || 0,
-      gst_percent: item.gst_percent || 0,
-      includes_gst: item.includes_gst || false,
+      
+      tax_percent: item.tax_percent || item.gst_percent || 0,
+      price_includes_tax: item.price_includes_tax !== undefined ? item.price_includes_tax : (item.includes_gst || false),
+      tax_type: item.tax_type || 'GST',
+
       min_order_quantity_product: item.min_order_quantity_product || 1,
       max_order_quantity_product: item.max_order_quantity_product || 1,
       isShow: item.isShow || false
@@ -230,11 +250,11 @@ const Products = () => {
 
     const fields = [
         'item_type', 'item_name', 'category', 'description', 
-        'mrp_baseprice', 'gross_amount', 'gst_percent', 
+        'mrp_baseprice', 'gross_amount', 'tax_percent', 'tax_type',
         'area', 'customer_view', 'item_video_link'
     ];
 
-    submitData.append('includes_gst', formData.includes_gst ? 'true' : 'false');
+    submitData.append('price_includes_tax', formData.price_includes_tax ? 'true' : 'false');
     submitData.append('isShow', formData.isShow ? 'true' : 'false');
 
     if (isService) {
@@ -251,7 +271,6 @@ const Products = () => {
         submitData.append(key, value);
     });
 
-    // --- 3. APPEND category_image FILE TO PAYLOAD ---
     ['item_image', 'image_1', 'image_2', 'image_3', 'category_image'].forEach(imgKey => {
         if (formData[imgKey] instanceof File) {
             submitData.append(imgKey, formData[imgKey]);
@@ -365,15 +384,16 @@ const Products = () => {
                 <th>Type</th>
                 <th>Category</th>
                 <th>Stock / Status</th>
-                <th>Price</th>
+                
                 <th>Gross</th>
+                <th>Includes Tax</th>
                 <th>Online</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length === 0 ? (
-                <tr><td colSpan="7" className="text-center p-5">No items found matching your filters.</td></tr>
+                <tr><td colSpan="8" className="text-center p-5">No items found matching your filters.</td></tr>
               ) : (
                 filteredItems.map((row) => (
                     <tr key={row.id}>
@@ -397,8 +417,8 @@ const Products = () => {
                             : <span className="text-green-600 font-medium">{row.availability_status_service}</span>
                           }
                       </td>
-                      <td>₹{row.mrp_baseprice}</td>
                       <td>₹{row.gross_amount}</td>
+                      <td>{row.price_includes_tax ? "Yes" : "No"}</td>
                       <td>
                           {row.isShow ? (
                               <span className="badge bg-green-50 text-green-600">Visible</span>
@@ -459,7 +479,6 @@ const Products = () => {
                 </div>
               </div>
 
-              {/* --- 4. NEW ROW FOR CATEGORY IMAGE --- */}
               <div className="form-row" style={{ borderBottom: '1px dashed #e5e7eb', paddingBottom: '15px', marginBottom: '15px' }}>
                  <div className="form-group">
                      <label style={{ fontSize:'13px', color: '#6b7280' }}>Upload Category Image (Optional)</label>
@@ -500,27 +519,47 @@ const Products = () => {
                   <input type="number" name="mrp_baseprice" value={formData.mrp_baseprice} onChange={handleInputChange} required />
                 </div>
                 <div className="form-group half-width">
-                  <label>GST %*</label>
-                  <input type="number" name="gst_percent" value={formData.gst_percent} onChange={handleInputChange} required />
+                  <label>Tax %*</label>
+                  <input type="number" name="tax_percent" value={formData.tax_percent} onChange={handleInputChange} required />
                 </div>
+              </div>
+
+              <div className="form-row">
+                 <div className="form-group half-width">
+                    <label>Tax Type</label>
+                    <select name="tax_type" value={formData.tax_type} onChange={handleInputChange}>
+                        <option value="GST">GST</option>
+                        <option value="VAT">VAT</option>
+                        <option value="Sales Tax">Sales Tax</option>
+                        <option value="None">None</option>
+                    </select>
+                 </div>
+                 
+                 {/* ✅ FIXED: Locked Down during editing */}
+                 <div className="form-group half-width">
+                    <label>Price includes Tax?</label>
+                    <select 
+                        name="price_includes_tax" 
+                        value={formData.price_includes_tax ? 'true' : 'false'}
+                        onChange={handleInputChange}
+                        disabled={isEditing}
+                        style={isEditing ? { backgroundColor: '#f3f4f6', cursor: 'not-allowed' } : {}}
+                    >
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                    </select>
+                    {isEditing && (
+                        <p style={{fontSize: '11px', color: '#ef4444', marginTop: '4px'}}>
+                            Tax inclusion cannot be changed after creation.
+                        </p>
+                    )}
+                 </div>
               </div>
 
               <div className="form-row">
                  <div className="form-group half-width">
                     <label>Gross Amount*</label>
                     <input type="number" name="gross_amount" value={formData.gross_amount} onChange={handleInputChange} required />
-                 </div>
-                 
-                 <div className="form-group half-width">
-                    <label>GA includes GST?</label>
-                    <select 
-                        name="includes_gst" 
-                        value={String(formData.includes_gst)} 
-                        onChange={handleInputChange}
-                    >
-                        <option value="false">No</option>
-                        <option value="true">Yes</option>
-                    </select>
                  </div>
               </div>
 
