@@ -1,6 +1,6 @@
 from django.urls import path
 from payments.views import BusinessPaymentConfigView
-from order.views import AddToCartView, CancelOrderView, CheckoutPreviewView, CheckoutView, CustomerOrderHistoryView, OrderDetailView, OrderItemListView, OrderListView, UpdateCartItemView, UpdateOrderStatusView, ViewCartView
+from order.views import AddToCartView, CancelOrderView, CheckoutPreviewView, CheckoutView, CustomerOrderHistoryView, OrderDetailView, OrderItemListView, OrderListView, UpdateCartItemView, UpdateOrderStatusView, UpdatePaymentStatusView, ViewCartView, CreateRazorpayOrderView, VerifyRazorpayPaymentView, CreatePaypalOrderView, CapturePaypalOrderView
 from invoice.views import CustomerDetailByNameView, CustomerSearchListView, InvoiceDetailView, InvoiceItemListView, InvoiceListCreateView, ItemDetailByNameView, ItemSearchListView
 from products.views import ItemDetailView, ItemListCreateView
 from customers.views import CustomerAddressUpdateView, CustomerDetailView, CustomerForgotPasswordView, CustomerListCreateView, CustomerLoginOtpRequestView, CustomerLoginOtpVerifyView, CustomerLoginView, CustomerResetPasswordView, CustomerSignupView, CustomerTokenRefreshView
@@ -48,7 +48,11 @@ urlpatterns = [
     path('orders/<str:order_number>/', OrderDetailView.as_view(), name='order-detail'),
     path('orders/<str:order_number>/items/', OrderItemListView.as_view(), name='order-item-list'),
     path('orders/<str:order_number>/update-status/', UpdateOrderStatusView.as_view(), name='order-update-status'),
-
+    path(
+        'orders/<str:order_number>/update-payment/',
+        UpdatePaymentStatusView.as_view(),
+        name='order-update-payment'
+    ),
     path('business/<slug:business_slug>/customer/signup/', CustomerSignupView.as_view(), name='customer-signup'),
     path('business/<slug:business_slug>/customer/login/', CustomerLoginView.as_view(), name='customer-login'),
     path('customer/token/refresh/', CustomerTokenRefreshView.as_view(), name='token-refresh'),
@@ -61,8 +65,16 @@ urlpatterns = [
     path('business/<slug:business_slug>/items/<slug:item_slug>/', ItemDetailBySlugView.as_view()),
     path('customer/cart/add/', AddToCartView.as_view()),
     path('customer/cart/', ViewCartView.as_view()),
-    path('customer/cart/checkout/preview/', CheckoutPreviewView.as_view(), name="customer-order-preview"),
-    path('customer/cart/checkout/process/', CheckoutView.as_view(), name="customer-order-cash"),
+    path('customer/cart/checkout/preview/', CheckoutPreviewView.as_view(), name="checkout-preview"),
+    path('customer/cart/checkout/process/', CheckoutView.as_view(), name="checkout-process"),
+
+    # ---------------- RAZORPAY (INR) ----------------
+    path('payments/razorpay/create-order/', CreateRazorpayOrderView.as_view(), name="razorpay-create-order"),
+    path('payments/razorpay/verify/', VerifyRazorpayPaymentView.as_view(), name="razorpay-verify"),
+
+    # ---------------- PAYPAL (USD) ----------------
+    path('payments/paypal/create-order/', CreatePaypalOrderView.as_view(), name="paypal-create-order"),
+    path('payments/paypal/capture/', CapturePaypalOrderView.as_view(), name="paypal-capture"),
     path('customer/orders/', CustomerOrderHistoryView.as_view(), name='customer-order-history'),
     path('customer/order/<str:order_number>/cancel/', CancelOrderView.as_view(), name='cancel-order'),
     path('customer/cart/update/', UpdateCartItemView.as_view(), name='update-cart'),

@@ -29,6 +29,8 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
+FIELD_ENCRYPTION_KEY = config("FIELD_ENCRYPTION_KEY")
+
 ALLOWED_HOSTS = ['*']
 
 

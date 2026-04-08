@@ -35,17 +35,6 @@ class Item(models.Model):
     # igst_percent = models.DecimalField(max_digits=5, decimal_places=2, blank=False, null=False)
     # cess_percent = models.DecimalField(max_digits=5, decimal_places=2, blank=False, null=False)
     tax_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    price_includes_tax = models.BooleanField(default=False)
-    tax_type = models.CharField(
-        max_length=20,
-        choices=[
-            ("GST", "GST"),
-            ("VAT", "VAT"),
-            ("SALES_TAX", "Sales Tax"),
-            ("NONE", "No Tax"),
-        ],
-        default="GST"
-    )
 
     
     min_stock_product = models.IntegerField(default=0)
@@ -67,10 +56,17 @@ class Item(models.Model):
             slug = base_slug
             counter = 1
 
-            while Item.objects.filter(business=self.business, slug=slug).exists():
+            existing_slugs = set(
+                Item.objects.filter(business=self.business, slug__startswith=base_slug)
+                .values_list("slug", flat=True)
+            )
+
+            while slug in existing_slugs:
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
             self.slug = slug
 
         super().save(*args, **kwargs)
+
+

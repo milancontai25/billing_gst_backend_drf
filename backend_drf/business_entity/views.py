@@ -23,17 +23,12 @@ from django.shortcuts import get_object_or_404
 
 
 def generate_unique_slug(name):
-    """
-    Generates a URL-safe slug from the name.
-    If the slug exists, appends a counter (e.g., 'joes-pizza-1').
-    """
-    base_slug = slugify(name)
-    slug = base_slug[:45]
+    base_slug = slugify(name)[:45]
+    slug = base_slug
     counter = 1
 
-    # Loop until we find a slug that doesn't exist in the database
     while BusinessEntity.objects.filter(slug=slug).exists():
-        slug = f"{slug}-{counter}"
+        slug = f"{base_slug}-{counter}"
         counter += 1
 
     return slug

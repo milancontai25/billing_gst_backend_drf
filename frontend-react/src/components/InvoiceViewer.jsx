@@ -67,6 +67,18 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
   const statusText = isPaid ? 'PAID' : 'UNPAID';
   const displayDate = date || created_at || Date.now();
 
+  // --- DYNAMIC TAX LOGIC ---
+  const businessTaxType = business?.tax_type?.toUpperCase() || 'NONE';
+  const showTax = businessTaxType !== 'NONE'; // TRUE if GST, VAT, SALES_TAX. FALSE if NONE.
+
+  let taxLabel = 'TAX';
+  if (businessTaxType === 'GST') taxLabel = 'GST';
+  if (businessTaxType === 'VAT') taxLabel = 'VAT';
+  if (businessTaxType === 'SALES_TAX' || businessTaxType === 'SALES TAX') taxLabel = 'SALES TAX';
+
+  // Change Document Title
+  const documentTitle = showTax ? 'TAX INVOICE' : 'INVOICE';
+
   // --- RECONSTRUCT TRUE LINEAR MATH USING DATABASE VALUES ---
   let trueTotalBase = 0;
   let trueTotalDisc = 0;
@@ -74,18 +86,12 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
   let trueTotalTax = 0;
 
   const processedItems = items.map(item => {
-      // CreateInvoice saved the true base rate to the DB, so we just use it
       const displayRate = parseFloat(item.rate || 0); 
       const qty = parseInt(item.quantity || 1);
       
       const displayBaseAmt = displayRate * qty;
-      
-      // ✅ FIX: Read the exact discount amount saved by the backend
       const displayDiscAmount = parseFloat(item.discount_amount || 0);
-      
-      // ✅ FIX: Taxable is simply Base - Discount
       const displayTaxable = displayBaseAmt - displayDiscAmount;
-      
       const displayTaxAmt = parseFloat(item.tax_amount || 0);
 
       trueTotalBase += displayBaseAmt;
@@ -104,14 +110,13 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
   });
 
   const hasAnyDiscount = trueTotalDisc > 0;
-  const hasAnyTax = trueTotalTax > 0;
 
   return (
     <div className="modal-overlay" style={{zIndex: 1000}}>
       <div className="modal-box" style={{ width: '950px', height: '95vh', display: 'flex', flexDirection: 'column', background:'#f8fafc' }}>
         
         <div className="modal-header" style={{ background:'white', borderBottom: '1px solid #e2e8f0', padding: '15px 25px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight:'600' }}>Tax Invoice Preview</h2>
+          <h2 style={{ fontSize: '18px', fontWeight:'600' }}>{documentTitle} Preview</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn btn-blue" onClick={handleDownload} disabled={downloading} style={{ minWidth: '140px' }}>
               {downloading ? <><Loader size={16} className="animate-spin"/> Generating...</> : <><Download size={16}/> Download PDF</>}
@@ -143,11 +148,17 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
                   {business?.address}
                   {(business?.district || business?.state) && <div>{business.district}, {business.state} {business.pin}</div>}
                   {business?.country && <div>{business.country}</div>}
-                  {business?.gst_number && <div style={{ marginTop:'4px', fontWeight: '600', color: '#475569' }}>GSTIN: {business.gst_number}</div>}
+                  {showTax && business?.tax_number && (
+                    <div style={{ marginTop:'4px', fontWeight: '600', color: '#475569' }}>
+                        {taxLabel} NO: {business.tax_number}
+                    </div>
+                  )}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '1px', margin: 0 }}>TAX INVOICE</h1>
+                <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '1px', margin: 0 }}>
+                    {documentTitle}
+                </h1>
               </div>
             </div>
 
@@ -199,13 +210,19 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
                     <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Rate</th>
                     <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Qty</th>
                     <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>BaseAmt</th>
+                    
                     {hasAnyDiscount && (
                       <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Disc</th>
                     )}
-                    <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', background: '#eef2ff' }}>Taxable</th>
-                    {hasAnyTax && (
-                      <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Tax</th>
+                    
+                    {/* CONDITIONALLY RENDERED TAX COLUMNS */}
+                    {showTax && (
+                      <>
+                        <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', background: '#eef2ff' }}>Taxable</th>
+                        <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>{taxLabel}</th>
+                      </>
                     )}
+
                     <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase' }}>Total</th>
                   </tr>
                 </thead>
@@ -214,7 +231,9 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
                     <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
                       <td style={{ padding: '16px 8px', verticalAlign: 'middle', fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>
                         {item.item_name || `Item ID: ${item.item}`}
-                        {parseFloat(item.tax_percent) > 0 && <div style={{fontSize: '11px', color: '#94a3b8', fontWeight: 'normal', marginTop: '2px'}}>{item.tax_type || 'Tax'}</div>}
+                        {showTax && parseFloat(item.tax_percent) > 0 && (
+                          <div style={{fontSize: '11px', color: '#94a3b8', fontWeight: 'normal', marginTop: '2px'}}>{item.tax_type || taxLabel}</div>
+                        )}
                       </td>
                       <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#475569', fontSize: '14px' }}>₹{item.displayRate.toFixed(2)}</td>
                       <td style={{ padding: '16px 8px', textAlign: 'center', verticalAlign: 'middle', color: '#475569', fontSize: '14px' }}>{item.quantity}</td>
@@ -230,18 +249,20 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
                         </td>
                       )}
 
-                      <td style={{ padding: '16px 12px', textAlign: 'center', verticalAlign: 'middle', color: '#2563eb', fontSize: '15px', background: '#eef2ff', fontWeight: '600' }}>
-                        {item.displayTaxable.toFixed(2)}
-                      </td>
-
-                      {hasAnyTax && (
-                        <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#64748b', fontSize: '14px' }}>
-                            {item.displayTaxAmt > 0 ? (
-                                <>₹{item.displayTaxAmt.toFixed(2)} <span style={{fontSize:'12px'}}>({parseFloat(item.tax_percent).toFixed(1)}%)</span></>
-                            ) : (
-                                "-"
-                            )}
-                        </td>
+                      {/* CONDITIONALLY RENDERED TAX CELLS */}
+                      {showTax && (
+                        <>
+                          <td style={{ padding: '16px 12px', textAlign: 'center', verticalAlign: 'middle', color: '#2563eb', fontSize: '15px', background: '#eef2ff', fontWeight: '600' }}>
+                            {item.displayTaxable.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#64748b', fontSize: '14px' }}>
+                              {parseFloat(item.tax_amount || 0) > 0 ? (
+                                  <>₹{parseFloat(item.tax_amount).toFixed(2)} <span style={{fontSize:'12px'}}>({parseFloat(item.tax_percent).toFixed(1)}%)</span></>
+                              ) : (
+                                  "-"
+                              )}
+                          </td>
+                        </>
                       )}
 
                       <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#0f172a', fontSize: '15px', fontWeight: '700' }}>{parseFloat(item.total_value || 0).toFixed(2)}</td>
@@ -273,14 +294,17 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
-                  <span>Total Taxable Amount</span><span>₹{trueTotalTaxable.toFixed(2)}</span>
-                </div>
-                
-                {hasAnyTax && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
-                    <span>Total Tax</span><span>₹{trueTotalTax.toFixed(2)}</span>
-                  </div>
+                {/* CONDITIONALLY RENDERED SUMMARY TAX ROWS */}
+                {showTax && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                      <span>Total Taxable Amount</span><span>₹{trueTotalTaxable.toFixed(2)}</span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                      <span>Total {taxLabel}</span><span>₹{trueTotalTax.toFixed(2)}</span>
+                    </div>
+                  </>
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
@@ -311,5 +335,6 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
     </div>
   );
 };
+
 
 export default InvoiceViewer;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { Plus, Filter, Edit, Trash2, X, Save, UploadCloud, Film, Download, Upload } from 'lucide-react';
 
@@ -11,6 +12,13 @@ const getImageUrl = (imagePath) => {
 };
 
 const Products = () => {
+  // Read the active business data from the Layout wrapper
+  const { data: dashboardData } = useOutletContext();
+  const activeBusiness = dashboardData?.active_business;
+  
+  // Conditionally show/hide tax features based on Business Settings
+  const isTaxEnabled = activeBusiness?.tax_type && activeBusiness.tax_type !== 'NONE';
+
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +45,7 @@ const Products = () => {
     availability_status_service: 'Available',
     category: '', category_image: null, 
     description: '', mrp_baseprice: 0, gross_amount: 0, 
-    tax_percent: 0, price_includes_tax: false, tax_type: 'GST',
+    tax_percent: 0, 
     area: '', customer_view: 'Special', isShow: false,
   };
   
@@ -67,11 +75,9 @@ const Products = () => {
 
   const categories = ['All', ...new Set(items.map(item => item.category).filter(Boolean))];
 
-  // --- UPDATED EXPORT LOGIC ---
   const handleExport = () => {
     if (filteredItems.length === 0) return alert("No items to export.");
 
-    // ✅ FIXED: Added "Includes Tax" to match your row data lengths
     const headers = [
         "Item Type", "Name", "Category", "Brand", "HSN Code", 
         "Price", "Gross", "Includes Tax", "Tax %", "Tax Type", "Cost Price", 
@@ -89,7 +95,7 @@ const Products = () => {
             isService ? 'NA' : (item.hsn_sac_code_product || '-'),
             item.mrp_baseprice,
             item.gross_amount,
-            item.price_includes_tax ? 'Yes' : 'No', // Format boolean nicely for Excel
+            item.price_includes_tax ? 'Yes' : 'No', 
             item.tax_percent || item.gst_percent || 0,
             item.tax_type || 'GST',
             isService ? 0 : item.cost_price_product,
@@ -146,10 +152,7 @@ const Products = () => {
             payload.append('mrp_baseprice', cols[5] || 0);
             payload.append('gross_amount', cols[6] || 0);
             
-            // Note: Update these indices if your import CSV changes shape from the export
             payload.append('tax_percent', cols[8] || 0);
-            payload.append('tax_type', 'GST');
-            payload.append('price_includes_tax', 'false');
 
             payload.append('area', cols[15] || 'Store'); 
             payload.append('description', cols[16]?.replace(/"/g, "") || '');
@@ -190,21 +193,11 @@ const Products = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    let finalValue;
-
-    if (type === 'checkbox') {
-      finalValue = checked;
-    } else if (name === 'price_includes_tax') {
-      finalValue = value === 'true';  
-    } else {
-      finalValue = value;
-    }
     setFormData({
-    ...formData,
-    [name]: finalValue
-  });
-};
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
 
   const handleFileChange = (e, fieldName) => {
     if (e.target.files && e.target.files[0]) {
@@ -229,10 +222,7 @@ const Products = () => {
 
       mrp_baseprice: item.mrp_baseprice || 0,
       gross_amount: item.gross_amount || 0,
-      
-      tax_percent: item.tax_percent || item.gst_percent || 0,
-      price_includes_tax: item.price_includes_tax !== undefined ? item.price_includes_tax : (item.includes_gst || false),
-      tax_type: item.tax_type || 'GST',
+      tax_percent: item.tax_percent || 0,
 
       min_order_quantity_product: item.min_order_quantity_product || 1,
       max_order_quantity_product: item.max_order_quantity_product || 1,
@@ -250,11 +240,10 @@ const Products = () => {
 
     const fields = [
         'item_type', 'item_name', 'category', 'description', 
-        'mrp_baseprice', 'gross_amount', 'tax_percent', 'tax_type',
+        'mrp_baseprice', 'gross_amount', 'tax_percent',
         'area', 'customer_view', 'item_video_link'
     ];
 
-    submitData.append('price_includes_tax', formData.price_includes_tax ? 'true' : 'false');
     submitData.append('isShow', formData.isShow ? 'true' : 'false');
 
     if (isService) {
@@ -384,23 +373,23 @@ const Products = () => {
                 <th>Type</th>
                 <th>Category</th>
                 <th>Stock / Status</th>
-                
                 <th>Gross</th>
-                <th>Includes Tax</th>
+                {/* Dynamically Hide the Includes Tax Column if NO TAX */}
+                {isTaxEnabled && <th>Includes Tax</th>}
                 <th>Online</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length === 0 ? (
-                <tr><td colSpan="8" className="text-center p-5">No items found matching your filters.</td></tr>
+                <tr><td colSpan={isTaxEnabled ? "8" : "7"} className="text-center p-5">No items found matching your filters.</td></tr>
               ) : (
                 filteredItems.map((row) => (
                     <tr key={row.id}>
                       <td className="fw-600 text-dark">
                         <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                            {row.item_image ? (
-                                <img src={getImageUrl(row.item_image)} alt="img" style={{width:'30px', height:'30px', borderRadius:'4px', objectFit:'cover'}} />
+                            {row.item_image_url ? (
+                                <img src={getImageUrl(row.item_image_url)} alt="img" style={{width:'30px', height:'30px', borderRadius:'4px', objectFit:'cover'}} />
                             ) : <div style={{width:'30px', height:'30px', background:'#eee', borderRadius:'4px'}}></div>}
                             {row.item_name}
                         </div>
@@ -418,7 +407,10 @@ const Products = () => {
                           }
                       </td>
                       <td>₹{row.gross_amount}</td>
-                      <td>{row.price_includes_tax ? "Yes" : "No"}</td>
+                      
+                      {/* Hide value if Tax is disabled globally */}
+                      {isTaxEnabled && <td>{row.price_includes_tax ? "Yes" : "No"}</td>}
+                      
                       <td>
                           {row.isShow ? (
                               <span className="badge bg-green-50 text-green-600">Visible</span>
@@ -518,42 +510,16 @@ const Products = () => {
                   <label>{isService ? 'Base Price (Fees)*' : 'MRP (Base Price)*'}</label>
                   <input type="number" name="mrp_baseprice" value={formData.mrp_baseprice} onChange={handleInputChange} required />
                 </div>
-                <div className="form-group half-width">
-                  <label>Tax %*</label>
-                  <input type="number" name="tax_percent" value={formData.tax_percent} onChange={handleInputChange} required />
-                </div>
-              </div>
-
-              <div className="form-row">
-                 <div className="form-group half-width">
-                    <label>Tax Type</label>
-                    <select name="tax_type" value={formData.tax_type} onChange={handleInputChange}>
-                        <option value="GST">GST</option>
-                        <option value="VAT">VAT</option>
-                        <option value="Sales Tax">Sales Tax</option>
-                        <option value="None">None</option>
-                    </select>
-                 </div>
-                 
-                 {/* ✅ FIXED: Locked Down during editing */}
-                 <div className="form-group half-width">
-                    <label>Price includes Tax?</label>
-                    <select 
-                        name="price_includes_tax" 
-                        value={formData.price_includes_tax ? 'true' : 'false'}
-                        onChange={handleInputChange}
-                        disabled={isEditing}
-                        style={isEditing ? { backgroundColor: '#f3f4f6', cursor: 'not-allowed' } : {}}
-                    >
-                        <option value="false">No</option>
-                        <option value="true">Yes</option>
-                    </select>
-                    {isEditing && (
-                        <p style={{fontSize: '11px', color: '#ef4444', marginTop: '4px'}}>
-                            Tax inclusion cannot be changed after creation.
-                        </p>
-                    )}
-                 </div>
+                
+                {/* Dynamically hide Tax Input if Business has NO TAX */}
+                {isTaxEnabled ? (
+                    <div className="form-group half-width">
+                      <label>Tax %*</label>
+                      <input type="number" name="tax_percent" value={formData.tax_percent} onChange={handleInputChange} required />
+                    </div>
+                ) : (
+                    <div className="half-width"></div>
+                )}
               </div>
 
               <div className="form-row">
@@ -561,6 +527,7 @@ const Products = () => {
                     <label>Gross Amount*</label>
                     <input type="number" name="gross_amount" value={formData.gross_amount} onChange={handleInputChange} required />
                  </div>
+                 <div className="half-width"></div>
               </div>
 
               {!isService && (

@@ -36,21 +36,30 @@ const OrderViewer = ({ order, onClose }) => {
     }
   };
 
-  const isPaid = ['paid'].includes(order.payment_status?.toLowerCase());
+  const isPaid = ['paid', 'success'].includes(order.payment_status?.toLowerCase());
   const badgeBg = isPaid ? '#D1FAE5' : '#FEE2E2';
   const badgeText = isPaid ? '#059669' : '#DC2626';
   const statusText = isPaid ? 'PAID' : 'UNPAID';
 
-  // --- Fallback Handlers for Totals ---
-  const tBase = order.total_base_amount || order.total_amount || 0;
-  const tDisc = order.discount_amount || 0;
-  const tTaxable = order.total_taxable_amount || order.total_amount || 0;
-  const tGst = order.total_gst || 0;
-  const tRound = order.round_off || 0;
-  const netPayable = order.net_payable || order.total_amount || 0;
+  // --- DYNAMIC TAX LOGIC ---
+  const businessTaxType = business?.tax_type?.toUpperCase() || 'NONE';
+  const showTax = businessTaxType !== 'NONE';
+
+  let taxLabel = 'TAX';
+  if (businessTaxType === 'GST') taxLabel = 'GST';
+  if (businessTaxType === 'VAT') taxLabel = 'VAT';
+  if (businessTaxType === 'SALES_TAX' || businessTaxType === 'SALES TAX') taxLabel = 'SALES TAX';
+
+  // --- EXACT BACKEND TOTALS ---
+  const tBase = parseFloat(order.total_base_amount) || 0;
+  const tDisc = parseFloat(order.discount_amount) || 0;
+  const tTaxable = parseFloat(order.total_taxable_amount) || 0;
+  const tTax = parseFloat(order.total_tax) || 0;
+  const tRound = parseFloat(order.round_off) || 0;
+  const netPayable = parseFloat(order.net_payable || order.total_value) || 0;
 
   // --- CHECK IF ANY DISCOUNT EXISTS ---
-  const hasAnyDiscount = parseFloat(tDisc) > 0 || order.order_items?.some(item => parseFloat(item.discount_amount || item.discount_percent || 0) > 0);
+  const hasAnyDiscount = tDisc > 0 || order.order_items?.some(item => parseFloat(item.discount_amount || item.discount_percent || 0) > 0);
 
   return (
     <div className="modal-overlay" style={{zIndex: 1000}}>
@@ -93,7 +102,14 @@ const OrderViewer = ({ order, onClose }) => {
                   {business?.address}
                   {(business?.district || business?.state) && <div>{business.district}, {business.state} {business.pin}</div>}
                   {business?.country && <div>{business.country}</div>}
-                  {business?.gst_number && <div style={{ marginTop:'4px', fontWeight: '600', color: '#374151' }}>GSTIN: {business.gst_number}</div>}
+                  
+                  {/* DYNAMIC TAX NUMBER */}
+                  {showTax && business?.tax_number && (
+                    <div style={{ marginTop:'4px', fontWeight: '600', color: '#374151' }}>
+                        {taxLabel} NO: {business.tax_number}
+                    </div>
+                  )}
+
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -142,7 +158,7 @@ const OrderViewer = ({ order, onClose }) => {
                     </tr>
                     <tr>
                       <td style={{ padding: '6px 20px 6px 0', color: '#6B7280', textAlign: 'left' }}>Payment Mode:</td>
-                      <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{order.payment_mode || 'N/A'}</td>
+                      <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{order.payment_method || order.payment_mode || 'N/A'}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -158,12 +174,20 @@ const OrderViewer = ({ order, onClose }) => {
                     <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Rate</th>
                     <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Qty</th>
                     <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>BaseAmt</th>
+                    
                     {/* CONDITIONALLY RENDER DISCOUNT COLUMN */}
                     {hasAnyDiscount && (
                       <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Disc</th>
                     )}
-                    <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', background: '#eef2ff' }}>Taxable</th>
-                    <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>GST</th>
+
+                    {/* CONDITIONALLY RENDER TAX COLUMNS */}
+                    {showTax && (
+                      <>
+                        <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', background: '#eef2ff' }}>Taxable</th>
+                        <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>{taxLabel}</th>
+                      </>
+                    )}
+
                     <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#111827', textTransform: 'uppercase' }}>Total</th>
                   </tr>
                 </thead>
@@ -175,14 +199,17 @@ const OrderViewer = ({ order, onClose }) => {
                     const discAmt = parseFloat(item.discount_amount || 0);
                     const discPct = parseFloat(item.discount_percent || 0);
                     const taxableAmt = parseFloat(item.taxable_amount || baseAmt);
-                    const gstAmt = parseFloat(item.gst_amount || 0);
-                    const gstPct = parseFloat(item.gst_percent || 0);
+                    const taxAmt = parseFloat(item.tax_amount || 0);
+                    const taxPct = parseFloat(item.tax_percent || 0);
                     const lineTotal = parseFloat(item.total_value || item.subtotal || baseAmt);
 
                     return (
                       <tr key={index} style={{ borderBottom: '1px solid #E5E7EB' }}>
                         <td style={{ padding: '16px 8px', verticalAlign: 'middle', fontWeight: '600', color: '#111827', fontSize: '14px' }}>
                           {item.product_name || item.item_name}
+                          {showTax && taxPct > 0 && (
+                            <div style={{fontSize: '11px', color: '#9CA3AF', fontWeight: 'normal', marginTop: '2px'}}>{item.tax_type || taxLabel}</div>
+                          )}
                         </td>
                         <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px' }}>₹{rate.toFixed(2)}</td>
                         <td style={{ padding: '16px 8px', textAlign: 'center', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px' }}>{qty}</td>
@@ -191,20 +218,30 @@ const OrderViewer = ({ order, onClose }) => {
                         {/* CONDITIONALLY RENDER DISCOUNT CELL */}
                         {hasAnyDiscount && (
                           <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#6B7280', fontSize: '14px' }}>
-                             {discAmt > 0 ? (
-                                 <>-₹{discAmt.toFixed(2)} ({discPct.toFixed(1)}%)</>
-                             ) : (
-                                 "-"
-                             )}
+                              {discAmt > 0 ? (
+                                  <>-₹{discAmt.toFixed(2)} <span style={{fontSize:'12px'}}>({discPct.toFixed(1)}%)</span></>
+                              ) : (
+                                  "-"
+                              )}
                           </td>
                         )}
 
-                        <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px', background: '#eef2ff', fontWeight: '600', color: '#1D4ED8' }}>
-                          {taxableAmt.toFixed(2)}
-                        </td>
-                        <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#6B7280', fontSize: '14px' }}>
-                            ₹{gstAmt.toFixed(2)} ({gstPct.toFixed(1)}%)
-                        </td>
+                        {/* CONDITIONALLY RENDER TAX CELLS */}
+                        {showTax && (
+                          <>
+                            <td style={{ padding: '16px 12px', textAlign: 'center', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px', background: '#eef2ff', fontWeight: '600', color: '#1D4ED8' }}>
+                              {taxableAmt.toFixed(2)}
+                            </td>
+                            <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#6B7280', fontSize: '14px' }}>
+                                {taxAmt > 0 ? (
+                                  <>₹{taxAmt.toFixed(2)} <span style={{fontSize:'12px'}}>({taxPct.toFixed(1)}%)</span></>
+                                ) : (
+                                  "-"
+                                )}
+                            </td>
+                          </>
+                        )}
+
                         <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px', fontWeight: '700', color: '#111827' }}>
                           {lineTotal.toFixed(2)}
                         </td>
@@ -219,46 +256,52 @@ const OrderViewer = ({ order, onClose }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               
               <div style={{ width: '45%', paddingRight: '20px' }}>
-                {order.note && (
+                {order.special_notes && (
                   <>
                     <h4 style={{ fontSize: '12px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</h4>
-                    <p style={{ color: '#4B5563', fontSize: '13px', lineHeight: '1.6' }}>{order.note}</p>
+                    <p style={{ color: '#4B5563', fontSize: '13px', lineHeight: '1.6' }}>{order.special_notes}</p>
                   </>
                 )}
               </div>
 
               <div style={{ width: '320px', background: '#F9FAFB', borderRadius: '12px', padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
-                  <span>Total Base Amount</span><span>₹{parseFloat(tBase).toFixed(2)}</span>
+                  <span>Total Base Amount</span><span>₹{tBase.toFixed(2)}</span>
                 </div>
                 
                 {/* CONDITIONALLY RENDER TOTAL DISCOUNT */}
-                {parseFloat(tDisc) > 0 && (
+                {tDisc > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
-                    <span>Total Discount</span><span>-₹{parseFloat(tDisc).toFixed(2)}</span>
+                    <span>Total Discount</span><span style={{color: '#EF4444'}}>-₹{tDisc.toFixed(2)}</span>
                   </div>
                 )}
 
+                {/* CONDITIONALLY RENDER SUMMARY TAX ROWS */}
+                {showTax && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
+                      <span>Total Taxable Amount</span><span>₹{tTaxable.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
+                      <span>Total {taxLabel}</span><span>₹{tTax.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
-                  <span>Total Taxable Amount</span><span>₹{parseFloat(tTaxable).toFixed(2)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
-                  <span>Total GST</span><span>₹{parseFloat(tGst).toFixed(2)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
-                  <span>Round Off</span><span>{parseFloat(tRound).toFixed(2)}</span>
+                  <span>Round Off</span><span>{tRound.toFixed(2)}</span>
                 </div>
                 
                 <div style={{ borderTop: '1px dashed #D1D5DB', margin: '16px 0' }}></div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>Net Payable</span>
-                  <span style={{ fontSize: '22px', fontWeight: '800', color: '#2563EB' }}>{parseFloat(netPayable).toFixed(2)}</span>
+                  <span style={{ fontSize: '22px', fontWeight: '800', color: '#2563EB' }}>{netPayable.toFixed(2)}</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#6B7280', fontStyle: 'italic' }}>
-                  <span>Payments ({order.payment_mode || 'Cash'})</span>
-                  <span>(₹{isPaid ? parseFloat(netPayable).toFixed(2) : '0.00'})</span>
+                  <span>Payments ({order.payment_method || order.payment_mode || 'N/A'})</span>
+                  <span>(₹{isPaid ? netPayable.toFixed(2) : '0.00'})</span>
                 </div>
               </div>
             </div>

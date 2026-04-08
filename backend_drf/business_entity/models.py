@@ -28,8 +28,21 @@ class BusinessEntity(models.Model):
 
     owner_name = models.CharField(max_length=255, blank=True, null=True)
     business_type = models.CharField(max_length=55)
-    gst_status = models.CharField(max_length=55)
-    gst_number = models.CharField(max_length=30, blank=True, null=True)
+
+    price_includes_tax = models.BooleanField(default=False)
+    tax_type = models.CharField(
+        max_length=20,
+        choices=[
+            ("GST", "GST"),
+            ("VAT", "VAT"),
+            ("SALES_TAX", "Sales Tax"),
+            ("NONE", "No Tax"),
+        ],
+        default="GST"
+    )
+
+    tax_status = models.CharField(max_length=55)
+    tax_number = models.CharField(max_length=30, blank=True, null=True)
 
     address = models.TextField(blank=True, null=True)
     country = models.CharField(max_length=20, blank=True, null=True)
@@ -41,11 +54,10 @@ class BusinessEntity(models.Model):
     kyc_pan_id = models.CharField(max_length=20, blank=True, null=True)
     kyc_bucket_url = models.CharField(blank=True, null=True)
 
-    slug = models.SlugField(null=True, blank=True)
+    slug = models.SlugField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
-    # upi_qrcode_url = models.CharField(blank=True, null=True)
 
     currency = models.CharField(
         max_length=10,

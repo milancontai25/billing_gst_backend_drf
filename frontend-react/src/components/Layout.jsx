@@ -29,8 +29,14 @@ const Layout = () => {
   const initialFormState = {
     business_name: '', owner_name: '', business_type: 'Retailer',
     currency: 'INR', 
-    gst_status: 'Unregister', gst_number: '', address: '',
-    country: 'India', state: '', district: '', pin: '',
+    
+    // NEW TAX FIELDS
+    tax_status: 'Unregistered', 
+    tax_number: '', 
+    tax_type: 'NONE',
+    price_includes_tax: false,
+
+    address: '', country: 'India', state: '', district: '', pin: '',
     kyc_doc_type: 'Pan', kyc_pan_id: '',
     logo_file: null, kyc_file: null,
     banner_1: null, banner_2: null, banner_3: null, 
@@ -69,6 +75,23 @@ const Layout = () => {
 
   useEffect(() => { fetchDashboard(); }, []);
 
+  // --- SMART TAX LOGIC ---
+  useEffect(() => {
+    const { currency, tax_status } = setupForm;
+    let autoTaxType = 'NONE';
+
+    if (currency === 'INR' && tax_status === 'Registered') {
+        autoTaxType = 'GST';
+    } else if (currency === 'USD' && tax_status === 'Registered') {
+        autoTaxType = 'SALES_TAX';
+    }
+
+    if (setupForm.tax_type !== autoTaxType) {
+        setSetupForm(prev => ({ ...prev, tax_type: autoTaxType }));
+    }
+  }, [setupForm.currency, setupForm.tax_status]);
+
+
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -92,9 +115,14 @@ const Layout = () => {
         business_name: biz.business_name || '', owner_name: biz.owner_name || '',
         business_type: biz.business_type || 'Retailer', 
         currency: biz.currency || 'INR', 
-        gst_status: biz.gst_status || 'Unregister',
-        gst_number: biz.gst_number || '', address: biz.address || '',
-        country: biz.country || 'India', state: biz.state || '',
+        
+        // MAPPED NEW TAX FIELDS
+        tax_status: biz.tax_status || 'Unregistered',
+        tax_number: biz.tax_number || '', 
+        tax_type: biz.tax_type || 'NONE',
+        price_includes_tax: biz.price_includes_tax || false,
+
+        address: biz.address || '', country: biz.country || 'India', state: biz.state || '',
         district: biz.district || '', pin: biz.pin || '',
         kyc_doc_type: biz.kyc_doc_type || 'Pan', kyc_pan_id: biz.kyc_pan_id || '',
         logo_file: null, kyc_file: null,
@@ -114,7 +142,21 @@ const Layout = () => {
       setShowSwitcher(false);
   };
 
-  const handleInputChange = (e) => setSetupForm({ ...setupForm, [e.target.name]: e.target.value });
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    let finalValue;
+
+    if (type === 'checkbox') {
+        finalValue = checked;
+    } else if (name === 'price_includes_tax') {
+        finalValue = value === 'true';  
+    } else {
+        finalValue = value;
+    }
+
+    setSetupForm({ ...setupForm, [name]: finalValue });
+  };
+
   const handleFileChange = (e) => setSetupForm({ ...setupForm, [e.target.name]: e.target.files[0] });
 
   const handleSetupSubmit = async (e) => {
@@ -136,8 +178,6 @@ const Layout = () => {
       }
       setShowSetupModal(false);
       fetchDashboard();
-      
-      // OPEN PAYMENT CONFIGURATION AFTER SAVING BUSINESS
       openPaymentConfig();
       
     } catch (err) {
@@ -155,7 +195,6 @@ const Layout = () => {
           const res = await api.get('/business/payment-config/');
           const conf = res.data;
 
-          // Smart Currency Logic: Force Gateway if USD
           let currentMode = conf.payment_mode || 'UPI';
           if (setupForm.currency === 'USD') {
               currentMode = 'GATEWAY';
@@ -175,7 +214,6 @@ const Layout = () => {
           });
           setHasPaymentConfig(true);
       } catch (error) {
-          // If no config exists, default to UPI, unless currency is USD
           let currentMode = 'UPI';
           if (setupForm.currency === 'USD') currentMode = 'GATEWAY';
 
@@ -208,9 +246,9 @@ const Layout = () => {
 
       if (mode === 'UPI' || mode === 'BOTH') {
           payload.append('upi_id', paymentForm.upi_id);
-          payload.append('is_upi_active', paymentForm.is_upi_active);
+          payload.append('is_upi_active', paymentForm.is_upi_active ? 'true' : 'false');
           if (paymentForm.upi_qrcode instanceof File) {
-              payload.append('upi_qrcode_url', paymentForm.upi_qrcode); 
+            payload.append('upi_qrcode', paymentForm.upi_qrcode); // ✅ correct
           }
       }
 
@@ -218,7 +256,7 @@ const Layout = () => {
           payload.append('gateway_provider', paymentForm.gateway_provider);
           payload.append('gateway_merchant_id', paymentForm.gateway_merchant_id); 
           payload.append('gateway_public_key', paymentForm.gateway_public_key);
-          payload.append('is_gateway_active', paymentForm.is_gateway_active);
+          payload.append('is_gateway_active', paymentForm.is_gateway_active ? 'true' : 'false');
           if (paymentForm.gateway_secret_key) payload.append('gateway_secret_key', paymentForm.gateway_secret_key);
           if (paymentForm.gateway_webhook_secret) payload.append('gateway_webhook_secret', paymentForm.gateway_webhook_secret);
       }
@@ -311,7 +349,6 @@ const Layout = () => {
                   </select>
                 </div>
                 
-                {/* --- CURRENCY DROPDOWN (LOCKED IN EDIT MODE) --- */}
                 <div className="form-group half-width">
                   <label>Base Currency</label>
                   <select 
@@ -405,22 +442,55 @@ const Layout = () => {
                  </div>
               </div>
 
+              {/* --- NEW TAX & COMPLIANCE SECTION --- */}
               <div className="form-section-title">Tax & Compliance</div>
+              
               <div className="form-row">
                 <div className="form-group half-width">
-                  <label>GST Status</label>
-                  <select name="gst_status" value={setupForm.gst_status} onChange={handleInputChange}>
-                    <option value="Unregister">Unregistered</option>
+                  <label>Tax Status</label>
+                  <select name="tax_status" value={setupForm.tax_status} onChange={handleInputChange}>
+                    <option value="Unregistered">Unregistered</option>
                     <option value="Registered">Registered</option>
                   </select>
                 </div>
-                {setupForm.gst_status === 'Registered' && (
-                  <div className="form-group half-width">
-                    <label>GST Number</label>
-                    <input type="text" name="gst_number" value={setupForm.gst_number} onChange={handleInputChange} />
-                  </div>
-                )}
+                
+                <div className="form-group half-width">
+                  <label>Tax Type</label>
+                  <select 
+                     name="tax_type" 
+                     value={setupForm.tax_type} 
+                     disabled
+                     style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
+                  >
+                    <option value="GST">GST</option>
+                    <option value="VAT">VAT</option>
+                    <option value="SALES_TAX">Sales Tax</option>
+                    <option value="NONE">No Tax</option>
+                  </select>
+                  <p style={{fontSize: '11px', color: '#6b7280', marginTop: '4px'}}>Auto-assigned based on Currency & Status.</p>
+                </div>
               </div>
+
+              {setupForm.tax_status === 'Registered' && (
+                <div className="form-row">
+                  <div className="form-group half-width">
+                    <label>{setupForm.currency === 'INR' ? 'GST Number' : 'Sales Tax Number'}*</label>
+                    <input type="text" name="tax_number" value={setupForm.tax_number} onChange={handleInputChange} required />
+                  </div>
+                  
+                  <div className="form-group half-width">
+                    <label>Default Price Includes Tax?</label>
+                    <select 
+                        name="price_includes_tax" 
+                        value={String(setupForm.price_includes_tax)} 
+                        onChange={handleInputChange}
+                    >
+                        <option value="false">No (Tax Exclusive)</option>
+                        <option value="true">Yes (Tax Inclusive)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {!isEditMode && (
                 <div className="form-row">
@@ -464,7 +534,6 @@ const Layout = () => {
               <div className="form-group" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                  <label style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>Select Payment Mode</label>
                  <select name="payment_mode" value={paymentForm.payment_mode} onChange={handlePaymentInputChange} style={{ marginTop: '8px' }}>
-                    {/* Only show UPI options if currency is NOT USD */}
                     {setupForm.currency !== 'USD' && <option value="UPI">UPI Only</option>}
                     <option value="GATEWAY">Payment Gateway Only</option>
                     {setupForm.currency !== 'USD' && <option value="BOTH">Both UPI & Gateway</option>}
@@ -476,7 +545,6 @@ const Layout = () => {
                  )}
               </div>
 
-              {/* UPI CONFIGURATION */}
               {(paymentForm.payment_mode === 'UPI' || paymentForm.payment_mode === 'BOTH') && (
                 <div style={{ marginTop: '25px' }}>
                     <div className="form-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -500,7 +568,6 @@ const Layout = () => {
                 </div>
               )}
 
-              {/* GATEWAY CONFIGURATION */}
               {(paymentForm.payment_mode === 'GATEWAY' || paymentForm.payment_mode === 'BOTH') && (
                 <div style={{ marginTop: '25px' }}>
                     <div className="form-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

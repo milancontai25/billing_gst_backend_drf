@@ -3,12 +3,6 @@ from business_entity.models import BusinessEntity
 from customers.models import Customer  # assuming you have a Customer model
 from products.models import Item  # your existing Item model
 
-from django.db import models
-from business_entity.models import BusinessEntity
-from customers.models import Customer
-from products.models import Item
-
-
 class Order(models.Model):
     business = models.ForeignKey(
         BusinessEntity,
@@ -22,7 +16,7 @@ class Order(models.Model):
     )
 
     order_number = models.CharField(max_length=50, unique=True)
-    invoice_id = models.CharField(max_length=20, unique=True, default="")  # keep as your logic
+    invoice_id = models.CharField(max_length=20, unique=True)  # keep as your logic
     date = models.DateField(auto_now_add=True)
 
     customer_name = models.CharField(max_length=150, blank=False, null=False, default="")
@@ -30,21 +24,31 @@ class Order(models.Model):
     total_base_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_taxable_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total_gst = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     round_off = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     net_payable = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
-    payment_method = models.CharField(max_length=20, default="UPI")
-    payment_status = models.CharField(max_length=10, default="Unpaid")
     status = models.CharField(max_length=20, default="Pending")
 
-    payment_proof_url = models.URLField(blank=True, null=True)
     attachment_url = models.URLField(blank=True, null=True)
     special_notes = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def payment_status(self):
+        if not self.payments.exists():
+            return "Unpaid"
+
+        if self.payments.filter(status="Success").exists():
+            return "Paid"
+
+        if self.payments.filter(status="Pending").exists():
+            return "Pending"
+
+        return "Failed"
 
     def __str__(self):
         return self.order_number
@@ -58,30 +62,66 @@ class OrderItem(models.Model):
     )
     item = models.ForeignKey(
         Item,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="ordered_items"
     )
 
-    product_name = models.CharField(max_length=150)
+    item_name = models.CharField(max_length=150)
     quantity = models.PositiveIntegerField(default=1)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    rate = models.DecimalField(max_digits=10, decimal_places=2)
 
     discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
-    gst_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    gst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax_percent = models.DecimalField(max_digits=5, decimal_places=2)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax_type = models.CharField(max_length=20)
+    price_includes_tax = models.BooleanField(default=False)
 
     base_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     taxable_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     def subtotal(self):
-        return self.price * self.quantity
+        return self.rate * self.quantity
 
     def __str__(self):
-        return f"{self.product_name} ({self.quantity})"
+        return f"{self.item_name} ({self.quantity})"
 
+class Payment(models.Model):
+    PAYMENT_METHOD_CHOICES = [
+        ("CASH", "Cash"),
+        ("UPI", "UPI"),
+        ("GATEWAY", "Gateway"),
+    ]
+
+    PAYMENT_STATUS_CHOICES = [
+        ("Pending", "Pending"),
+        ("Success", "Success"),
+        ("Failed", "Failed"),
+        ("Refunded", "Refunded"),
+    ]
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="payments")
+
+    method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
+    status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default="Pending")
+
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+
+    # Gateway fields
+    gateway_order_id = models.CharField(max_length=255, blank=True, null=True)
+    gateway_payment_id = models.CharField(max_length=255, blank=True, null=True)
+    gateway_signature = models.TextField(blank=True, null=True)
+
+    # UPI proof
+    payment_proof_url = models.URLField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.order.order_number} - {self.method}"
+    
 
 
 class Cart(models.Model):

@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import { Trash2, X, Search, MapPin, Phone, CreditCard, User } from 'lucide-react';
+import { Trash2, X, Search, MapPin, Phone } from 'lucide-react';
 
 const CreateInvoice = ({ onClose, onSuccess }) => {
+  // --- GET BUSINESS TAX SETTINGS ---
+  const { data: dashboardData } = useOutletContext();
+  const activeBusiness = dashboardData?.active_business;
+  const isTaxEnabled = activeBusiness?.tax_type && activeBusiness.tax_type !== 'NONE';
+
   const [formData, setFormData] = useState({
     invoice_id: `INV-${Math.floor(100000 + Math.random() * 900000)}`,
     date: new Date().toISOString().split('T')[0],
@@ -26,49 +32,26 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
   const [showAddCust, setShowAddCust] = useState(false);
   const [newCustData, setNewCustData] = useState({ name: '', phone_number: '', email: '', address: '', gst_number: '' });
 
-  // --- PERFECT MATH MATCHING YOUR PYTHON BACKEND ---
-  const calculateRowValues = (qty, rate, discPct, taxPct, includesTax) => {
+  // --- EXACT LINEAR MATH (EXCLUSIVE BASE) ---
+  const calculateRowValues = (qty, baseRate, discPct, taxPct) => {
     const q = parseFloat(qty) || 0;
-    const r = parseFloat(rate) || 0; // Gross Rate
+    const r = parseFloat(baseRate) || 0; 
     const d = parseFloat(discPct) || 0;
     const t = parseFloat(taxPct) || 0;
 
-    const linePrice = q * r;
+    const baseAmt = q * r;
+    const discAmt = baseAmt * (d / 100);
+    const taxableAmt = baseAmt - discAmt;
+    const taxAmt = taxableAmt * (t / 100);
+    const totalAmt = taxableAmt + taxAmt;
 
-    if (includesTax) {
-        // CASE 2: Tax Inclusive
-        const total_amount = linePrice;
-        const discount = (total_amount * d) / 100;
-        const after_discount = total_amount - discount;
-
-        const taxable = after_discount / (1 + t / 100);
-        const tax = after_discount - taxable;
-        const base_amount = taxable;
-
-        return {
-            baseAmt: base_amount.toFixed(2),
-            discAmt: discount.toFixed(2),
-            taxableAmt: taxable.toFixed(2),
-            taxAmt: tax.toFixed(2),
-            totalAmt: after_discount.toFixed(2)
-        };
-    } else {
-        // CASE 1: Tax Exclusive
-        const base_amount = linePrice;
-        const discount = (base_amount * d) / 100;
-        const taxable = base_amount - discount;
-
-        const tax = (taxable * t) / 100;
-        const total = taxable + tax;
-
-        return {
-            baseAmt: base_amount.toFixed(2),
-            discAmt: discount.toFixed(2),
-            taxableAmt: taxable.toFixed(2),
-            taxAmt: tax.toFixed(2),
-            totalAmt: total.toFixed(2)
-        };
-    }
+    return {
+        baseAmt: baseAmt.toFixed(2),
+        discAmt: discAmt.toFixed(2),
+        taxableAmt: taxableAmt.toFixed(2),
+        taxAmt: taxAmt.toFixed(2),
+        totalAmt: totalAmt.toFixed(2)
+    };
   };
 
   // --- DYNAMIC SUMMARY ---
@@ -138,20 +121,29 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
 
   const selectProduct = (prod, index) => {
     const newItems = [...items];
-    const rate = parseFloat(prod.gross_amount) || parseFloat(prod.mrp_baseprice) || 0;
-    const taxPct = parseFloat(prod.tax_percent) || 0;
+    const grossRate = parseFloat(prod.gross_amount) || parseFloat(prod.mrp_baseprice) || 0;
+    
+    // ✅ FORCE TAX TO 0 IF BUSINESS TAX IS DISABLED
+    let taxPct = isTaxEnabled ? (parseFloat(prod.tax_percent) || 0) : 0; 
+    
     const discPct = parseFloat(prod.discount_percent) || 0;
     const includesTax = prod.price_includes_tax || false;
     const taxType = prod.tax_type || 'GST';
 
-    const calc = calculateRowValues(newItems[index].qty, rate, discPct, taxPct, includesTax);
+    // EXTRACT BASE RATE
+    let baseRate = grossRate;
+    if (includesTax && taxPct > 0) {
+        baseRate = grossRate / (1 + taxPct / 100);
+    }
+
+    const calc = calculateRowValues(newItems[index].qty, baseRate, discPct, taxPct);
 
     newItems[index] = {
       ...newItems[index],
       item_id: prod.id, 
       name: prod.item_name, 
       hsn: prod.hsn_sac_code_product || '',
-      rate: rate.toFixed(2),
+      rate: baseRate.toFixed(2), 
       tax_percent: taxPct || '', 
       tax_type: taxType, 
       price_includes_tax: includesTax, 
@@ -172,7 +164,7 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     newItems[index][field] = value;
     const item = newItems[index];
     
-    const calc = calculateRowValues(item.qty, item.rate, item.discount_percent, item.tax_percent, item.price_includes_tax);
+    const calc = calculateRowValues(item.qty, item.rate, item.discount_percent, item.tax_percent);
     newItems[index].baseAmt = calc.baseAmt;
     newItems[index].discAmt = calc.discAmt;
     newItems[index].taxableAmt = calc.taxableAmt;
@@ -203,9 +195,9 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
         quantity: parseInt(item.qty) || 1,
         rate: parseFloat(item.rate || 0).toFixed(2),
         discount_percent: parseFloat(item.discount_percent || 0).toFixed(2),
-        tax_percent: parseFloat(item.tax_percent || 0).toFixed(2),
+        tax_percent: isTaxEnabled ? parseFloat(item.tax_percent || 0).toFixed(2) : "0.00",
         tax_type: item.tax_type || "GST",
-        price_includes_tax: item.price_includes_tax || false
+        price_includes_tax: false 
       }))
     };
 
@@ -281,9 +273,9 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                   <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', width: '90px' }}>Rate</th>
                   <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', width: '70px' }}>Qty</th>
                   <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>BaseAmt</th>
-                  <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', width: '100px' }}>Disc</th>
+                  <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', width: '100px' }}>Disc %</th>
                   <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', background: '#eef2ff' }}>Taxable</th>
-                  <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', width: '100px' }}>Tax</th>
+                  <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', width: '100px' }}>Tax %</th>
                   <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase' }}>Total</th>
                   <th style={{ width: '40px' }}></th>
                 </tr>
@@ -313,11 +305,12 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                               ₹{item.baseAmt}
                           </td>
                           
-                          {/* DISCOUNT INPUT (Hide 0.00 string conditionally) */}
                           <td style={{ padding: '15px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
                               <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'4px'}}>
                                   <input type="number" value={item.discount_percent} onChange={(e) => handleItemChange(index, 'discount_percent', e.target.value)} placeholder="0" style={{width:'100%', textAlign:'center', padding:'6px', fontSize:'13px', border: '1px solid #cbd5e1', borderRadius: '4px'}} title="Disc %"/>
-                                  {parseFloat(item.discAmt) > 0 && <span style={{fontSize:'12px', color:'#ef4444'}}>-₹{item.discAmt}</span>}
+                                  <div style={{fontSize:'12px', color:'#ef4444', height: '16px'}}>
+                                      {parseFloat(item.discAmt) > 0 ? `-₹${item.discAmt}` : ''}
+                                  </div>
                               </div>
                           </td>
 
@@ -325,11 +318,30 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                               {item.taxableAmt}
                           </td>
 
-                          {/* TAX INPUT (Hide 0.00 string conditionally) */}
                           <td style={{ padding: '15px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
                               <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'4px'}}>
-                                  <input type="number" value={item.tax_percent} onChange={(e) => handleItemChange(index, 'tax_percent', e.target.value)} placeholder="0" style={{width:'100%', textAlign:'center', padding:'6px', fontSize:'13px', border: '1px solid #cbd5e1', borderRadius: '4px'}} title="Tax %"/>
-                                  {parseFloat(item.taxAmt) > 0 && <span style={{fontSize:'12px', color:'#64748b'}}>₹{item.taxAmt}</span>}
+                                  {/* ✅ DISABLED AND LOCKED IF NO TAX ENALBED IN SETTINGS */}
+                                  <input 
+                                    type="number" 
+                                    value={item.tax_percent} 
+                                    onChange={(e) => handleItemChange(index, 'tax_percent', e.target.value)} 
+                                    placeholder="0" 
+                                    disabled={!isTaxEnabled}
+                                    style={{
+                                        width:'100%', 
+                                        textAlign:'center', 
+                                        padding:'6px', 
+                                        fontSize:'13px', 
+                                        border: '1px solid #cbd5e1', 
+                                        borderRadius: '4px',
+                                        backgroundColor: !isTaxEnabled ? '#f1f5f9' : 'white',
+                                        cursor: !isTaxEnabled ? 'not-allowed' : 'auto'
+                                    }} 
+                                    title="Tax %"
+                                  />
+                                  <div style={{fontSize:'12px', color:'#64748b', height: '16px'}}>
+                                      {parseFloat(item.taxAmt) > 0 ? `₹${item.taxAmt}` : ''}
+                                  </div>
                               </div>
                           </td>
 

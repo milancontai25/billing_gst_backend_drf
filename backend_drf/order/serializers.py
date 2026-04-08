@@ -1,6 +1,6 @@
 from business_entity.serializers import BusinessEntitySerializer
 from rest_framework import serializers
-from .models import Cart, CartItem, Order, OrderItem
+from .models import Cart, CartItem, Order, OrderItem, Payment
 
 class OrderItemSerializer(serializers.ModelSerializer):
     subtotal = serializers.SerializerMethodField()
@@ -8,26 +8,44 @@ class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = [
-            'product_name',
+            'item_name',
             'quantity',
-            'price',
+            'rate',
             'discount_percent',
             'discount_amount',
-            'gst_percent',
+            'tax_percent',
+            'tax_type',
+            'price_includes_tax',
             'base_amount',
             'taxable_amount',
-            'gst_amount',
+            'tax_amount',
             'total_value',
             'subtotal',
         ]
 
     def get_subtotal(self, obj):
-        return obj.quantity * obj.price
+        return obj.quantity * obj.rate
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            "method",
+            "status",
+            "amount",
+            "payment_proof_url",
+            "gateway_order_id",
+            "gateway_payment_id",
+        ]
 
 
 class OrderSerializer(serializers.ModelSerializer):
     order_items = OrderItemSerializer(many=True, read_only=True)
+    payments = PaymentSerializer(many=True, read_only=True)
+    payment_status = serializers.SerializerMethodField()
     business = BusinessEntitySerializer(read_only=True)
+
     customer_name_display = serializers.CharField(source='customer.name', read_only=True)
     customer_email = serializers.EmailField(source='customer.email', read_only=True)
     customer_phone = serializers.CharField(source='customer.phone', read_only=True)
@@ -42,6 +60,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'order_number',
             'invoice_id',
             'date',
+
             'customer_name',
             'customer_name_display',
             'customer_email',
@@ -49,41 +68,47 @@ class OrderSerializer(serializers.ModelSerializer):
             'customer_district',
             'customer_state',
             'customer_address',
-            'payment_method',
-            'payment_status',
+
             'status',
+            'payment_status',
             'total_base_amount',
             'discount_amount',
             'total_taxable_amount',
-            'total_gst',
-            'total_amount',
+            'total_tax',
+            'total_value',
             'round_off',
             'net_payable',
+
             'order_items',
-            'payment_proof_url',
+            'payments',   # ✅ NEW
+
             'attachment_url',
             'special_notes',
             'created_at',
             'updated_at'
         ]
 
+    def get_payment_status(self, obj):
+        payment = obj.payments.last()
+        return payment.status if payment else "Pending"
 
+        
 class OrderStatusUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(
         choices=['Pending', 'Confirmed', 'Processing', 'Shipped', 'Received', 'Cancelled'],
         required=False
     )
-    payment_status = serializers.ChoiceField(
-        choices=['Unpaid', 'Paid', 'Refunded'],
-        required=False
-    )
+    # payment_status = serializers.ChoiceField(
+    #     choices=['Unpaid', 'Paid', 'Refunded'],
+    #     required=False
+    # )
 
-    def validate(self, attrs):
-        if not attrs:
-            raise serializers.ValidationError(
-                "At least one field (status or payment_status) is required."
-            )
-        return attrs
+    # def validate(self, attrs):
+    #     if not attrs:
+    #         raise serializers.ValidationError(
+    #             "At least one field (status or payment_status) is required."
+    #         )
+    #     return attrs
 
 
 
@@ -133,11 +158,15 @@ class CartSerializer(serializers.ModelSerializer):
         fields = ['id', 'items', 'total_amount']
 
     def get_items(self, obj):
-        qs = obj.items.all()
+        qs = obj.items.select_related('item').all()
         return CartItemSerializer(qs, many=True).data
 
+
     def get_total_amount(self, obj):
-        return sum(i.subtotal() for i in obj.items.all())
+        return sum(
+            (i.subtotal() for i in obj.items.all()),
+            Decimal("0.00")
+        )
 
 
 

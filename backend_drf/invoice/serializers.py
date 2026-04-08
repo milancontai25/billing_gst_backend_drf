@@ -62,8 +62,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
             discount_percent = Decimal(item_data.get("discount_percent", 0))
 
             tax_percent = Decimal(item_obj.tax_percent)
-            tax_type = item_obj.tax_type
-            includes_tax = item_obj.price_includes_tax
+            tax_type = business.tax_type
+            includes_tax = business.price_includes_tax
 
             # ---------------- STOCK CHECK ----------------
             if item_obj.quantity_product < qty:

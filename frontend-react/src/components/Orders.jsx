@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 import { 
-  Search, Eye, X, Download, Filter, FileSpreadsheet, Image as ImageIcon, FileText, ExternalLink 
+  Search, Eye, X, Download, Filter, FileSpreadsheet, Image as ImageIcon, ExternalLink 
 } from 'lucide-react';
 import OrderViewer from './OrderViewer';
 
@@ -25,7 +25,7 @@ const Orders = () => {
   const [showModal, setShowModal] = useState(false);
   
   // Image Preview State
-  const [previewImage, setPreviewImage] = useState(null); // URL of image to preview
+  const [previewImage, setPreviewImage] = useState(null);
 
   // --- API CALLS ---
   const fetchOrders = async () => {
@@ -80,12 +80,12 @@ const Orders = () => {
   const handleExport = () => {
     if (filteredOrders.length === 0) return alert("No data to export");
     
-    const headers = ["Order #", "Customer", "Date", "Amount", "Payment", "Status", "Notes"];
+    const headers = ["Order #", "Customer", "Date", "Net Payable", "Payment", "Status", "Notes"];
     const rows = filteredOrders.map(o => [
       o.order_number,
       o.customer_name,
       new Date(o.date).toLocaleDateString(),
-      o.total_amount,
+      o.net_payable, 
       o.payment_status,
       o.status,
       `"${o.special_notes || ''}"`
@@ -106,15 +106,25 @@ const Orders = () => {
       const updatedOrders = orders.map(o => o.order_number === orderNumber ? { ...o, status: newStatus } : o);
       setOrders(updatedOrders);
       calculateStats(updatedOrders);
-    } catch (err) { alert("Failed to update status"); fetchOrders(); }
+    } catch (err) { 
+      alert("Failed to update status"); 
+      fetchOrders(); 
+    }
   };
 
   const handlePaymentUpdate = async (orderNumber, newPaymentStatus) => {
     try {
-      await api.patch(`/orders/${orderNumber}/update-status/`, { payment_status: newPaymentStatus });
+      await api.patch(`/orders/${orderNumber}/update-payment/`, { status: newPaymentStatus });
       const updatedOrders = orders.map(o => o.order_number === orderNumber ? { ...o, payment_status: newPaymentStatus } : o);
       setOrders(updatedOrders);
-    } catch (err) { alert("Failed to update payment status"); fetchOrders(); }
+    } catch (err) { 
+      // ✅ GRACEFULLY HANDLE THE BACKEND 404 ERROR
+      const errorMsg = err.response?.data?.error || "Failed to update payment status.";
+      alert(`Action Failed: ${errorMsg}\n\nYou can only update the status of an existing payment.`); 
+      
+      // Re-fetch to reset the dropdown back to its original state
+      fetchOrders(); 
+    }
   };
 
   const openOrderDetails = async (orderNumber) => {
@@ -180,7 +190,7 @@ const Orders = () => {
                   <div style={{ display: 'flex' }}>
                       <div className="dropdown-section" style={{ flex: 1, borderRight: '1px solid #eee' }}>
                           <div className="dropdown-label">Status</div>
-                          {['All', 'Pending', 'Confirmed', 'Processing', 'Received', 'Cancelled'].map(status => (
+                          {['All', 'Pending', 'Confirmed', 'Processing', 'Shipped', 'Received', 'Cancelled'].map(status => (
                               <div key={status} className={`dropdown-option ${statusFilter === status ? 'active' : ''}`} onClick={() => setStatusFilter(status)}>
                                   {status}
                               </div>
@@ -188,7 +198,7 @@ const Orders = () => {
                       </div>
                       <div className="dropdown-section" style={{ flex: 1 }}>
                           <div className="dropdown-label">Payment</div>
-                          {['All', 'Paid', 'Unpaid'].map(pmt => (
+                          {['All', 'Paid', 'Unpaid', 'Pending', 'Refunded'].map(pmt => (
                               <div key={pmt} className={`dropdown-option ${paymentFilter === pmt ? 'active' : ''}`} onClick={() => setPaymentFilter(pmt)}>
                                   {pmt}
                               </div>
@@ -214,11 +224,9 @@ const Orders = () => {
                 <th>Date</th>
                 <th>Amount</th>
                 <th>Payment</th>
-                {/* NEW COLUMNS */}
                 <th>Proof</th>
                 <th>Attach</th>
                 <th>Notes</th>
-                {/* END NEW COLUMNS */}
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -234,7 +242,7 @@ const Orders = () => {
                      onStatusUpdate={handleStatusUpdate} 
                      onPaymentUpdate={handlePaymentUpdate}
                      onView={openOrderDetails} 
-                     onPreviewImage={(url) => setPreviewImage(url)} // Pass preview handler
+                     onPreviewImage={(url) => setPreviewImage(url)}
                    />
                  ))
               )}
@@ -248,7 +256,7 @@ const Orders = () => {
         <OrderViewer order={selectedOrder} onClose={() => setShowModal(false)} />
       )}
 
-      {/* 4. IMAGE PREVIEW MODAL (NEW) */}
+      {/* 4. IMAGE PREVIEW MODAL */}
       {previewImage && (
         <ImagePreviewModal imageUrl={previewImage} onClose={() => setPreviewImage(null)} />
       )}
@@ -268,7 +276,6 @@ const StatBox = ({ title, value, color }) => (
   </div>
 );
 
-// Updated OrderRow with New Columns
 const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView, onPreviewImage }) => {
   
   const getStatusColor = (s) => {
@@ -282,7 +289,17 @@ const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView, onPreviewIma
     return 'bg-gray-100 text-gray-800';
   };
 
-  const getPaymentColor = (s) => s.toLowerCase() === 'paid' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200';
+  const getPaymentColor = (s) => {
+      const status = s.toLowerCase();
+      if (status === 'paid' || status === 'success') return 'bg-green-50 text-green-700 border-green-200';
+      if (status === 'refunded') return 'bg-gray-100 text-gray-700 border-gray-300';
+      if (status === 'pending') return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      return 'bg-red-50 text-red-700 border-red-200'; // unpaid/failed
+  };
+
+  const latestPayment = order.payments && order.payments.length > 0 
+        ? order.payments[order.payments.length - 1] 
+        : null;
 
   return (
     <tr>
@@ -292,7 +309,8 @@ const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView, onPreviewIma
         <div className="text-xs text-gray-500">{order.customer_email}</div>
       </td>
       <td>{new Date(order.date).toLocaleDateString()}</td>
-      <td className="font-bold">₹{order.total_amount}</td>
+      
+      <td className="font-bold">₹{order.net_payable}</td>
       
       <td>
         <select 
@@ -301,19 +319,18 @@ const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView, onPreviewIma
           onChange={(e) => onPaymentUpdate(order.order_number, e.target.value)}
           style={{ paddingRight: '20px' }} 
         >
-          <option value="Unpaid">Unpaid</option>
-          <option value="Paid">Paid</option>
+          <option value="Failed">Unpaid</option>
+          <option value="Pending">Pending</option>
+          <option value="Success">Paid</option>
+          <option value="Refunded">Refunded</option>
         </select>
       </td>
 
-      {/* --- NEW COLUMNS START --- */}
-      
-      {/* 1. Payment Proof */}
       <td className="text-center">
-        {order.payment_proof_url ? (
+        {latestPayment?.payment_proof_url ? (
             <div 
                 className="cursor-pointer hover:opacity-80 inline-flex items-center justify-center bg-blue-50 text-blue-600 p-2 rounded-md"
-                onClick={() => onPreviewImage(order.payment_proof_url)}
+                onClick={() => onPreviewImage(latestPayment.payment_proof_url)}
                 title="View Payment Proof"
             >
                 <ImageIcon size={18} />
@@ -323,7 +340,6 @@ const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView, onPreviewIma
         )}
       </td>
 
-      {/* 2. Attachment */}
       <td className="text-center">
         {order.attachment_url ? (
             <div 
@@ -338,7 +354,6 @@ const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView, onPreviewIma
         )}
       </td>
 
-      {/* 3. Special Notes */}
       <td style={{ maxWidth: '150px' }}>
         {order.special_notes ? (
             <div className="truncate text-xs text-gray-600" title={order.special_notes}>
@@ -349,8 +364,6 @@ const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView, onPreviewIma
         )}
       </td>
       
-      {/* --- NEW COLUMNS END --- */}
-
       <td>
         <select 
           className={`status-select ${getStatusColor(order.status)}`}
@@ -375,7 +388,6 @@ const OrderRow = ({ order, onStatusUpdate, onPaymentUpdate, onView, onPreviewIma
   );
 };
 
-// --- IMAGE PREVIEW MODAL COMPONENT ---
 const ImagePreviewModal = ({ imageUrl, onClose }) => {
     if (!imageUrl) return null;
 
@@ -391,20 +403,16 @@ const ImagePreviewModal = ({ imageUrl, onClose }) => {
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            {/* Updated ClassName: preview-modal-box */}
             <div 
                 className="preview-modal-box"
                 onClick={(e) => e.stopPropagation()} 
             >
-                {/* Updated ClassName: preview-close-btn */}
                 <button onClick={onClose} className="preview-close-btn">
                     <X size={20} />
                 </button>
 
-                {/* Updated ClassName: preview-title */}
                 <h3 className="preview-title">Image Preview</h3>
 
-                {/* Updated ClassName: preview-image-container */}
                 <div className="preview-image-container">
                     <img 
                         src={imageUrl} 
@@ -413,7 +421,6 @@ const ImagePreviewModal = ({ imageUrl, onClose }) => {
                     />
                 </div>
 
-                {/* Updated ClassName: preview-actions */}
                 <div className="preview-actions">
                     <a 
                         href={imageUrl} 

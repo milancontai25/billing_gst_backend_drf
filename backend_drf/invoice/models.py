@@ -40,7 +40,6 @@ class InvoiceItem(models.Model):
 
     item_name = models.CharField(max_length=255, default="NA")  # ✅ snapshot
     quantity = models.PositiveIntegerField(default=1)
-
     rate = models.DecimalField(max_digits=10, decimal_places=2)
 
     discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)

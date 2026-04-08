@@ -1,5 +1,6 @@
 from django.db import models
 from business_entity.models import BusinessEntity
+from encrypted_model_fields.fields import EncryptedCharField
 
 class BusinessPaymentConfig(models.Model):
     PAYMENT_MODE_CHOICES = [
@@ -39,8 +40,8 @@ class BusinessPaymentConfig(models.Model):
     upi_id = models.CharField(max_length=100, blank=True, null=True)
 
     gateway_public_key = models.CharField(max_length=255, blank=True, null=True)
-    gateway_secret_key = models.CharField(max_length=255, blank=True, null=True)
-    gateway_webhook_secret = models.CharField(max_length=255, blank=True, null=True)
+    gateway_secret_key = EncryptedCharField(max_length=255, null=True, blank=True)
+    gateway_webhook_secret = EncryptedCharField(max_length=255, null=True, blank=True)
     gateway_merchant_id = models.CharField(max_length=255, blank=True, null=True)
 
     is_gateway_active = models.BooleanField(default=False)
