@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom'; // Import useLocation
 import { Search, ShoppingCart, User, LogOut, Package, X } from 'lucide-react';
 import '../assets/css/storeheader.css'; 
 
@@ -22,6 +22,17 @@ const StoreHeader = ({
   const [scrolled, setScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
+  
+  // Use location to determine active link
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const currentType = searchParams.get('type');
+  
+  // Helper to determine if a link is active
+  const isCategoriesActive = location.pathname === `/${slug}` && !currentType;
+  const isProductsActive = currentType === 'goods';
+  const isServicesActive = currentType === 'services';
+  const isOurStoryActive = location.pathname === `/${slug}/about`;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -37,6 +48,7 @@ const StoreHeader = ({
     <header className={`store-header ${scrolled ? 'scrolled' : ''}`}>
       <div className="header-content">
         
+        {/* --- LEFT: BRAND LOGO --- */}
         <Link to={`/${slug}`} className="brand-section">
           {businessLogo && (
               <img 
@@ -46,19 +58,48 @@ const StoreHeader = ({
                 onError={(e) => e.target.style.display='none'} 
               />
           )}
+          {/* Apply a class to handle truncation via CSS */}
           <h1 className="brand-name-elegant" title={businessName}>
               {businessName || 'LUXE'}
           </h1>
         </Link>
         
-        {/* --- DYNAMIC ROUTING NAVIGATION --- */}
+        {/* --- CENTER: NAVIGATION MENU --- */}
         <nav className="header-nav">
-          <Link to={`/${slug}`} className="header-nav-link">Categories</Link>
-          {hasProducts && <Link to={`/${slug}/items?type=goods`} className="header-nav-link">Products</Link>}
-          {hasServices && <Link to={`/${slug}/items?type=services`} className="header-nav-link">Services</Link>}
-          <Link to={`/${slug}/about`} className="header-nav-link">Our Story</Link>
+          <Link 
+            to={`/${slug}`} 
+            className={`header-nav-link ${isCategoriesActive ? 'active' : ''}`}
+          >
+            Categories
+          </Link>
+          
+          {hasProducts && (
+            <Link 
+              to={`/${slug}/items?type=goods`} 
+              className={`header-nav-link ${isProductsActive ? 'active' : ''}`}
+            >
+              Products
+            </Link>
+          )}
+          
+          {hasServices && (
+            <Link 
+              to={`/${slug}/items?type=services`} 
+              className={`header-nav-link ${isServicesActive ? 'active' : ''}`}
+            >
+              Services
+            </Link>
+          )}
+          
+          <Link 
+            to={`/${slug}/about`} 
+            className={`header-nav-link ${isOurStoryActive ? 'active' : ''}`}
+          >
+            Our Story
+          </Link>
         </nav>
 
+        {/* --- RIGHT: ICONS --- */}
         <div className="header-actions">
           <div className="header-search-wrapper">
             <div className="search-input-group">

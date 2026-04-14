@@ -117,14 +117,15 @@ const StoreCategory = () => {
     fetchStoreData();
   }, [slug]);
 
-  // Handle Search Submission from Header
+
   useEffect(() => {
      if (searchTerm && searchTerm.trim() !== '') {
-         navigate(`/${slug}/items`); 
+         // Pass the search term in the URL!
+         navigate(`/${slug}/items?search=${encodeURIComponent(searchTerm)}`); 
      }
   }, [searchTerm, navigate, slug]);
 
-  // Banner Slide
+  
   useEffect(() => {
     if (banners.length > 1) {
       const interval = setInterval(() => {

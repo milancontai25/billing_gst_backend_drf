@@ -32,14 +32,65 @@
 }
 
 /* --- Brand Logo & Name (Protected Layout) --- */
+/* Update the Brand Section */
 .brand-section {
   text-decoration: none;
   display: flex;
   align-items: center;
   gap: 16px;
-  flex: 1; /* Allows it to take available space */
-  min-width: 0; /* CRITICAL: Allows text-overflow ellipsis to work in flexbox */
-  max-width: 50%; /* Prevents name from squishing the right menus */
+  flex: 1; /* Allow it to grow */
+  min-width: 0; /* Crucial for text-overflow to work in flexbox */
+  max-width: 45%; /* Restrict how much space it can take so it doesn't crush the nav */
+}
+
+/* Ensure the name wraps correctly or truncates */
+.brand-name-elegant {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 20px; /* Reduced slightly to help fit long names */
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.5px;
+  text-transform: uppercase;
+  
+  /* Use line-clamp for 2 lines, or white-space: nowrap for 1 line */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Allow it to wrap to 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+/* Navigation Links */
+.header-nav-link {
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6B7280; 
+  transition: color 0.2s ease;
+  position: relative; /* For active underline */
+}
+
+.header-nav-link:hover {
+  color: #111827; 
+}
+
+/* NEW: Active State Styling */
+.header-nav-link.active {
+  color: #111827;
+  font-weight: 700;
+}
+
+.header-nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #111827;
+  border-radius: 2px;
 }
 
 .brand-logo-img {
@@ -49,20 +100,7 @@
   flex-shrink: 0; /* Prevents logo from squishing */
 }
 
-.brand-name-elegant {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 24px; /* Slightly scaled down for long names */
-  font-weight: 800;
-  color: #111827;
-  margin: 0;
-  letter-spacing: -0.5px;
-  text-transform: uppercase;
-  
-  /* CRITICAL: Truncates super long names with ... */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+
 
 /* --- Center Navigation --- */
 .header-nav {
@@ -72,17 +110,7 @@
   flex-shrink: 0; /* Prevents nav from getting crushed */
 }
 
-.header-nav-link {
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-  color: #6B7280; 
-  transition: color 0.2s ease;
-}
 
-.header-nav-link:hover {
-  color: #111827; 
-}
 
 /* --- Right Side Icons --- */
 .header-actions {

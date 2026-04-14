@@ -14,9 +14,13 @@ const StoreFront = () => {
   const navigate = useNavigate();
   const location = useLocation(); 
 
-  // Grab the ?type= parameter from the URL
+  // Grab parameters from the URL
   const queryParams = new URLSearchParams(location.search);
   const currentType = queryParams.get('type'); 
+  const initialSearch = queryParams.get('search') || ''; // Grab the search term!
+  
+  // --- STATE ---
+  const [searchTerm, setSearchTerm] = useState(initialSearch); // Set it here!
   
   // --- STATE ---
   const [products, setProducts] = useState([]);
@@ -32,7 +36,7 @@ const StoreFront = () => {
   const [contactInfo, setContactInfo] = useState({});
   
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
+
   const [selectedCategory, setSelectedCategory] = useState('All'); 
   const [showAuthCustomer, setShowAuthCustomer] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
