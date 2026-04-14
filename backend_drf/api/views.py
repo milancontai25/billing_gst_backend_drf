@@ -54,6 +54,60 @@ class ItemListView(generics.ListAPIView):
             isShow=True
         ).order_by('-created_date')
     
+
+class BaseItemListView(generics.ListAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [AllowAny]
+    item_type = None
+
+    def get_queryset(self):
+        business_slug = self.kwargs.get('business_slug')
+
+        return Item.objects.filter(
+            business__slug=business_slug,
+            isShow=True,
+            item_type=self.item_type
+        ).order_by('-created_date')
+
+
+class GoodsItemListView(BaseItemListView):
+    item_type = 'Goods'
+
+
+class ServiceItemListView(BaseItemListView):
+    item_type = 'Service'
+
+
+from django.db.models import Max
+
+class ItemSummaryBySlugView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, business_slug):
+        items = Item.objects.filter(
+            business__slug=business_slug,
+            isShow=True
+        )
+
+        # ✅ Unique categories (no duplicates)
+        categories = (
+            items.values("category")
+            .annotate(category_image_url=Max("category_image_url"))
+        )
+
+        # ✅ Best selling
+        best_selling = items.filter(best_selling=True)
+
+        # ✅ Trending
+        trending = items.filter(trending=True)
+
+        return Response({
+            "categories": list(categories),
+            "best_selling": ProductSerializer(best_selling, many=True).data,
+            "trending": ProductSerializer(trending, many=True).data,
+        })
+    
+    
     
 class ItemAllListView(generics.ListAPIView):
     queryset = Item.objects.all()

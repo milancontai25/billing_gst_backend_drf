@@ -43,6 +43,8 @@ class Item(models.Model):
     availability_status_service = models.CharField(max_length=10, default='NA')
     area = models.CharField(max_length=150, blank=False, null=False)
     isShow = models.BooleanField(blank=False, null=False, default=False)
+    best_selling = models.BooleanField(blank=False, null=False, default=False)
+    trending = models.BooleanField(blank=False, null=False, default=False)
 
     def __str__(self):
         return self.item_name

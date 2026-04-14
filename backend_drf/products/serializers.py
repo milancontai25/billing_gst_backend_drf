@@ -56,7 +56,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'category_image',
 
             # Other
-            'area', 'customer_view', 'isShow', 'created_date',
+            'area', 'customer_view', 'isShow', 'best_selling', 'trending', 'created_date',
         ]
 
         read_only_fields = [

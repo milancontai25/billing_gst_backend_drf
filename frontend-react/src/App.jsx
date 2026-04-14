@@ -9,6 +9,7 @@ import Customers from './components/Customers'
 import Invoices from './components/Invoices'
 import ForgotPassword from './components/ForgotPassword'
 import StoreFront from './components/StoreFront'
+import StoreCategory from './components/StoreCategory'
 import Checkout from './components/Checkout'
 import OrderHistory from './components/OrderHistory'
 import Layout from './components/Layout'
@@ -48,7 +49,8 @@ function App() {
             {/* <Route path="*" element={<Navigate to="/dashboard" />} /> */}
           </Route>
           <Route path="/forgot-password" element={<ForgotPassword /> } />
-          <Route path="/:slug" element={<StoreFront />} />
+          <Route path="/:slug" element={<StoreCategory />} />
+          <Route path="/:slug/items" element={<StoreFront />} />
           <Route path="/:slug/item/:itemSlug" element={<StoreProductDetail />} />
           <Route path="/:slug/checkout" element={<Checkout />} />
           <Route path="/:slug/orders" element={<OrderHistory />} />

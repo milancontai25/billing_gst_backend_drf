@@ -6,7 +6,7 @@ from products.views import ItemDetailView, ItemListCreateView
 from customers.views import CustomerAddressUpdateView, CustomerDetailView, CustomerForgotPasswordView, CustomerListCreateView, CustomerLoginOtpRequestView, CustomerLoginOtpVerifyView, CustomerLoginView, CustomerResetPasswordView, CustomerSignupView, CustomerTokenRefreshView
 from business_entity.views import BusinessSetupView, BusinessUpdateView, SwitchBusinessView
 from users import views as UserViews
-from .views import DashboardView, ItemAllListView, ItemListView, AppRunView, ItemDetailBySlugView
+from .views import DashboardView, GoodsItemListView, ItemAllListView, ItemListView, AppRunView, ItemDetailBySlugView, ItemSummaryBySlugView, ServiceItemListView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 urlpatterns = [
@@ -62,6 +62,13 @@ urlpatterns = [
     path('business/<slug:business_slug>/customer/login/otp/verify/', CustomerLoginOtpVerifyView.as_view()),
 
     path('business/<slug:business_slug>/items/', ItemListView.as_view(), name="customer-dashboard"),
+    path('business/<slug:business_slug>/items/goods/', GoodsItemListView.as_view(), name="goods-items"),
+    path('business/<slug:business_slug>/items/services/', ServiceItemListView.as_view(), name="service-items"),
+    path(
+        'business/<slug:business_slug>/items/summary/',
+        ItemSummaryBySlugView.as_view(),
+        name="item-summary"
+    ),
     path('business/<slug:business_slug>/items/<slug:item_slug>/', ItemDetailBySlugView.as_view()),
     path('customer/cart/add/', AddToCartView.as_view()),
     path('customer/cart/', ViewCartView.as_view()),

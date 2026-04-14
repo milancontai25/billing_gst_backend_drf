@@ -1,0 +1,320 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&display=swap');
+
+/* Main Page Theme Wrapper */
+.elegant-theme {
+  background-color: #FCFBF8; /* Base Cream */
+  color: #111827;
+  min-height: 100vh;
+}
+
+/* Sections stretch 100% width for full-bleed backgrounds */
+.elegant-section {
+  width: 100%;
+  padding: 80px 0; /* Creates massive breathing room top and bottom */
+}
+
+/* Alternating Background Colors */
+.section-cream {
+  background-color: #FCFBF8;
+}
+
+.section-white {
+  background-color: #FFFFFF;
+}
+
+/* Restricts the internal content perfectly */
+.elegant-main-wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.elegant-section-header {
+  margin-bottom: 40px; /* More space between title and grid */
+  text-align: left;
+}
+
+.elegant-overline {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #6B7280; /* Gray */
+  display: block;
+  margin-bottom: 12px;
+}
+
+.elegant-serif-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 42px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+
+/* --- 1. CATEGORY BLOCKS --- */
+.category-blocks-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+  width: 100%;
+}
+
+.cat-block {
+  position: relative;
+  width: 100%;
+  height: 380px; /* Fixed tall height */
+  overflow: hidden;
+  display: block;
+  cursor: pointer;
+  background-color: #E5E7EB;
+  border-radius: 8px; /* Softer corners */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Premium subtle shadow */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Lifts up and shadow expands on hover */
+.cat-block:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.cat-block-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.cat-block:hover .cat-block-img {
+  transform: scale(1.05);
+}
+
+.cat-block-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #111827 0%, #374151 100%); 
+}
+
+.cat-block-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 40px;
+}
+
+.cat-block-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  color: white;
+  font-size: 38px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  line-height: 1.2;
+}
+
+.cat-block-link {
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease, transform 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.cat-block:hover .cat-block-link {
+  opacity: 1;
+  transform: translateX(4px); 
+}
+
+
+/* --- 2. ELEGANT PRODUCT CARDS --- */
+.elegant-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 30px;
+}
+
+.elegant-product-card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: #FFFFFF; /* Forces card to be white */
+  border-radius: 8px; 
+  overflow: hidden; 
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06); /* Premium subtle shadow */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Lifts up and shadow expands on hover */
+.elegant-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.elegant-image-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1; 
+  background-color: #F3F4F6; 
+  overflow: hidden;
+  border-radius: 0; /* Ensures it sits flush inside the card */
+}
+
+/* Crisp White Label Badge */
+.elegant-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background-color: white;
+  color: #111827;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  z-index: 5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.elegant-badge.out-of-stock {
+  background-color: #1F2937;
+  color: white;
+}
+
+.elegant-product-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.elegant-placeholder-img {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
+  font-weight: 800;
+  color: #9CA3AF;
+}
+
+.elegant-add-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(30, 30, 30, 0.95);
+  transform: translateY(100%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0;
+  z-index: 10;
+}
+
+.elegant-product-card:hover .elegant-add-overlay {
+  transform: translateY(0);
+}
+
+.elegant-add-btn {
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  letter-spacing: 0.5px;
+}
+
+.elegant-details {
+  padding: 16px; /* Padding inside the white card */
+}
+
+.elegant-title {
+  margin: 0 0 6px 0;
+  font-size: 15px;
+  font-weight: 600; /* Slightly bolder */
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.elegant-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.elegant-price {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.elegant-mrp {
+  font-size: 13px;
+  color: #9CA3AF;
+  text-decoration: line-through;
+}
+
+.elegant-discount-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #059669; /* Elegant Emerald Green */
+  margin-left: 2px;
+}
+
+
+/* --- RESPONSIVE DESIGN --- */
+@media (max-width: 768px) {
+  .elegant-section {
+    padding: 50px 0; /* Slightly less padding on mobile */
+  }
+
+  .elegant-serif-title {
+    font-size: 32px;
+  }
+  
+  .category-blocks-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .cat-block {
+    height: 280px; 
+  }
+
+  .cat-block-overlay {
+    padding: 24px;
+  }
+
+  .cat-block-title {
+    font-size: 30px;
+  }
+  
+  .elegant-product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  
+  .elegant-add-overlay {
+    padding: 10px 0;
+  }
+  
+  .elegant-add-btn {
+    font-size: 13px;
+  }
+}

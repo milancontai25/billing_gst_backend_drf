@@ -46,7 +46,10 @@ const Products = () => {
     category: '', category_image: null, 
     description: '', mrp_baseprice: 0, gross_amount: 0, 
     tax_percent: 0, 
-    area: '', customer_view: 'Special', isShow: false,
+    area: '', customer_view: 'Special', 
+    isShow: false,
+    best_selling: false, // <-- Added
+    trending: false,     // <-- Added
   };
   
   const [formData, setFormData] = useState(initialFormState);
@@ -226,7 +229,9 @@ const Products = () => {
 
       min_order_quantity_product: item.min_order_quantity_product || 1,
       max_order_quantity_product: item.max_order_quantity_product || 1,
-      isShow: item.isShow || false
+      isShow: item.isShow || false,
+      best_selling: item.best_selling || false, // <-- Mapped
+      trending: item.trending || false // <-- Mapped
     });
     setEditId(item.id);
     setIsEditing(true);
@@ -244,7 +249,10 @@ const Products = () => {
         'area', 'customer_view', 'item_video_link'
     ];
 
+    // Boolean checks
     submitData.append('isShow', formData.isShow ? 'true' : 'false');
+    submitData.append('best_selling', formData.best_selling ? 'true' : 'false');
+    submitData.append('trending', formData.trending ? 'true' : 'false');
 
     if (isService) {
         fields.push('availability_status_service');
@@ -439,7 +447,9 @@ const Products = () => {
             </div>
             
             <form onSubmit={handleSubmit} className="setup-form scrollable-form">
-              <div style={{ padding: '10px 0', borderBottom: '1px solid #f3f4f6', marginBottom: '15px' }}>
+              
+              {/* Checkboxes Row */}
+              <div style={{ padding: '10px 0', borderBottom: '1px solid #f3f4f6', marginBottom: '15px', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                 <label className="flex items-center gap-2 cursor-pointer" style={{fontSize: '14px', fontWeight: '500', color:'#374151'}}>
                     <input 
                         type="checkbox" 
@@ -448,7 +458,29 @@ const Products = () => {
                         onChange={handleInputChange} 
                         style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
                     />
-                    Show this item in Online Store
+                    Show in Online Store
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer" style={{fontSize: '14px', fontWeight: '500', color:'#374151'}}>
+                    <input 
+                        type="checkbox" 
+                        name="best_selling" 
+                        checked={formData.best_selling} 
+                        onChange={handleInputChange} 
+                        style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
+                    />
+                    Best Selling
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer" style={{fontSize: '14px', fontWeight: '500', color:'#374151'}}>
+                    <input 
+                        type="checkbox" 
+                        name="trending" 
+                        checked={formData.trending} 
+                        onChange={handleInputChange} 
+                        style={{ width: '18px', height: '18px', accentColor: '#f59e0b' }}
+                    />
+                    Trending
                 </label>
               </div>
 

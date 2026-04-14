@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Store, Facebook, Instagram, Youtube, Twitter, Mail, Phone } from 'lucide-react';
-import '../assets/css/storefront.css';
+import '../assets/css/storefooter.css';
 
 const StoreFooter = ({ slug, businessName, businessLogo, socialLinks, contactInfo }) => {
   return (

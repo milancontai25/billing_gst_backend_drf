@@ -1,402 +1,6 @@
-// import React, { useState, useEffect } from 'react';
-// import axios from 'axios'; 
-// import { useParams, Link } from 'react-router-dom'; 
-// import { ShoppingCart, Search, Store, User, Settings, LogOut, Package, ChevronDown, Loader2, Facebook, Instagram, Youtube, Twitter, Mail, Phone, ChevronRight, ChevronLeft } from 'lucide-react';
-
-// import AuthCustomer from './AuthCustomer';
-// import CartDrawer from './CartDrawer';
-// import customerApi from '../api/customerAxios';
-// import '../assets/css/storefront.css'; 
-
-// const StoreFront = () => {
-//   const { slug } = useParams();
-  
-//   // --- STATE ---
-//   const [products, setProducts] = useState([]);
-//   const [loading, setLoading] = useState(true);
-  
-//   // Business Info
-//   const [businessName, setBusinessName] = useState('');
-//   const [businessLogo, setBusinessLogo] = useState('');
-//   const [banners, setBanners] = useState([]); // Array of valid banner URLs
-//   const [socialLinks, setSocialLinks] = useState({});
-//   const [contactInfo, setContactInfo] = useState({});
-  
-//   // UI State
-//   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-//   const [searchTerm, setSearchTerm] = useState('');
-//   const [selectedCategory, setSelectedCategory] = useState('All');
-//   const [showAuthCustomer, setShowAuthCustomer] = useState(false);
-//   const [isCartOpen, setIsCartOpen] = useState(false);
-//   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-//   const [isLoggedIn, setIsLoggedIn] = useState(false);
-//   const [user, setUser] = useState(null);
-
-//   const toTitleCase = (str) => {
-//     if (!str) return '';
-//     return str
-//       .toLowerCase()
-//       .split(' ')
-//       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-//       .join(' ');
-//   };
-
-  
-//   const categories = ['All', ...new Set(products
-//       .map(p => p.category)
-//       .filter(c => c)
-//       .map(c => toTitleCase(c))
-//   )];
-
-//   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
-//   const PRODUCT_API_URL = `${API_BASE_URL}/api/v1/business/${slug}/items/`;
-
-//   // --- HELPERS ---
-//   const formatUrl = (path) => {
-//     if (!path) return null;
-//     if (path.startsWith('http')) return path;
-//     const filename = path.split(/[/\\]/).pop();
-//     return `${API_BASE_URL}/media/business_logo/${filename}`; // Adjust if banners are in a different folder
-//   };
-
-//   // Helper for Banner specifically (sometimes banners are in different media folder, assuming same for now or full URL)
-//   const formatBannerUrl = (path) => {
-//     if (!path) return null;
-//     if (path.startsWith('http')) return path;
-//     const filename = path.split(/[/\\]/).pop();
-//     // Assuming banners might be in a general media folder or specific one. 
-//     // If backend returns full URL for banners, this isn't needed. 
-//     // If it returns local path, we assume /media/ root or specific bucket.
-//     return `${API_BASE_URL}/media/${filename}`; 
-//   };
-
-//   useEffect(() => {
-//     checkLoginStatus();
-//     const fetchStoreData = async () => {
-//       try {
-//         setLoading(true);
-//         const res = await axios.get(PRODUCT_API_URL);
-//         const productList = Array.isArray(res.data) ? res.data : (res.data.results || []);
-//         setProducts(productList);
-        
-//         if (productList.length > 0) {
-//              const biz = productList[0].business;
-//              setBusinessName(biz.business_name);
-//              setBusinessLogo(formatUrl(biz.logo_bucket_url));
-             
-//              // Extract Banners
-//              const activeBanners = [];
-//              if (biz.banner_1_url) activeBanners.push(biz.banner_1_url); // Use formatBannerUrl if needed
-//              if (biz.banner_2_url) activeBanners.push(biz.banner_2_url);
-//              if (biz.banner_3_url) activeBanners.push(biz.banner_3_url);
-//              setBanners(activeBanners);
-
-//              // Extract Socials & Contact
-//              setSocialLinks({
-//                 facebook: biz.facebook_url,
-//                 instagram: biz.instagram_url,
-//                 youtube: biz.youtube_url,
-//                 twitter: biz.x_url
-//              });
-//              setContactInfo({
-//                  email: `contact@${biz.slug}.com`, // Fallback or real data
-//                  phone: '+91-9876543210'           // Fallback or real data
-//              });
-
-//         } else {
-//              const formattedSlug = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-//              setBusinessName(formattedSlug);
-//         }
-//         setLoading(false);
-//       } catch (err) {
-//         console.error(err);
-//         setBusinessName("Store Not Found");
-//         setLoading(false);
-//       }
-//     };
-//     fetchStoreData();
-//   }, [slug]);
-
-//   // --- BANNER AUTO SLIDE ---
-//   useEffect(() => {
-//     if (banners.length > 1) {
-//       const interval = setInterval(() => {
-//         setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
-//       }, 5000); // Change every 5 seconds
-//       return () => clearInterval(interval);
-//     }
-//   }, [banners]);
-
-//   // --- AUTH & CART HANDLERS (Same as before) ---
-//   const checkLoginStatus = () => {
-//     const token = localStorage.getItem('customer_token');
-//     const name = localStorage.getItem('customer_name');
-//     if (token) { setIsLoggedIn(true); setUser({ name: name || 'User' }); }
-//     else { setIsLoggedIn(false); setUser(null); }
-//   };
-
-//   const handleLogout = () => {
-//     localStorage.removeItem('customer_token');
-//     localStorage.removeItem('customer_name');
-//     localStorage.removeItem('customer_refresh');
-//     setIsLoggedIn(false); setUser(null); setIsDropdownOpen(false);
-//   };
-
-//   const handleAddToCart = async (productId) => {
-//     if (!isLoggedIn) { alert("Please Login to shop!"); setShowAuthCustomer(true); return; }
-//     try {
-//         await customerApi.post(`customer/cart/add/`, { item: productId, quantity: 1 });
-//         setIsCartOpen(true);
-//     } catch (err) { console.error(err); alert("Failed to add item to cart."); }
-//   };
-
-//   const filteredProducts = products.filter(p => {
-//     const pName = p.item_name ? p.item_name.toLowerCase() : "";
-//     const rawCat = p.category ? p.category.toLowerCase() : ""; // For Search
-//     const displayCat = p.category ? toTitleCase(p.category) : ""; // For Filter button match
-
-//     const search = searchTerm.toLowerCase();
-    
-//     const matchesSearch = pName.includes(search) || rawCat.includes(search);
-//     const matchesCategory = selectedCategory === 'All' ? true : displayCat === selectedCategory;
-    
-//     return matchesSearch && matchesCategory;
-//   });
-
-  
-//   const getStockBadge = (qty, minStock) => {
-//     if (qty <= 0) return <span className="stock-badge out">Out of Stock</span>;
-//     if (qty <= minStock) return <span className="stock-badge low">Low Stock</span>;
-//     return null;
-//   };
-
-//   if (loading) return <div className="loading-container"><Loader2 size={40} className="animate-spin" /><p>Loading...</p></div>;
-
-//   return (
-//     <div className="store-body">
-      
-//       {/* --- HEADER --- */}
-//       <header className="store-header">
-//         <div className="header-content">
-//           <Link to={`/${slug}`} className="brand-section">
-//             <div className="brand-logo-box">
-//               {businessLogo ? <img src={businessLogo} className="brand-logo-img" alt="logo" /> : <Store size={22} />}
-//             </div>
-//             {/* Split name if long for styling (Handled in CSS) */}
-//             <h1 className="brand-name">{businessName}</h1>
-//           </Link>
-          
-//           <div className="search-container">
-//             <input type="text" className="search-input" placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-//             <Search size={18} className="search-icon" />
-//           </div>
-
-//           <div className="header-actions">
-//             {isLoggedIn ? (
-//                 <div className="user-info-trigger" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-//                     <div className="user-avatar">{user?.name?.charAt(0).toUpperCase() || 'U'}</div>
-//                     {isDropdownOpen && (
-//                         <div className="profile-dropdown">
-//                             <div className="dropdown-header">Hello, {user?.name}</div>
-//                             <Link to={`/${slug}/orders`} className="dropdown-item"><Package size={16} /> My Orders</Link>
-//                             <div className="dropdown-item"><User size={16} /> Profile</div>
-//                             <div className="dropdown-divider"></div>
-//                             <div className="dropdown-item text-red" onClick={handleLogout}><LogOut size={16} /> Logout</div>
-//                         </div>
-//                     )}
-//                 </div>
-//             ) : (
-//                 <button className="login-link-btn" onClick={() => setShowAuthCustomer(true)}>Login / Sign Up</button>
-//             )}
-//             <button className="cart-btn" onClick={() => setIsCartOpen(true)}><ShoppingCart size={20} /></button>
-//           </div>
-//         </div>
-//       </header>
-
-//       {/* --- DYNAMIC HERO SECTION --- */}
-//       <div className="hero-wrapper">
-//           {banners.length > 0 ? (
-//             <div className="hero-slider">
-//                 {banners.map((banner, index) => (
-//                     <div 
-//                         key={index} 
-//                         className={`hero-slide ${index === currentBannerIndex ? 'active' : ''}`}
-//                         style={{ backgroundImage: `url(${banner})` }}
-//                     >
-//                          {/* Optional: Add text overlay if needed, currently just image as per request */}
-//                     </div>
-//                 ))}
-                
-//                 {/* Slider Dots (Only if > 1 banner) */}
-//                 {banners.length > 1 && (
-//                     <div className="slider-dots">
-//                         {banners.map((_, idx) => (
-//                             <span 
-//                                 key={idx} 
-//                                 className={`dot ${idx === currentBannerIndex ? 'active' : ''}`}
-//                                 onClick={() => setCurrentBannerIndex(idx)}
-//                             ></span>
-//                         ))}
-//                     </div>
-//                 )}
-//             </div>
-//           ) : (
-//              // FALLBACK: Solid Blue Gradient
-//              <div className="store-hero-fallback">
-//                  <div className="hero-content">
-//                      <h1>Welcome to <br/><span>{businessName}</span></h1>
-//                      <p>Quality products, honest savings. Delivered to your door.</p>
-//                  </div>
-//              </div>
-//           )}
-//       </div>
-
-//       {/* --- CATEGORY BAR --- */}
-//       <div className="category-bar-wrapper">
-//         <div className="category-list">
-//             {categories.map((cat) => (
-//             <button key={cat} className={`category-chip ${selectedCategory === cat ? 'active' : ''}`} onClick={() => setSelectedCategory(cat)}>{cat}</button>
-//             ))}
-//         </div>
-//       </div>
-
-//       {/* --- PRODUCT GRID --- */}
-//       <main className="store-main">
-//         <h2 className="section-title">{selectedCategory === 'All' ? 'All Products' : selectedCategory}</h2>
-//         {filteredProducts.length === 0 ? (
-//           <div className="no-products">
-//             <h3>No products found</h3>
-//             <p>Try adjusting your search or category filter.</p>
-//           </div>
-//         ) : (
-//           <div className="product-grid">
-//             {filteredProducts.map(product => {
-//               const isOutOfStock = product.quantity_product <= 0;
-//               const mrp = parseFloat(product.mrp_baseprice);
-//               const sellingPrice = parseFloat(product.gross_amount); // Assuming gross_amount is the selling price
-//               const hasDiscount = mrp > sellingPrice;
-//               const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
-
-//               return (
-//               <div key={product.id} className="product-card">
-                
-//                 {/* 1. Wrap Image in Link */}
-//                 <Link to={`/${slug}/item/${product.slug}`}>
-//                     <div className="product-image-box">
-//                         {getStockBadge(product.quantity_product, product.min_stock_product)}
-//                         {product.item_image_url ? (
-//                         <img src={product.item_image_url} alt={product.item_name} className={`product-img ${isOutOfStock ? 'grayscale' : ''}`} />
-//                         ) : ( <span className="placeholder-img">{product.item_name.charAt(0)}</span> )}
-//                     </div>
-//                 </Link>
-                
-//                 <div className="product-details">
-//                     <div className="product-cat">{product.category}</div>
-                    
-//                     {/* 2. Wrap Title in Link */}
-//                     <Link to={`/${slug}/item/${product.slug}`} style={{textDecoration:'none', color:'inherit'}}>
-//                         <h3 className="product-name" title={product.item_name}>{product.item_name}</h3>
-//                     </Link>
-//                     {/* --- NEW PRICE SECTION --- */}
-//                     <div className="price-row">
-//                       {hasDiscount && (
-//                           <span className="price-mrp">₹{mrp}</span>
-//                       )}
-//                       <span className="price-selling">₹{sellingPrice}</span>
-                      
-//                       {hasDiscount && discountPercent > 0 && (
-//                           <span className="discount-tag">{discountPercent}% OFF</span>
-//                       )}
-//                     </div>
-
-//                     <div className="product-actions">
-//                       <button 
-//                           className={`add-btn ${isOutOfStock ? 'disabled' : ''}`} 
-//                           disabled={isOutOfStock}
-//                           onClick={() => handleAddToCart(product.id)}
-//                       >
-//                           {isOutOfStock ? 'Sold Out' : 'Add to Cart'}
-//                       </button>
-//                     </div>
-//                   </div>
-//                 </div>
-//               );
-
-//             })}
-//           </div>
-//         )}
-//       </main>
-
-//       {/* --- PROFESSIONAL FOOTER --- */}
-//       <footer className="modern-footer">
-//          <div className="footer-content">
-            
-//             {/* Column 1: Brand */}
-//             <div className="footer-col brand-col">
-//                <div className="footer-brand">
-//                   <div className="brand-logo-box">
-//                     {businessLogo ? <img src={businessLogo} className="brand-logo-img" alt="logo" /> : <Store size={22} />}
-//                   </div>
-//                   <span className="footer-brand-name">{businessName}</span>
-//                </div>
-//                <div className="social-links">
-//                   {socialLinks.instagram && <a href={socialLinks.instagram} target="_blank" rel="noreferrer"><Instagram size={20} /></a>}
-//                   {socialLinks.facebook && <a href={socialLinks.facebook} target="_blank" rel="noreferrer"><Facebook size={20} /></a>}
-//                   {socialLinks.youtube && <a href={socialLinks.youtube} target="_blank" rel="noreferrer"><Youtube size={20} /></a>}
-//                   {socialLinks.twitter && <a href={socialLinks.twitter} target="_blank" rel="noreferrer"><Twitter size={20} /></a>}
-//                </div>
-//             </div>
-
-//             {/* Column 2: Quick Links */}
-//             <div className="footer-col">
-//                <h4>Quick Links</h4>
-//                <ul>
-//                   <li><Link to={`/${slug}`}>Home</Link></li>
-//                   <li><a href="#">Shop Now</a></li>
-//                   <li><a href="#">Top Reads</a></li>
-//                   <li><a href="#">Refund Policy</a></li>
-//                   <li><Link to={`/${slug}/orders`}>Track Your Order</Link></li>
-//                </ul>
-//             </div>
-
-//             {/* Column 3: About */}
-//             <div className="footer-col">
-//                <h4>About</h4>
-//                <ul>
-//                   <li><a href="#">Our Story</a></li>
-//                   <li><a href="#">Our Impact</a></li>
-//                   <li><a href="#">Help Center</a></li>
-//                   <li><a href="#">Terms of Service</a></li>
-//                   <li><a href="#">Privacy Policy</a></li>
-//                </ul>
-//             </div>
-
-//             {/* Column 4: Contact */}
-//             <div className="footer-col contact-col">
-//                <h4>Contact Us</h4>
-//                <p><Mail size={16} /> {contactInfo.email || 'contact@store.com'}</p>
-//                <p><Phone size={16} /> {contactInfo.phone || '+91-0000000000'}</p>
-//             </div>
-//          </div>
-         
-//          <div className="footer-bottom">
-//             <p>&copy; {new Date().getFullYear()} {businessName}. All rights reserved.</p>
-//             <p>Powered by StatGrow</p>
-//          </div>
-//       </footer>
-
-//       {/* Modals */}
-//       <AuthCustomer isOpen={showAuthCustomer} onClose={() => setShowAuthCustomer(false)} onLoginSuccess={checkLoginStatus} />
-//       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} slug={slug} />
-//     </div>
-//   );
-// };
-
-// export default StoreFront;
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios'; 
-import { useParams, Link } from 'react-router-dom'; 
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'; 
 import { Loader2, Image as ImageIcon } from 'lucide-react';
 import StoreHeader from './StoreHeader';
 import StoreFooter from './StoreFooter';
@@ -407,22 +11,29 @@ import '../assets/css/storefront.css';
 
 const StoreFront = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation(); 
+
+  // Grab the ?type= parameter from the URL
+  const queryParams = new URLSearchParams(location.search);
+  const currentType = queryParams.get('type'); 
   
   // --- STATE ---
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Business Info
+  const [hasProducts, setHasProducts] = useState(true); 
+  const [hasServices, setHasServices] = useState(false);
+  
   const [businessName, setBusinessName] = useState('');
   const [businessLogo, setBusinessLogo] = useState('');
   const [banners, setBanners] = useState([]);
   const [socialLinks, setSocialLinks] = useState({});
   const [contactInfo, setContactInfo] = useState({});
   
-  // UI State
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All'); 
   const [showAuthCustomer, setShowAuthCustomer] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -430,9 +41,10 @@ const StoreFront = () => {
   const [user, setUser] = useState(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
-  const PRODUCT_API_URL = `${API_BASE_URL}/api/v1/business/${slug}/items/`;
+  
+  const GOODS_API_URL = `${API_BASE_URL}/api/v1/business/${slug}/items/goods/`;
+  const SERVICES_API_URL = `${API_BASE_URL}/api/v1/business/${slug}/items/services/`;
 
-  // --- HELPERS ---
   const formatUrl = (path) => {
     if (!path) return null;
     const filename = path.split(/[/\\]/).pop();
@@ -447,41 +59,66 @@ const StoreFront = () => {
   // 1. Fetch Data
   useEffect(() => {
     checkLoginStatus();
+    
     const fetchStoreData = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(PRODUCT_API_URL);
-        const productList = Array.isArray(res.data) ? res.data : (res.data.results || []);
-        setProducts(productList);
         
-        if (productList.length > 0) {
-             const biz = productList[0].business;
-             setBusinessName(biz.business_name);
-             setBusinessLogo(formatUrl(biz.logo_bucket_url));
-             
-             const activeBanners = [];
-             if (biz.banner_1_url) activeBanners.push(biz.banner_1_url);
-             if (biz.banner_2_url) activeBanners.push(biz.banner_2_url);
-             if (biz.banner_3_url) activeBanners.push(biz.banner_3_url);
-             setBanners(activeBanners);
+        const [goodsRes, servicesRes] = await Promise.allSettled([
+            axios.get(GOODS_API_URL),
+            axios.get(SERVICES_API_URL)
+        ]);
 
-             setSocialLinks({
-                facebook: biz.facebook_url,
-                instagram: biz.instagram_url,
-                youtube: biz.youtube_url,
-                twitter: biz.x_url
-             });
-             setContactInfo({
-                 email: biz.user?.email || `contact@${slug}.com`, 
-                 phone: biz.user?.phone ? `+91 ${biz.user.phone}` : ''
-             });
-        } else {
-             const formattedSlug = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-             setBusinessName(formattedSlug);
+        let goodsList = [];
+        let servicesList = [];
+
+        if (goodsRes.status === 'fulfilled') {
+            goodsList = Array.isArray(goodsRes.value.data) ? goodsRes.value.data : (goodsRes.value.data.results || []);
+            goodsList.forEach(item => item._local_item_type = 'goods'); 
         }
+        if (servicesRes.status === 'fulfilled') {
+            servicesList = Array.isArray(servicesRes.value.data) ? servicesRes.value.data : (servicesRes.value.data.results || []);
+            servicesList.forEach(item => item._local_item_type = 'services'); 
+        }
+
+        const combinedProducts = [...goodsList, ...servicesList];
+        setProducts(combinedProducts);
+        
+        setHasProducts(goodsList.length > 0 || combinedProducts.length === 0); 
+        setHasServices(servicesList.length > 0);
+        
+        if (combinedProducts.length > 0) {
+             const biz = combinedProducts[0].business;
+             if (biz) {
+                 setBusinessName(biz.business_name || slug.toUpperCase());
+                 setBusinessLogo(formatUrl(biz.logo_bucket_url));
+                 
+                 const activeBanners = [];
+                 if (biz.banner_1_url) activeBanners.push(biz.banner_1_url);
+                 if (biz.banner_2_url) activeBanners.push(biz.banner_2_url);
+                 if (biz.banner_3_url) activeBanners.push(biz.banner_3_url);
+                 setBanners(activeBanners);
+
+                 setSocialLinks({
+                    facebook: biz.facebook_url,
+                    instagram: biz.instagram_url,
+                    youtube: biz.youtube_url,
+                    twitter: biz.x_url
+                 });
+                 setContactInfo({
+                     email: biz.user?.email || `contact@${slug}.com`, 
+                     phone: biz.user?.phone ? `+91 ${biz.user.phone}` : ''
+                 });
+             } else {
+                 setBusinessName(toTitleCase(slug.replace('-', ' ')));
+             }
+        } else {
+             setBusinessName(toTitleCase(slug.replace('-', ' ')));
+        }
+        
         setLoading(false);
       } catch (err) {
-        console.error(err);
+        console.error("API Fetch Error:", err);
         setBusinessName("Store Not Found");
         setLoading(false);
       }
@@ -489,48 +126,61 @@ const StoreFront = () => {
     fetchStoreData();
   }, [slug]);
 
-  // --- CATEGORY EXTRACTION ---
+  // =========================================================================
+  // NEW LOGIC: Filter by URL Type FIRST, then build categories from that list
+  // =========================================================================
+  
+  // 1. Filter master products list based on the Header Link clicked
+  const typeFilteredProducts = products.filter(p => {
+    if (currentType === 'goods') return p._local_item_type === 'goods';
+    if (currentType === 'services' || currentType === 'service') return p._local_item_type === 'services';
+    return true; // Show all if no type is in the URL
+  });
+
+  // 2. Extract Categories ONLY from the filtered products
   const categoryMap = new Map();
-  products.forEach(p => {
+  typeFilteredProducts.forEach(p => {
     if (p.category) {
       const catName = toTitleCase(p.category);
       if (!categoryMap.has(catName)) {
-        categoryMap.set(catName, p.category_image_url || null);
+        categoryMap.set(catName, p.category_image_url || p.category_image || null);
       }
     }
   });
 
-  const categories = [{ name: 'All', image: null }];
+  const categories = [];
   categoryMap.forEach((image, name) => {
     categories.push({ name, image });
   });
 
-  // --- URL HASH ROUTING LOGIC ---
-  // Read hash on initial load or when products finish fetching
+  // 3. Reset Selected Category if the user switches tabs (Goods -> Services)
   useEffect(() => {
     const hash = window.location.hash.replace('#', '');
-    if (hash && products.length > 0) {
-      const decodedHash = decodeURIComponent(hash);
-      // Find matching category ignoring case
-      const matchedCategory = categories.find(c => c.name.toLowerCase() === decodedHash.toLowerCase());
-      if (matchedCategory) {
-        setSelectedCategory(matchedCategory.name);
+    if (typeFilteredProducts.length > 0 && categories.length > 0) {
+      if (hash) {
+        const decodedHash = decodeURIComponent(hash);
+        // Only select the category if it actually exists in the current tab
+        const matchedCategory = categories.find(c => c.name.toLowerCase() === decodedHash.toLowerCase());
+        if (matchedCategory) {
+          setSelectedCategory(matchedCategory.name);
+          return;
+        }
       }
+      setSelectedCategory('All');
     }
-  }, [products]); // Re-run once products are loaded so categories exist
+  }, [typeFilteredProducts.length, currentType]); // Re-run when switching tabs
 
-  // Update hash when a category is clicked
   const handleCategorySelect = (catName) => {
     setSelectedCategory(catName);
     if (catName === 'All') {
-        // Remove hash from URL for 'All'
         window.history.pushState("", document.title, window.location.pathname + window.location.search);
     } else {
-        // Add category name to hash (e.g., #Honey)
         window.location.hash = encodeURIComponent(catName);
     }
   };
 
+  // =========================================================================
+  
   // Banner Slide
   useEffect(() => {
     if (banners.length > 1) {
@@ -555,7 +205,8 @@ const StoreFront = () => {
     setIsLoggedIn(false); setUser(null); setIsDropdownOpen(false);
   };
 
-  const handleAddToCart = async (productId) => {
+  const handleAddToCart = async (productId, e) => {
+    e.preventDefault(); 
     if (!isLoggedIn) { alert("Please Login to shop!"); setShowAuthCustomer(true); return; }
     try {
         await customerApi.post(`customer/cart/add/`, { item: productId, quantity: 1 });
@@ -563,9 +214,9 @@ const StoreFront = () => {
     } catch (err) { console.error(err); alert("Failed to add item to cart."); }
   };
 
-  // --- DATA LOGIC ---
-
-  const filteredProducts = products.filter(p => {
+  // 4. Final Grid Filtering (Search & Category selection) 
+  // We use `typeFilteredProducts` here instead of the master `products` array
+  const filteredProducts = typeFilteredProducts.filter(p => {
     const pName = p.item_name ? p.item_name.toLowerCase() : "";
     const rawCat = p.category ? p.category.toLowerCase() : ""; 
     const displayCat = p.category ? toTitleCase(p.category) : ""; 
@@ -578,65 +229,51 @@ const StoreFront = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const getTrendingProducts = () => {
-    const totalItems = products.length;
-    if (totalItems <= 2) return products;
-    const itemsToShow = Math.ceil(totalItems * 0.5); 
-    const startIdx = Math.floor((totalItems - itemsToShow) / 2);
-    return products.slice(startIdx, startIdx + itemsToShow);
-  };
-  const trendingProducts = getTrendingProducts();
-
-  const getStockBadge = (qty, minStock) => {
-    if (qty <= 0) return <div className="card-badge out-of-stock">SOLD OUT</div>;
-    if (qty > minStock + 10) return <div className="card-badge best-seller">BEST SELLER</div>; 
-    return null;
-  };
-
-  // --- REUSABLE PRODUCT CARD RENDERER ---
   const renderProductCard = (product) => {
     const isOutOfStock = product.quantity_product <= 0;
     const mrp = parseFloat(product.mrp_baseprice || 0);
     const sellingPrice = parseFloat(product.gross_amount || 0);
     const hasDiscount = mrp > sellingPrice;
     const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+    const currency = product.currency_symbol || '₹';
 
     return (
-      <div key={product.id} className="product-card">
-        {getStockBadge(product.quantity_product, product.min_stock_product)}
+      <div key={product.id} className="min-product-card">
+        <Link to={`/${slug}/item/${product.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+            <div className="min-image-box">
+                {isOutOfStock && <div className="min-out-badge">SOLD OUT</div>}
 
-        <Link to={`/${slug}/item/${product.slug}`} style={{ textDecoration: 'none' }}>
-            <div className="product-image-box">
                 {product.item_image_url ? (
-                <img src={product.item_image_url} alt={product.item_name} className={`product-img ${isOutOfStock ? 'grayscale' : ''}`} />
-                ) : ( <span className="placeholder-img">{product.item_name.charAt(0)}</span> )}
+                    <img src={product.item_image_url} alt={product.item_name} className={`min-product-img ${isOutOfStock ? 'grayscale' : ''}`} />
+                ) : ( 
+                    <div className="min-placeholder-img">{product.item_name.charAt(0)}</div> 
+                )}
+                
+                <div className="min-add-overlay">
+                    <button 
+                        className="min-add-btn" 
+                        disabled={isOutOfStock} 
+                        onClick={(e) => handleAddToCart(product.id, e)}
+                    >
+                        {isOutOfStock ? 'Sold Out' : 'Add to Cart'}
+                    </button>
+                </div>
+            </div>
+            
+            <div className="min-details">
+                <h3 className="min-title" title={product.item_name}>{product.item_name}</h3>
+                
+                <div className="min-price-row">
+                    <span className="min-price">{currency}{sellingPrice}</span>
+                    {hasDiscount && (
+                        <>
+                            <span className="min-mrp">{currency}{mrp}</span>
+                            {discountPercent > 0 && <span className="min-discount-text">{discountPercent}% off</span>}
+                        </>
+                    )}
+                </div>
             </div>
         </Link>
-        
-        <div className="product-details">
-          <Link to={`/${slug}/item/${product.slug}`} style={{textDecoration:'none', color:'inherit'}}>
-              <h3 className="product-name" title={product.item_name}>{product.item_name}</h3>
-          </Link>
-          
-          <div className="price-row">
-             <span className="price-selling">₹{sellingPrice}</span>
-             {hasDiscount && <span className="price-mrp">₹{mrp}</span>}
-             {hasDiscount && discountPercent > 0 && <span className="discount-tag">{discountPercent}% OFF</span>}
-          </div>
-
-          <div className="product-card-footer">
-             <div className="unit-pill">
-                {product.unit_product || '1 Unit'}
-             </div>
-             <button 
-                className={`add-btn ${isOutOfStock ? 'disabled' : ''}`} 
-                disabled={isOutOfStock} 
-                onClick={() => handleAddToCart(product.id)}
-             >
-                {isOutOfStock ? 'SOLD OUT' : 'ADD TO CART'}
-             </button>
-          </div>
-        </div>
       </div>
     );
   };
@@ -659,9 +296,11 @@ const StoreFront = () => {
         onCartClick={() => setIsCartOpen(true)}
         isDropdownOpen={isDropdownOpen}
         setIsDropdownOpen={setIsDropdownOpen}
+        hasProducts={hasProducts}
+        hasServices={hasServices}
       />
 
-      <div className="top-section-bg">
+      <div className="main-section-bg">
           <div className="hero-wrapper">
               {banners.length > 0 ? (
                 <div className="hero-slider">
@@ -687,57 +326,50 @@ const StoreFront = () => {
           </div>
 
           <section className="explore-section">
-            <h2 className="explore-title">EXPLORE OUR RANGE</h2>
-            
-            <div className="category-scroll-container">
-                {categories.map((cat) => (
-                    <div 
-                      key={cat.name} 
-                      className={`cat-card ${selectedCategory === cat.name ? 'active' : ''}`} 
-                      onClick={() => handleCategorySelect(cat.name)}
-                    >
-                        <div className="cat-img-box">
-                            {cat.image ? (
-                                <img src={cat.image} alt={cat.name} className="cat-img" />
-                            ) : (
-                                <ImageIcon size={32} color="#94A3B8" /> 
-                            )}
-                        </div>
-                        <div className="cat-label">{cat.name}</div>
+            {categories.length > 0 && (
+                <>
+                    <h2 className="explore-title">
+                       {currentType === 'services' ? 'EXPLORE OUR SERVICES' : 'EXPLORE OUR RANGE'}
+                    </h2>
+                    
+                    <div className="category-scroll-container">
+                        {categories.map((cat) => (
+                            <div 
+                              key={cat.name} 
+                              className={`cat-card ${selectedCategory === cat.name ? 'active' : ''}`} 
+                              onClick={() => handleCategorySelect(cat.name)}
+                            >
+                                <div className="cat-img-box">
+                                    {cat.image ? (
+                                        <img src={cat.image} alt={cat.name} className="cat-img" />
+                                    ) : (
+                                        <ImageIcon size={32} color="#94A3B8" /> 
+                                    )}
+                                </div>
+                                <div className="cat-label">{cat.name}</div>
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
+                </>
+            )}
 
             {filteredProducts.length === 0 ? (
               <div className="no-products" style={{ marginTop: '40px' }}>
-                <h3>No products found</h3>
-                <p>Try adjusting your search or category filter.</p>
+                <h3>No items found</h3>
+                <p>Try selecting a different category or check back later.</p>
               </div>
             ) : (
-              <div className="product-grid" style={{ marginTop: '40px' }}>
+              <div className="min-product-grid" style={{ marginTop: '40px' }}>
                 {filteredProducts.map(product => renderProductCard(product))}
               </div>
             )}
 
-            {filteredProducts.length > 0 && selectedCategory !== 'All' && (
+            {selectedCategory !== 'All' && (
                 <div className="view-all-container">
-                    <button className="btn-view-all" onClick={() => handleCategorySelect('All')}>VIEW ALL PRODUCTS</button>
+                    <button className="btn-view-all" onClick={() => handleCategorySelect('All')}>VIEW ALL</button>
                 </div>
             )}
           </section>
-      </div>
-
-      <div className="bottom-section-bg">
-          {trendingProducts.length > 0 && (
-            <section className="store-main">
-                <div className="grid-header">
-                    <h2 className="explore-title" style={{ textTransform: 'none', marginBottom: 0 }}>Trending Now</h2>
-                </div>
-                <div className="product-grid">
-                    {trendingProducts.map(product => renderProductCard(product))}
-                </div>
-            </section>
-          )}
       </div>
 
       <StoreFooter 

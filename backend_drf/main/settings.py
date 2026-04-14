@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'invoice',
     'django_filters',
     'order',
+    'encrypted_model_fields',
     'payments'
 ]
 
