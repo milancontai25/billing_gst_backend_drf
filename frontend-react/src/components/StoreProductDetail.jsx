@@ -18,6 +18,10 @@ const StoreProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
 
+  // Dynamic Header Menu Toggles
+  const [hasProducts, setHasProducts] = useState(true); 
+  const [hasServices, setHasServices] = useState(false);
+
   // --- MEDIA STATE ---
   const [mediaList, setMediaList] = useState([]);
   const [activeMedia, setActiveMedia] = useState(null); 
@@ -49,31 +53,22 @@ const StoreProductDetail = () => {
     return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
-  // --- VIDEO HELPERS (UPDATED) ---
-
-  // 1. Detect Platform
+  // --- VIDEO HELPERS ---
   const isYoutube = (url) => url && (url.includes('youtube.com') || url.includes('youtu.be'));
   const isInstagram = (url) => url && (url.includes('instagram.com/reel') || url.includes('instagram.com/p'));
 
-  // 2. Get YouTube Embed (Handles Standard + Shorts)
   const getYoutubeEmbed = (url) => {
-    // Handle Shorts
     if (url.includes('/shorts/')) {
         const videoId = url.split('/shorts/')[1].split('?')[0];
         return `https://www.youtube.com/embed/${videoId}`;
     }
-    // Handle Standard
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : url;
   };
 
-  // 3. Get Instagram Embed
   const getInstagramEmbed = (url) => {
-    // Ensure URL ends with /embed/ caption
-    // Remove query params first
     const cleanUrl = url.split('?')[0]; 
-    // Remove trailing slash if present
     const base = cleanUrl.endsWith('/') ? cleanUrl.slice(0, -1) : cleanUrl;
     return `${base}/embed`;
   };
@@ -84,42 +79,65 @@ const StoreProductDetail = () => {
     const fetchProductAndBiz = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${API_BASE_URL}/api/v1/business/${slug}/items/${itemSlug}/`);
-        const data = res.data;
-        setProduct(data);
-
-        // --- PREPARE MEDIA LIST ---
-        const media = [];
         
-        // 1. Add Images
-        if (data.item_image_url) media.push({ type: 'image', url: data.item_image_url });
-        if (data.item_image_1) media.push({ type: 'image', url: data.item_image_1 });
-        if (data.item_image_2) media.push({ type: 'image', url: data.item_image_2 });
-        if (data.item_image_3) media.push({ type: 'image', url: data.item_image_3 });
-        
-        // 2. Add Video (if exists)
-        if (data.item_video_link) media.push({ type: 'video', url: data.item_video_link });
+        // Fetch specific product AND store summary concurrently
+        const PRODUCT_API_URL = `${API_BASE_URL}/api/v1/business/${slug}/items/${itemSlug}/`;
+        const SUMMARY_API_URL = `${API_BASE_URL}/api/v1/business/${slug}/items/summary/`;
 
-        setMediaList(media);
-        setActiveMedia(media[0]); 
+        const [productRes, summaryRes] = await Promise.allSettled([
+            axios.get(PRODUCT_API_URL),
+            axios.get(SUMMARY_API_URL)
+        ]);
 
-        // Business Info
-        if (data.business) {
-            const biz = data.business;
-            setBusinessName(biz.business_name);
-            setBusinessLogo(formatUrl(biz.logo_bucket_url));
-            setSocialLinks({
-                facebook: biz.facebook_url,
-                instagram: biz.instagram_url,
-                youtube: biz.youtube_url,
-                twitter: biz.x_url
-            });
-            setContactInfo({
-                 email: biz.user.email, 
-                 phone: `+91 ${biz.user.phone}`
-             });
+        // Process Summary Data to determine Header Menu status
+        if (summaryRes.status === 'fulfilled') {
+            const sumData = summaryRes.value.data;
+            const allSummaryItems = [...(sumData.best_selling || []), ...(sumData.trending || [])];
+            
+            const foundServices = allSummaryItems.some(p => p.item_type && p.item_type.toLowerCase() === 'service');
+            const foundGoods = allSummaryItems.some(p => !p.item_type || ['good', 'goods', 'product', 'products'].includes(p.item_type.toLowerCase()));
+            
+            setHasServices(foundServices);
+            setHasProducts(allSummaryItems.length === 0 ? true : foundGoods);
         } else {
-            setBusinessName(slug.toUpperCase());
+            setHasProducts(true);
+            setHasServices(false);
+        }
+
+        // Process Product Data
+        if (productRes.status === 'fulfilled') {
+            const data = productRes.value.data;
+            setProduct(data);
+
+            // PREPARE MEDIA LIST
+            const media = [];
+            if (data.item_image_url) media.push({ type: 'image', url: data.item_image_url });
+            if (data.item_image_1) media.push({ type: 'image', url: data.item_image_1 });
+            if (data.item_image_2) media.push({ type: 'image', url: data.item_image_2 });
+            if (data.item_image_3) media.push({ type: 'image', url: data.item_image_3 });
+            if (data.item_video_link) media.push({ type: 'video', url: data.item_video_link });
+
+            setMediaList(media);
+            setActiveMedia(media[0]); 
+
+            // Business Info
+            if (data.business) {
+                const biz = data.business;
+                setBusinessName(biz.business_name);
+                setBusinessLogo(formatUrl(biz.logo_bucket_url));
+                setSocialLinks({
+                    facebook: biz.facebook_url,
+                    instagram: biz.instagram_url,
+                    youtube: biz.youtube_url,
+                    twitter: biz.x_url
+                });
+                setContactInfo({
+                     email: biz.user?.email || '', 
+                     phone: biz.user?.phone ? `+91 ${biz.user.phone}` : ''
+                 });
+            } else {
+                setBusinessName(slug.toUpperCase());
+            }
         }
 
       } catch (err) {
@@ -165,9 +183,10 @@ const StoreProductDetail = () => {
   const sellingPrice = parseFloat(product.gross_amount || 0);
   const hasDiscount = mrp > sellingPrice;
   const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+  const currency = product.currency_symbol || '₹';
 
   return (
-    <div className="product-detail-page">
+    <div className="product-detail-page elegant-theme">
       
       <StoreHeader 
         slug={slug}
@@ -182,13 +201,15 @@ const StoreProductDetail = () => {
         onCartClick={() => setIsCartOpen(true)}
         isDropdownOpen={isDropdownOpen}
         setIsDropdownOpen={setIsDropdownOpen}
+        hasProducts={hasProducts}
+        hasServices={hasServices}
       />
 
       <div className="detail-header">
         <div className="breadcrumb-nav">
             <Link to={`/${slug}`} className="crumb-link">HOME</Link> 
             <span className="crumb-sep">{'>'}</span>
-            <Link to={`/${slug}`} className="crumb-link">{product.category?.toUpperCase()}</Link>
+            <Link to={`/${slug}/items`} className="crumb-link">{product.category?.toUpperCase() || 'ITEMS'}</Link>
             <span className="crumb-sep">{'>'}</span>
             <span className="crumb-current">{product.item_name?.toUpperCase()}</span>
         </div>
@@ -198,13 +219,12 @@ const StoreProductDetail = () => {
         
         {/* --- LEFT: MEDIA GALLERY --- */}
         <div className="detail-gallery">
-            {/* 1. Thumbnail Strip */}
             <div className="thumbnail-list">
                 {mediaList.map((media, idx) => (
                     <div 
                         key={idx} 
                         className={`thumb-item ${activeMedia?.url === media.url ? 'active' : ''}`}
-                        onMouseEnter={() => setActiveMedia(media)} // Or onClick
+                        onMouseEnter={() => setActiveMedia(media)}
                         onClick={() => setActiveMedia(media)}
                     >
                         {media.type === 'video' ? (
@@ -218,7 +238,6 @@ const StoreProductDetail = () => {
                 ))}
             </div>
 
-            {/* 2. Main Display Area */}
             <div className="main-image-frame">
                 {activeMedia?.type === 'video' ? (
                     isYoutube(activeMedia.url) ? (
@@ -236,7 +255,7 @@ const StoreProductDetail = () => {
                             title="Instagram Video"
                             frameBorder="0"
                             allowFullScreen
-                            className="main-video-embed instagram-embed" // Add specific class if needed
+                            className="main-video-embed instagram-embed"
                             scrolling="no"
                         ></iframe>
                     ) : (
@@ -262,21 +281,21 @@ const StoreProductDetail = () => {
             </div>
 
             <div className="tag-row">
-                <span className="sub-text">Natural | {toTitleCase(product.category)}</span>
+                <span className="sub-text">Category: {toTitleCase(product.category)}</span>
             </div>
 
             <div className="rating-row">
                 <div className="stars">
-                    {[1,2,3,4,5].map(s => <Star key={s} size={16} fill="#FACC15" color="#FACC15"/>)}
+                    {[1,2,3,4,5].map(s => <Star key={s} size={16} fill="#111827" color="#111827"/>)}
                 </div>
-                <span className="review-text">2 Reviews</span>
+                <span className="review-text">Customer Reviews</span>
             </div>
 
             <div className="detail-price-section">
-                <span className="d-selling-price">₹{sellingPrice.toFixed(2)}</span>
+                <span className="d-selling-price">{currency}{sellingPrice.toFixed(2)}</span>
                 {hasDiscount && (
                     <>
-                        <span className="d-mrp-price">₹{mrp.toFixed(2)}</span>
+                        <span className="d-mrp-price">{currency}{mrp.toFixed(2)}</span>
                         <span className="d-discount-off">{discountPercent}% off</span>
                     </>
                 )}

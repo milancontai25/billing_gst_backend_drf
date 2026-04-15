@@ -590,7 +590,9 @@ body { margin: 0; padding: 0; }
 .detail-header { width: 100%; max-width: 1200px; margin: 0 auto; padding: 16px 24px; border-bottom: 1px solid #F1F5F9; background: #fff; }
 .breadcrumb-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #64748B; letter-spacing: 0.5px; text-transform: uppercase; }
 .crumb-link { text-decoration: none; color: #64748B; transition: color 0.2s ease; }
-.crumb-link:hover { color: var(--primary); }
+.crumb-link:hover {
+  color: #111827; /* Pure black text hover */
+}
 .crumb-current { color: #0F172A; font-weight: 700; }
 
 .detail-container { max-width: 1200px; margin: 40px auto 80px; padding: 0 24px; display: grid; grid-template-columns: 80px 1fr 1fr; gap: 40px; width: 100%; box-sizing: border-box; flex: 1; }
@@ -598,8 +600,15 @@ body { margin: 0; padding: 0; }
 .thumbnail-list { display: flex; flex-direction: column; gap: 12px; width: 80px; height: 500px; overflow-y: auto; scrollbar-width: none; }
 .thumbnail-list::-webkit-scrollbar { display: none; }
 .thumb-item { width: 80px; height: 80px; border: 1px solid #E2E8F0; border-radius: 12px; cursor: pointer; overflow: hidden; padding: 4px; transition: all 0.2s ease; background: #fff; flex-shrink: 0; }
-.thumb-item:hover { border-color: var(--primary-light); }
-.thumb-item.active { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.15); }
+.thumb-item:hover {
+  border-color: #9CA3AF; /* Slate hover */
+}
+
+.thumb-item.active {
+  border-color: #111827; /* Solid black active border */
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.15); /* Soft black glow */
+}
+
 .thumb-item img { width: 100%; height: 100%; object-fit: contain; }
 .main-image-frame { position: relative; width: 100%; height: 500px; background: #FFFFFF; border: 1px solid #F1F5F9; border-radius: 24px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .main-img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease; cursor: zoom-in; }
@@ -610,7 +619,12 @@ body { margin: 0; padding: 0; }
 .detail-title { font-size: 32px; font-weight: 800; color: #1E293B; line-height: 1.2; margin: 0; font-family: 'Playfair Display', serif; }
 .icon-actions { display: flex; gap: 12px; }
 .icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid #E2E8F0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748B; transition: 0.2s; }
-.icon-btn:hover { border-color: var(--primary); color: var(--primary); background: #F8FAFC; }
+/* Update Icon Buttons (Share / Like) */
+.icon-btn:hover {
+  border-color: #111827;
+  color: #111827;
+  background: #F3F4F6;
+}
 
 .tag-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .gi-tag { background-color: #F1F5F9; color: #334155; font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 6px; text-transform: uppercase; }
@@ -629,10 +643,29 @@ body { margin: 0; padding: 0; }
 .qty-selector-big span { font-weight: 700; font-size: 18px; color: #0F172A; }
 
 .btn-add-cart-big, .btn-buy-now-big { flex: 1; height: 52px; border-radius: 50px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s ease; }
-.btn-add-cart-big { background-color: #F8FAFC; color: var(--primary); border: 1px solid var(--border); }
-.btn-add-cart-big:hover { background-color: #F1F5F9; transform: translateY(-1px); }
-.btn-buy-now-big { background: var(--primary); color: white; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.btn-buy-now-big:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+.btn-add-cart-big {
+  background-color: #FFFFFF; 
+  color: #111827; /* Black text */
+  border: 1px solid #111827; /* Solid black border */
+}
+
+.btn-add-cart-big:hover {
+  background-color: #F9FAFB;
+  transform: translateY(-1px);
+}
+
+.btn-buy-now-big {
+  background: #111827; /* Solid almost-black */
+  color: white;
+  border: 1px solid #111827;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.btn-buy-now-big:hover {
+  background: #000000; /* Pure black on hover */
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
 
 .description-box h3 { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #1E293B; }
 .description-box p { font-size: 15px; line-height: 1.7; color: #475569; }
@@ -774,4 +807,111 @@ body { margin: 0; padding: 0; }
 }
 @media (max-width: 380px) {
   .product-grid { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS (PHONES & TABLETS)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .explore-section {
+    padding: 0 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 1. Shrink the Hero Banner */
+  .hero-wrapper {
+    height: 240px; /* Much shorter on mobile so it doesn't take up the whole screen */
+  }
+  
+  .store-hero-fallback h1 {
+    font-size: 26px; /* Smaller text */
+  }
+
+  .store-hero-fallback p {
+    font-size: 14px;
+  }
+
+  /* 2. Adjust Category Section Spacing */
+  .explore-section {
+    margin-top: 24px;
+    padding: 0 16px;
+  }
+
+  .explore-title {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  .category-scroll-container {
+    gap: 12px;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+
+  .cat-card {
+    width: 100px; /* Smaller category bubbles */
+  }
+
+  .cat-img-box {
+    height: 100px;
+    border-radius: 10px;
+  }
+
+  .cat-label {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  /* 3. Product Grid - Force 2 Columns on Mobile */
+  .min-product-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 items side-by-side */
+    gap: 12px; /* Less space between items */
+    margin-top: 24px !important;
+  }
+
+  .min-details {
+    padding: 12px;
+  }
+
+  .min-title {
+    font-size: 13px; /* Smaller title */
+  }
+
+  .min-price {
+    font-size: 14px;
+  }
+
+  .min-mrp, .min-discount-text {
+    font-size: 11px;
+  }
+
+  /* 4. Fix Add to Cart Hover on Mobile */
+  /* Since phones don't have a "hover" mouse, we make the overlay slightly smaller 
+     but always accessible, or require a tap */
+  .min-add-overlay {
+    padding: 8px 0;
+  }
+  
+  .min-add-btn {
+    font-size: 12px;
+  }
+  
+  .view-all-container {
+    margin-top: 32px;
+  }
+  
+  .btn-view-all {
+    padding: 10px 24px;
+    font-size: 13px;
+  }
+}
+
+/* Extra Small Phones (iPhone SE, etc) */
+@media (max-width: 380px) {
+  .min-product-grid {
+    /* If the phone is REALLY small, stack them 1 by 1 */
+    grid-template-columns: 1fr; 
+  }
 }

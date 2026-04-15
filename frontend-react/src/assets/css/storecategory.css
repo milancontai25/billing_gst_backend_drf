@@ -318,3 +318,94 @@
     font-size: 13px;
   }
 }
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS (PHONES & TABLETS)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .elegant-main-wrapper {
+    padding: 0 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 1. Adjust Section Spacing & Titles */
+  .elegant-section {
+    padding: 40px 0;
+  }
+  
+  .elegant-serif-title {
+    font-size: 24px;
+  }
+
+  .elegant-overline {
+    font-size: 11px;
+  }
+
+  /* 2. Categories Grid - 2 Columns */
+  .category-blocks-grid {
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 12px;
+  }
+
+  .cat-block {
+    height: 140px; 
+    border-radius: 8px;
+  }
+
+  .cat-block-title {
+    font-size: 15px;
+  }
+
+  .cat-block-link {
+    font-size: 11px;
+  }
+
+  /* 3. Product Grid - 2 Columns */
+  .elegant-product-grid {
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 20px 12px; /* vertical gap 20px, horizontal gap 12px */
+  }
+
+  .elegant-details {
+    padding: 12px 4px;
+  }
+
+  .elegant-title {
+    font-size: 13px;
+  }
+
+  .elegant-price {
+    font-size: 14px;
+  }
+  
+  .elegant-mrp, .elegant-discount-text {
+    font-size: 11px;
+  }
+
+  /* 4. Mobile Add-to-Cart Button */
+  .elegant-add-overlay {
+    padding: 8px;
+  }
+
+  .elegant-add-btn {
+    font-size: 12px;
+    padding: 8px;
+  }
+  
+  .elegant-badge {
+    font-size: 9px;
+    padding: 3px 6px;
+    top: 8px;
+    left: 8px;
+  }
+}
+
+/* Extra Small Phones */
+@media (max-width: 380px) {
+  .category-blocks-grid,
+  .elegant-product-grid {
+    grid-template-columns: 1fr; /* Stack completely on tiny screens */
+  }
+}
