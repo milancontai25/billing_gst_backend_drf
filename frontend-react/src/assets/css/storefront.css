@@ -915,3 +915,115 @@ body { margin: 0; padding: 0; }
     grid-template-columns: 1fr; 
   }
 }
+
+
+
+/* ==========================================================================
+   PRODUCT DETAIL PAGE - RESPONSIVENESS
+   ========================================================================== */
+
+/* Tablet layout */
+@media (max-width: 1024px) {
+  .detail-container {
+    gap: 32px; /* Reduce gap between images and text */
+    padding: 0 24px;
+  }
+  
+  .detail-title {
+    font-size: 28px; /* Slightly smaller title */
+  }
+}
+
+/* Mobile layout */
+@media (max-width: 768px) {
+  .detail-container {
+    flex-direction: column; /* Stack the gallery and the info vertically */
+    padding: 0 16px;
+    margin-top: 16px;
+  }
+
+  .detail-gallery {
+    width: 100%;
+    display: flex;
+    /* CRITICAL: This pushes the thumbnails BELOW the main image */
+    flex-direction: column-reverse; 
+    gap: 16px;
+  }
+
+  .main-image-frame {
+    /* INCREASED SPACE: Made the main image much taller on mobile */
+    height: 480px; 
+    width: 100%;
+  }
+
+  /* Make thumbnails scroll horizontally below the main image */
+  .thumbnail-list {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    overflow-x: auto; /* Allow horizontal scrolling */
+    padding-bottom: 8px; /* Space for scrollbar */
+    gap: 12px;
+    
+    /* Hide scrollbar for a cleaner look */
+    -ms-overflow-style: none;  
+    scrollbar-width: none;  
+  }
+  
+  .thumbnail-list::-webkit-scrollbar {
+    display: none; 
+  }
+
+  .thumb-item {
+    width: 65px; /* Slightly larger thumbnails for easier tapping */
+    height: 65px;
+    flex-shrink: 0; 
+  }
+
+  .detail-info {
+    width: 100%;
+    padding: 0;
+    margin-top: 16px;
+  }
+
+  .detail-title {
+    font-size: 24px;
+  }
+
+  .d-selling-price {
+    font-size: 28px;
+  }
+
+  .action-row {
+    flex-direction: column; /* Stack the buttons on mobile */
+    gap: 12px;
+  }
+
+  .qty-selector-big {
+    width: 100%; /* Full width quantity selector */
+    justify-content: space-between;
+    padding: 12px 24px;
+  }
+
+  .btn-add-cart-big, 
+  .btn-buy-now-big {
+    width: 100%; /* Full width buttons for easy thumb tapping */
+    padding: 14px 0;
+  }
+  
+  .detail-header {
+    padding: 16px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 480px) {
+  .main-image-frame {
+    /* Gave tiny phones more space too (up from 320px) */
+    height: 400px; 
+  }
+  
+  .detail-title {
+    font-size: 22px;
+  }
+}

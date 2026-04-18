@@ -67,7 +67,7 @@ class BaseItemListView(generics.ListAPIView):
             business__slug=business_slug,
             isShow=True,
             item_type=self.item_type
-        ).order_by('-created_date')
+        ).order_by('id')
 
 
 class GoodsItemListView(BaseItemListView):
@@ -96,10 +96,10 @@ class ItemSummaryBySlugView(APIView):
         )
 
         # ✅ Best selling
-        best_selling = items.filter(best_selling=True)
+        best_selling = items.filter(best_selling=True).order_by('id')
 
         # ✅ Trending
-        trending = items.filter(trending=True)
+        trending = items.filter(trending=True).order_by('id')
 
         return Response({
             "categories": list(categories),
