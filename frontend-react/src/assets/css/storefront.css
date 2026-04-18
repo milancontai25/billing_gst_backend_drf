@@ -925,105 +925,102 @@ body { margin: 0; padding: 0; }
 /* Tablet layout */
 @media (max-width: 1024px) {
   .detail-container {
-    gap: 32px; /* Reduce gap between images and text */
+    gap: 32px; 
     padding: 0 24px;
   }
-  
-  .detail-title {
-    font-size: 28px; /* Slightly smaller title */
-  }
+  .detail-title { font-size: 28px; }
 }
 
-/* Mobile layout */
+
+/* Mobile layout (Heavy-Duty Overrides) */
 @media (max-width: 768px) {
   .detail-container {
-    flex-direction: column; /* Stack the gallery and the info vertically */
-    padding: 0 16px;
-    margin-top: 16px;
+    display: flex !important; 
+    flex-direction: column !important; 
+    padding: 0 16px !important;
+    margin-top: 16px !important;
   }
 
   .detail-gallery {
-    width: 100%;
-    display: flex;
-    /* CRITICAL: This pushes the thumbnails BELOW the main image */
-    flex-direction: column-reverse; 
-    gap: 16px;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column-reverse !important; 
+    gap: 12px !important;
   }
 
+  /* --- THE FIX IS HERE --- */
   .main-image-frame {
-    /* INCREASED SPACE: Made the main image much taller on mobile */
-    height: 480px; 
-    width: 100%;
+    height: auto !important; 
+    max-height: 400px !important; 
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
-  /* Make thumbnails scroll horizontally below the main image */
+  .main-img {
+    height: auto !important;
+    max-height: 400px !important;
+    width: 100% !important;
+    object-fit: contain !important;
+  }
+  /* ----------------------- */
+
   .thumbnail-list {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-    overflow-x: auto; /* Allow horizontal scrolling */
-    padding-bottom: 8px; /* Space for scrollbar */
-    gap: 12px;
-    
-    /* Hide scrollbar for a cleaner look */
+    display: flex !important;
+    flex-direction: row !important; 
+    width: 100% !important;
+    overflow-x: auto !important; 
+    padding-bottom: 8px !important; 
+    gap: 12px !important;
     -ms-overflow-style: none;  
     scrollbar-width: none;  
   }
   
   .thumbnail-list::-webkit-scrollbar {
-    display: none; 
+    display: none !important; 
   }
 
   .thumb-item {
-    width: 65px; /* Slightly larger thumbnails for easier tapping */
-    height: 65px;
-    flex-shrink: 0; 
+    width: 70px !important; 
+    height: 70px !important;
+    flex-shrink: 0 !important; 
   }
 
   .detail-info {
-    width: 100%;
-    padding: 0;
-    margin-top: 16px;
+    width: 100% !important;
+    padding: 0 !important;
+    margin-top: 8px !important; /* Reduced gap between image and text */
   }
 
-  .detail-title {
-    font-size: 24px;
-  }
-
-  .d-selling-price {
-    font-size: 28px;
-  }
+  .detail-title { font-size: 24px !important; }
+  .d-selling-price { font-size: 28px !important; }
 
   .action-row {
-    flex-direction: column; /* Stack the buttons on mobile */
-    gap: 12px;
+    display: flex !important;
+    flex-direction: column !important; 
+    gap: 12px !important;
   }
 
   .qty-selector-big {
-    width: 100%; /* Full width quantity selector */
-    justify-content: space-between;
-    padding: 12px 24px;
+    width: 100% !important; 
+    justify-content: space-between !important;
+    padding: 12px 24px !important;
   }
 
   .btn-add-cart-big, 
   .btn-buy-now-big {
-    width: 100%; /* Full width buttons for easy thumb tapping */
-    padding: 14px 0;
-  }
-  
-  .detail-header {
-    padding: 16px;
+    width: 100% !important; 
+    padding: 14px 0 !important;
   }
 }
 
 /* Very small phones */
 @media (max-width: 480px) {
   .main-image-frame {
-    /* Gave tiny phones more space too (up from 320px) */
-    height: 400px; 
+    height: 350px !important; /* Adjust height for very small screens */
   }
-  
   .detail-title {
-    font-size: 22px;
+    font-size: 22px !important;
   }
 }
