@@ -158,7 +158,7 @@ const OrderViewer = ({ order, onClose }) => {
                     </tr>
                     <tr>
                       <td style={{ padding: '6px 20px 6px 0', color: '#6B7280', textAlign: 'left' }}>Payment Mode:</td>
-                      <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{order.payment_method || order.payment_mode || 'N/A'}</td>
+                      <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{order.payments.method || order.payment_mode || 'N/A'}</td>
                     </tr>
                   </tbody>
                 </table>

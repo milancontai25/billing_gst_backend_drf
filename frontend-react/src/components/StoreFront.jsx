@@ -26,7 +26,7 @@ const StoreFront = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  const [hasProducts, setHasProducts] = useState(true); 
+  const [hasProducts, setHasProducts] = useState(false); 
   const [hasServices, setHasServices] = useState(false);
   
   const [businessName, setBusinessName] = useState('');

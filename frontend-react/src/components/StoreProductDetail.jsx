@@ -316,7 +316,13 @@ const StoreProductDetail = () => {
 
             <div className="description-box">
                 <h3>Description</h3>
-                <p>{product.description || "No description available."}</p>
+                {product.description ? (
+                    <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                        {product.description}
+                    </p>
+                ) : (
+                    <p>No description available.</p>
+                )}
             </div>
         </div>
       </div>
