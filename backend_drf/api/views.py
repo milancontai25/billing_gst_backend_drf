@@ -78,7 +78,8 @@ class ServiceItemListView(BaseItemListView):
     item_type = 'Service'
 
 
-from django.db.models import Max
+
+from django.db.models import Min, Max
 
 class ItemSummaryBySlugView(APIView):
     permission_classes = [AllowAny]
@@ -89,25 +90,37 @@ class ItemSummaryBySlugView(APIView):
             isShow=True
         )
 
-        # ✅ Unique categories (no duplicates)
+        # Categories in order of FIRST appearance
         categories = (
             items.values("category")
-            .annotate(category_image_url=Max("category_image_url"))
+            .annotate(
+                first_id=Min("id"),
+                category_image_url=Max("category_image_url")
+            )
+            .order_by("first_id")
         )
 
-        # ✅ Best selling
-        best_selling = items.filter(best_selling=True).order_by('id')
+        best_selling = items.filter(
+            best_selling=True
+        ).order_by("id")
 
-        # ✅ Trending
-        trending = items.filter(trending=True).order_by('id')
+        trending = items.filter(
+            trending=True
+        ).order_by("id")
 
         return Response({
-            "categories": list(categories),
+            "categories": [
+                {
+                    "category": c["category"],
+                    "category_image_url": c["category_image_url"]
+                }
+                for c in categories
+            ],
             "best_selling": ProductSerializer(best_selling, many=True).data,
             "trending": ProductSerializer(trending, many=True).data,
         })
-    
-    
+
+
     
 class ItemAllListView(generics.ListAPIView):
     queryset = Item.objects.all()
