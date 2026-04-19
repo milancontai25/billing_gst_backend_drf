@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios'; 
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'; 
-import { Loader2, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react'; // Added Chevrons
 import StoreHeader from './StoreHeader';
 import StoreFooter from './StoreFooter';
 import AuthCustomer from './AuthCustomer';
@@ -17,12 +17,10 @@ const StoreFront = () => {
   // Grab parameters from the URL
   const queryParams = new URLSearchParams(location.search);
   const currentType = queryParams.get('type'); 
-  const initialSearch = queryParams.get('search') || ''; // Grab the search term!
+  const initialSearch = queryParams.get('search') || ''; 
   
   // --- STATE ---
-  const [searchTerm, setSearchTerm] = useState(initialSearch); // Set it here!
-  
-  // --- STATE ---
+  const [searchTerm, setSearchTerm] = useState(initialSearch); 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -36,13 +34,15 @@ const StoreFront = () => {
   const [contactInfo, setContactInfo] = useState({});
   
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-
   const [selectedCategory, setSelectedCategory] = useState('All'); 
   const [showAuthCustomer, setShowAuthCustomer] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+
+  // NEW: Ref for category scrolling
+  const categoryScrollRef = useRef(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
   
@@ -130,15 +130,11 @@ const StoreFront = () => {
     fetchStoreData();
   }, [slug]);
 
-  // =========================================================================
-  // NEW LOGIC: Filter by URL Type FIRST, then build categories from that list
-  // =========================================================================
-  
   // 1. Filter master products list based on the Header Link clicked
   const typeFilteredProducts = products.filter(p => {
     if (currentType === 'goods') return p._local_item_type === 'goods';
     if (currentType === 'services' || currentType === 'service') return p._local_item_type === 'services';
-    return true; // Show all if no type is in the URL
+    return true; 
   });
 
   // 2. Extract Categories ONLY from the filtered products
@@ -157,13 +153,12 @@ const StoreFront = () => {
     categories.push({ name, image });
   });
 
-  // 3. Reset Selected Category if the user switches tabs (Goods -> Services)
+  // 3. Reset Selected Category if the user switches tabs
   useEffect(() => {
     const hash = window.location.hash.replace('#', '');
     if (typeFilteredProducts.length > 0 && categories.length > 0) {
       if (hash) {
         const decodedHash = decodeURIComponent(hash);
-        // Only select the category if it actually exists in the current tab
         const matchedCategory = categories.find(c => c.name.toLowerCase() === decodedHash.toLowerCase());
         if (matchedCategory) {
           setSelectedCategory(matchedCategory.name);
@@ -172,7 +167,7 @@ const StoreFront = () => {
       }
       setSelectedCategory('All');
     }
-  }, [typeFilteredProducts.length, currentType]); // Re-run when switching tabs
+  }, [typeFilteredProducts.length, currentType]); 
 
   const handleCategorySelect = (catName) => {
     setSelectedCategory(catName);
@@ -183,8 +178,17 @@ const StoreFront = () => {
     }
   };
 
-  // =========================================================================
-  
+  // NEW: Scroll Function for Arrow Buttons
+  const scrollCategories = (direction) => {
+    if (categoryScrollRef.current) {
+      const scrollAmount = 350; // Distance to scroll per click
+      categoryScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   // Banner Slide
   useEffect(() => {
     if (banners.length > 1) {
@@ -218,8 +222,6 @@ const StoreFront = () => {
     } catch (err) { console.error(err); alert("Failed to add item to cart."); }
   };
 
-  // 4. Final Grid Filtering (Search & Category selection) 
-  // We use `typeFilteredProducts` here instead of the master `products` array
   const filteredProducts = typeFilteredProducts.filter(p => {
     const pName = p.item_name ? p.item_name.toLowerCase() : "";
     const rawCat = p.category ? p.category.toLowerCase() : ""; 
@@ -336,23 +338,34 @@ const StoreFront = () => {
                        {currentType === 'services' ? 'EXPLORE OUR SERVICES' : 'EXPLORE OUR RANGE'}
                     </h2>
                     
-                    <div className="category-scroll-container">
-                        {categories.map((cat) => (
-                            <div 
-                              key={cat.name} 
-                              className={`cat-card ${selectedCategory === cat.name ? 'active' : ''}`} 
-                              onClick={() => handleCategorySelect(cat.name)}
-                            >
-                                <div className="cat-img-box">
-                                    {cat.image ? (
-                                        <img src={cat.image} alt={cat.name} className="cat-img" />
-                                    ) : (
-                                        <ImageIcon size={32} color="#94A3B8" /> 
-                                    )}
+                    {/* NEW: Category Carousel Wrapper with Buttons */}
+                    <div className="category-carousel-wrapper">
+                        <button className="carousel-arrow left-arrow" onClick={() => scrollCategories('left')}>
+                            <ChevronLeft size={24} />
+                        </button>
+
+                        <div className="category-scroll-container" ref={categoryScrollRef}>
+                            {categories.map((cat) => (
+                                <div 
+                                  key={cat.name} 
+                                  className={`cat-card ${selectedCategory === cat.name ? 'active' : ''}`} 
+                                  onClick={() => handleCategorySelect(cat.name)}
+                                >
+                                    <div className="cat-img-box">
+                                        {cat.image ? (
+                                            <img src={cat.image} alt={cat.name} className="cat-img" />
+                                        ) : (
+                                            <ImageIcon size={32} color="#94A3B8" /> 
+                                        )}
+                                    </div>
+                                    <div className="cat-label">{cat.name}</div>
                                 </div>
-                                <div className="cat-label">{cat.name}</div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+
+                        <button className="carousel-arrow right-arrow" onClick={() => scrollCategories('right')}>
+                            <ChevronRight size={24} />
+                        </button>
                     </div>
                 </>
             )}
