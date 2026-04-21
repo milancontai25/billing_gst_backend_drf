@@ -671,6 +671,110 @@ body { margin: 0; padding: 0; }
 .description-box p { font-size: 15px; line-height: 1.7; color: #475569; }
 
 /* ==========================================================================
+   HELP BOX (RIGHT COLUMN)
+   ========================================================================== */
+.help-box-right {
+  /* margin-top: 1px; */
+  padding: 22px; /* Generous padding inside the box */
+  background-color: #F8F9FA; /* Light gray background like the screenshot */
+  border-radius: 4px; /* Optional: gives a very slight softening to the corners */
+}
+
+.help-box-right h5 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1F2937;
+  margin: 0 0 20px 0;
+}
+
+
+
+
+.help-timing {
+  color: #6B7280;
+  font-size: 13px;
+  margin: 0 0 16px 0;
+}
+
+.help-contact, .help-email {
+  font-size: 14px;
+  color: #374151;
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.help-contact strong, .help-email strong {
+  color: #111827;
+}
+
+/* ==========================================================================
+   FULL-WIDTH DESCRIPTION SECTION (LIKE SCREENSHOT)
+   ========================================================================== */
+.full-width-description-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto 60px auto;
+  padding: 0 54px;
+}
+
+/* Container for the centered tab and the full-width line */
+.desc-tabs-header {
+  position: relative;
+  text-align: center;
+  margin-bottom: 40px; 
+}
+
+/* The thin, full-width gray line */
+.desc-tabs-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: #E5E7EB; /* Light gray */
+  z-index: 1;
+}
+
+/* The centered text with the thick black underline */
+.active-tab {
+  display: inline-block; /* Crucial: allows the border to wrap just the text */
+  font-size: 20px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 3px solid #000000; /* Thick black line */
+  position: relative;
+  z-index: 2; /* Forces the black line to sit ON TOP of the gray line */
+}
+
+/* The actual text content area */
+.desc-body {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.desc-subtitle {
+  font-size: 22px;
+  font-weight: 900; /* Extra bold like the screenshot */
+  color: #111827;
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.desc-text {
+  font-size: 16px;
+  line-height: 1.8; /* Generous line height for readability */
+  color: #374151;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+
+
+/* ==========================================================================
    NEW UI UPDATES (Explore Range & Recommended)
    ========================================================================== */
 .explore-section { max-width: 1280px; margin: 40px auto 0; padding: 0 24px; }
@@ -961,6 +1065,8 @@ body { margin: 0; padding: 0; }
     padding: 10px 24px;
     font-size: 13px;
   }
+
+
 }
 
 /* Extra Small Phones (iPhone SE, etc) */
@@ -989,44 +1095,59 @@ body { margin: 0; padding: 0; }
 
 /* Mobile layout (Heavy-Duty Overrides) */
 @media (max-width: 768px) {
+  
+  .product-detail-page {
+    padding-top: 90px !important; /* Pushes content down below your new royal header */
+  }
+
   .detail-container {
     display: flex !important; 
     flex-direction: column !important; 
     padding: 0 16px !important;
-    margin-top: 16px !important;
-    gap: 16px !important; /* Kills any massive gaps inherited from desktop */
+    margin-top: 0px !important;
+    gap: 16px !important; 
   }
 
+  /* 2. FIX THE MASSIVE WHITE GAP */
   .detail-gallery {
     width: 100% !important;
+    height: auto !important; /* CRITICAL: Kills the giant fixed-height empty box */
+    min-height: 0 !important; /* Ensures it can shrink as much as needed */
     display: flex !important;
     flex-direction: column-reverse !important; 
+    justify-content: flex-start !important; /* Packs the image and thumbnails tightly */
     gap: 12px !important;
+    margin-bottom: 0 !important;
   }
 
   .main-image-frame {
     height: auto !important; 
-    max-height: 400px !important; 
+    max-height: 350px !important; 
+    min-height: 0 !important; /* Kills any lingering desktop heights */
     width: 100% !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    margin: 0 !important;
   }
 
   .main-img {
     height: auto !important;
-    max-height: 400px !important;
+    max-height: 350px !important;
     width: 100% !important;
     object-fit: contain !important;
+    margin: 0 !important;
   }
 
+  /* Thumbnails */
   .thumbnail-list {
     display: flex !important;
     flex-direction: row !important; 
     width: 100% !important;
     overflow-x: auto !important; 
-    padding-bottom: 8px !important; 
+    padding-bottom: 4px !important; 
     gap: 12px !important;
+    margin-bottom: 0 !important; /* Removes gap below thumbnails */
     -ms-overflow-style: none;  
     scrollbar-width: none;  
   }
@@ -1036,15 +1157,16 @@ body { margin: 0; padding: 0; }
   }
 
   .thumb-item {
-    width: 70px !important; 
-    height: 70px !important;
+    width: 65px !important; 
+    height: 65px !important;
     flex-shrink: 0 !important; 
   }
 
+  /* Text Info Section */
   .detail-info {
     width: 100% !important;
     padding: 0 !important;
-    margin-top: 0px !important; /* Pulls text right up to the thumbnails */
+    margin-top: 8px !important; /* Brings the title right up to the thumbnails */
   }
 
   .detail-title { font-size: 24px !important; }
@@ -1067,7 +1189,34 @@ body { margin: 0; padding: 0; }
     width: 100% !important; 
     padding: 14px 0 !important;
   }
+
+
+  .full-width-description-container {
+    margin: 0 auto 30px auto;
+    padding: 0 24px;
+  }
+  .active-tab { 
+    font-size: 18px; 
+  }
+  .desc-subtitle { 
+    font-size: 20px; 
+  }
+  .desc-text {
+    font-size: 15px;
+  }
+
+  .help-box-right { 
+    /* margin-top: 16px; */
+    padding: 24px; 
+  }
+  .help-box-right h5 {
+    font-size: 16px;
+  }
+  .help-text, .help-numbers {
+    font-size: 15px;
+  }
 }
+
 
 /* Very small phones */
 @media (max-width: 480px) {

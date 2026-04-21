@@ -176,6 +176,32 @@ const StoreProductDetail = () => {
     }
   };
 
+  const handleShare = async () => {
+    const currentUrl = window.location.href;
+    const shareTitle = `${product.item_name} - ${businessName}`;
+    
+    // Use the native Web Share API if available (works great on mobile!)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: `Check out this amazing ${product.item_name} at ${businessName}!`,
+          url: currentUrl,
+        });
+      } catch (err) {
+        console.log("Error sharing:", err);
+      }
+    } else {
+      // Fallback for older desktop browsers: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(currentUrl);
+        alert("Link copied to clipboard!");
+      } catch (err) {
+        console.error("Failed to copy link: ", err);
+      }
+    }
+  };
+
   if (loading) return <div className="loading-container"><Loader2 className="animate-spin" /></div>;
   if (!product) return <div className="loading-container">Product not found</div>;
 
@@ -184,6 +210,18 @@ const StoreProductDetail = () => {
   const hasDiscount = mrp > sellingPrice;
   const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
   const currency = product.currency_symbol || '₹';
+
+
+  // NEW: Determine if it's a Product or Service Description
+  const descriptionTitle = (() => {
+    if (!hasProducts && hasServices) return "Service Description";
+    if (hasProducts && hasServices && product?.item_type) {
+        const typeStr = String(product.item_type).toLowerCase();
+        if (typeStr.includes('service')) return "Service Description";
+    }
+    return "Product Description"; // Default fallback
+  })();
+
 
   return (
     <div className="product-detail-page elegant-theme">
@@ -275,7 +313,10 @@ const StoreProductDetail = () => {
             <div className="info-header">
                 <h1 className="detail-title">{product.item_name}</h1>
                 <div className="icon-actions">
-                    <button className="icon-btn"><Share2 size={20} /></button>
+                    {/* ADD THE onClick HERE */}
+                    <button className="icon-btn" onClick={handleShare}>
+                        <Share2 size={20} />
+                    </button>
                     <button className="icon-btn"><Heart size={20} /></button>
                 </div>
             </div>
@@ -314,18 +355,48 @@ const StoreProductDetail = () => {
                 <button className="btn-buy-now-big">BUY NOW</button>
             </div>
 
-            <div className="description-box">
-                <h3>Description</h3>
-                {product.description ? (
-                    <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
-                        {product.description}
+            {/* --- MOVED HELP SECTION HERE (Right Column) --- */}
+            <div className="help-box-right">
+                <h5>Have a question? We can help.</h5>
+                <p className="help-timing">24*7</p>
+                
+                {contactInfo.phone && (
+                    <p className="help-contact">
+                        <strong>Call or WhatsApp us:</strong><br/>
+                        {contactInfo.phone}
                     </p>
-                ) : (
-                    <p>No description available.</p>
+                )}
+                
+                {contactInfo.email && (
+                    <p className="help-email">
+                        Email us at <strong>{contactInfo.email}</strong> or chat/DM us on our Instagram.
+                    </p>
                 )}
             </div>
+
         </div>
       </div>
+
+      {/* --- FULL-WIDTH DESCRIPTION (Bottom) --- */}
+      <div className="full-width-description-container">
+          <div className="desc-tabs-header">
+              <h3 className="active-tab">Description</h3>
+          </div>
+          
+          <div className="desc-body">
+              {/* NEW: Dynamic Subtitle */}
+              <h4 className="desc-subtitle">{descriptionTitle}</h4>
+              
+              {product.description ? (
+                  <p className="desc-text" style={{ whiteSpace: 'pre-wrap' }}>
+                      {product.description}
+                  </p>
+              ) : (
+                  <p className="desc-text">No description available.</p>
+              )}
+          </div>
+      </div>
+
 
       <StoreFooter 
         slug={slug}
