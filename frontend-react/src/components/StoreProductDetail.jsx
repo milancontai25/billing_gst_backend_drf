@@ -7,7 +7,7 @@ import StoreHeader from './StoreHeader';
 import StoreFooter from './StoreFooter';
 import CartDrawer from './CartDrawer';
 import AuthCustomer from './AuthCustomer';
-import '../assets/css/storefront.css';
+import '../assets/css/productdetail.css';
 
 const StoreProductDetail = () => {
   const { slug, itemSlug } = useParams();

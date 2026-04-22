@@ -1,0 +1,355 @@
+/* ==========================================================================
+   PRODUCT DETAIL PAGE STYLES
+   ========================================================================== */
+.product-detail-page { background-color: #FFFFFF; min-height: 100vh; display: flex; flex-direction: column; }
+.detail-header { width: 100%; max-width: 1200px; margin: 0 auto; padding: 16px 24px; border-bottom: 1px solid #F1F5F9; background: #fff; }
+.breadcrumb-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #64748B; letter-spacing: 0.5px; text-transform: uppercase; }
+.crumb-link { text-decoration: none; color: #64748B; transition: color 0.2s ease; }
+.crumb-link:hover {
+  color: #111827; /* Pure black text hover */
+}
+.crumb-current { color: #0F172A; font-weight: 700; }
+
+.detail-container { max-width: 1200px; margin: 40px auto; padding: 0 24px; display: grid; grid-template-columns: 80px 1fr 1fr; gap: 40px; width: 100%; box-sizing: border-box; flex: 1; }
+.detail-gallery { display: contents; }
+.thumbnail-list { display: flex; flex-direction: column; gap: 12px; width: 80px; height: 500px; overflow-y: auto; scrollbar-width: none; }
+.thumbnail-list::-webkit-scrollbar { display: none; }
+.thumb-item { width: 80px; height: 80px; border: 1px solid #E2E8F0; border-radius: 12px; cursor: pointer; overflow: hidden; padding: 4px; transition: all 0.2s ease; background: #fff; flex-shrink: 0; }
+.thumb-item:hover {
+  border-color: #9CA3AF; /* Slate hover */
+}
+
+.thumb-item.active {
+  border-color: #111827; /* Solid black active border */
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.15); /* Soft black glow */
+}
+
+.thumb-item img { width: 100%; height: 100%; object-fit: contain; }
+.main-image-frame { position: relative; width: 100%; height: 500px; background: #FFFFFF; border: 1px solid #F1F5F9; border-radius: 24px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.main-img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease; cursor: zoom-in; }
+.main-img:hover { transform: scale(1.05); }
+
+.detail-info { display: flex; flex-direction: column; padding-left: 20px; }
+.info-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 20px; }
+.detail-title { font-size: 32px; font-weight: 800; color: #1E293B; line-height: 1.2; margin: 0; font-family: 'Playfair Display', serif; }
+.icon-actions { display: flex; gap: 12px; }
+.icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid #E2E8F0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748B; transition: 0.2s; }
+/* Update Icon Buttons (Share / Like) */
+.icon-btn:hover {
+  border-color: #111827;
+  color: #111827;
+  background: #F3F4F6;
+}
+
+.tag-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.gi-tag { background-color: #F1F5F9; color: #334155; font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 6px; text-transform: uppercase; }
+.sub-text { font-size: 14px; color: #64748B; font-weight: 500; }
+.unit-box { display: inline-flex; padding: 8px 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 24px; }
+
+.detail-price-section { display: flex; align-items: baseline; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+.d-selling-price { font-size: 32px; font-weight: 800; color: #0F172A; }
+.d-mrp-price { font-size: 20px; color: #94A3B8; text-decoration: line-through; font-weight: 500; }
+.d-discount-off { color: #16A34A; font-weight: 700; font-size: 18px; background: #DCFCE7; padding: 4px 8px; border-radius: 6px; }
+
+.action-row { display: flex; gap: 16px; margin-bottom: 36px; align-items: center; }
+.qty-selector-big { display: flex; align-items: center; justify-content: space-between; width: 140px; height: 52px; border: 1px solid #E2E8F0; border-radius: 50px; padding: 0 6px; background: #fff; }
+.qty-selector-big button { width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; cursor: pointer; color: #334155; transition: 0.2s; }
+.qty-selector-big button:hover { background: #F1F5F9; }
+.qty-selector-big span { font-weight: 700; font-size: 18px; color: #0F172A; }
+
+.btn-add-cart-big, .btn-buy-now-big { flex: 1; height: 52px; border-radius: 50px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s ease; }
+.btn-add-cart-big {
+  background-color: #FFFFFF; 
+  color: #111827; /* Black text */
+  border: 1px solid #111827; /* Solid black border */
+}
+
+.btn-add-cart-big:hover {
+  background-color: #F9FAFB;
+  transform: translateY(-1px);
+}
+
+.btn-buy-now-big {
+  background: #111827; /* Solid almost-black */
+  color: white;
+  border: 1px solid #111827;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.btn-buy-now-big:hover {
+  background: #000000; /* Pure black on hover */
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+.description-box h3 { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #1E293B; }
+.description-box p { font-size: 15px; line-height: 1.7; color: #475569; }
+
+/* ==========================================================================
+   HELP BOX (RIGHT COLUMN)
+   ========================================================================== */
+.help-box-right {
+  /* margin-top: 1px; */
+  padding: 22px; /* Generous padding inside the box */
+  background-color: #F8F9FA; /* Light gray background like the screenshot */
+  border-radius: 4px; /* Optional: gives a very slight softening to the corners */
+}
+
+.help-box-right h5 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1F2937;
+  margin: 0 0 20px 0;
+}
+
+
+
+
+.help-timing {
+  color: #6B7280;
+  font-size: 13px;
+  margin: 0 0 16px 0;
+}
+
+.help-contact, .help-email {
+  font-size: 14px;
+  color: #374151;
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.help-contact strong, .help-email strong {
+  color: #111827;
+}
+
+/* ==========================================================================
+   FULL-WIDTH DESCRIPTION SECTION (LIKE SCREENSHOT)
+   ========================================================================== */
+.full-width-description-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto 60px auto;
+  padding: 0 54px;
+}
+
+/* Container for the centered tab and the full-width line */
+.desc-tabs-header {
+  position: relative;
+  text-align: center;
+  margin-bottom: 40px; 
+}
+
+/* The thin, full-width gray line */
+.desc-tabs-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: #E5E7EB; /* Light gray */
+  z-index: 1;
+}
+
+/* The centered text with the thick black underline */
+.active-tab {
+  display: inline-block; /* Crucial: allows the border to wrap just the text */
+  font-size: 20px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 3px solid #000000; /* Thick black line */
+  position: relative;
+  z-index: 2; /* Forces the black line to sit ON TOP of the gray line */
+}
+
+/* The actual text content area */
+.desc-body {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.desc-subtitle {
+  font-size: 22px;
+  font-weight: 900; /* Extra bold like the screenshot */
+  color: #111827;
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.desc-text {
+  font-size: 16px;
+  line-height: 1.8; /* Generous line height for readability */
+  color: #374151;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+
+
+/* ==========================================================================
+   NEW UI UPDATES (Explore Range & Recommended)
+   ========================================================================== */
+.explore-section { max-width: 1280px; margin: 40px auto 0; padding: 0 24px; }
+.explore-title { font-size: 22px; font-weight: 700; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 24px; }
+
+
+
+/* ==========================================================================
+   PRODUCT DETAIL PAGE - RESPONSIVENESS
+   ========================================================================== */
+
+/* Tablet layout */
+@media (max-width: 1024px) {
+  .detail-container {
+    gap: 32px; 
+    padding: 0 24px;
+  }
+  .detail-title { font-size: 28px; }
+}
+
+
+/* Mobile layout (Heavy-Duty Overrides) */
+@media (max-width: 768px) {
+  
+  .product-detail-page {
+    padding-top: 90px !important; /* Pushes content down below your new royal header */
+  }
+
+  .detail-container {
+    display: flex !important; 
+    flex-direction: column !important; 
+    padding: 0 16px !important;
+    margin-top: 0px !important;
+    gap: 0px !important; /* CHANGED: Removed the 16px gap between gallery and info */
+  }
+
+  /* 2. FIX THE MASSIVE WHITE GAP */
+  .detail-gallery {
+    width: 100% !important;
+    height: auto !important; /* CRITICAL: Kills the giant fixed-height empty box */
+    min-height: 0 !important; /* Ensures it can shrink as much as needed */
+    display: flex !important;
+    flex-direction: column-reverse !important; 
+    justify-content: flex-start !important; /* Packs the image and thumbnails tightly */
+    gap: 12px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .main-image-frame {
+    height: auto !important; 
+    max-height: 350px !important; 
+    min-height: 0 !important; /* Kills any lingering desktop heights */
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+  }
+
+  .main-img {
+    height: auto !important;
+    max-height: 350px !important;
+    width: 100% !important;
+    object-fit: contain !important;
+    margin: 0 !important;
+  }
+
+  .thumbnail-list {
+    display: flex !important;
+    flex-direction: row !important; 
+    width: 100% !important;
+    
+    /* THE FIX: Kill the inherited 500px desktop height! */
+    height: auto !important; 
+    
+    overflow-x: auto !important; 
+    padding-bottom: 4px !important; 
+    gap: 12px !important;
+    margin-bottom: 0 !important; /* Removes gap below thumbnails */
+    -ms-overflow-style: none;  
+    scrollbar-width: none;  
+  }
+  .thumbnail-list::-webkit-scrollbar {
+    display: none !important; 
+  }
+
+  .thumb-item {
+    width: 65px !important; 
+    height: 65px !important;
+    flex-shrink: 0 !important; 
+  }
+
+  /* Text Info Section */
+  /* Text Info Section */
+  .detail-info {
+    width: 100% !important;
+    padding: 0 !important;
+    margin-top: 0px !important; /* CHANGED: Removed the 8px margin */
+  }
+
+  .detail-title { font-size: 24px !important; }
+  .d-selling-price { font-size: 28px !important; }
+
+  .action-row {
+    display: flex !important;
+    flex-direction: column !important; 
+    gap: 12px !important;
+  }
+
+  .qty-selector-big {
+    width: 100% !important; 
+    justify-content: space-between !important;
+    padding: 12px 24px !important;
+  }
+
+  .btn-add-cart-big, 
+  .btn-buy-now-big {
+    width: 100% !important; 
+    padding: 14px 0 !important;
+  }
+
+
+  .full-width-description-container {
+    margin: 0 auto 30px auto;
+    padding: 0 24px;
+  }
+  .active-tab { 
+    font-size: 18px; 
+  }
+  .desc-subtitle { 
+    font-size: 20px; 
+  }
+  .desc-text {
+    font-size: 15px;
+  }
+
+  .help-box-right { 
+    /* margin-top: 16px; */
+    padding: 24px; 
+  }
+  .help-box-right h5 {
+    font-size: 16px;
+  }
+  .help-text, .help-numbers {
+    font-size: 15px;
+  }
+}
+
+
+/* Very small phones */
+@media (max-width: 480px) {
+  .main-image-frame {
+    height: auto !important; /* CRITICAL: Fixed the 350px height bug here! */
+    max-height: 300px !important; 
+  }
+  .main-img {
+    height: auto !important;
+    max-height: 300px !important;
+  }
+  .detail-title {
+    font-size: 22px !important;
+  }
+}

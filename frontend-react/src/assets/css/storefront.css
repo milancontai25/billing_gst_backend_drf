@@ -595,7 +595,7 @@ body { margin: 0; padding: 0; }
 }
 .crumb-current { color: #0F172A; font-weight: 700; }
 
-.detail-container { max-width: 1200px; margin: 40px auto 80px; padding: 0 24px; display: grid; grid-template-columns: 80px 1fr 1fr; gap: 40px; width: 100%; box-sizing: border-box; flex: 1; }
+.detail-container { max-width: 1200px; margin: 40px auto; padding: 0 24px; display: grid; grid-template-columns: 80px 1fr 1fr; gap: 40px; width: 100%; box-sizing: border-box; flex: 1; }
 .detail-gallery { display: contents; }
 .thumbnail-list { display: flex; flex-direction: column; gap: 12px; width: 80px; height: 500px; overflow-y: auto; scrollbar-width: none; }
 .thumbnail-list::-webkit-scrollbar { display: none; }
@@ -1105,7 +1105,7 @@ body { margin: 0; padding: 0; }
     flex-direction: column !important; 
     padding: 0 16px !important;
     margin-top: 0px !important;
-    gap: 16px !important; 
+    gap: 0px !important; /* CHANGED: Removed the 16px gap between gallery and info */
   }
 
   /* 2. FIX THE MASSIVE WHITE GAP */
@@ -1163,10 +1163,11 @@ body { margin: 0; padding: 0; }
   }
 
   /* Text Info Section */
+  /* Text Info Section */
   .detail-info {
     width: 100% !important;
     padding: 0 !important;
-    margin-top: 8px !important; /* Brings the title right up to the thumbnails */
+    margin-top: 0px !important; /* CHANGED: Removed the 8px margin */
   }
 
   .detail-title { font-size: 24px !important; }

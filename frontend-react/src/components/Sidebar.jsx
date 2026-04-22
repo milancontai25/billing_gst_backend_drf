@@ -88,7 +88,12 @@ const Sidebar = ({
            </div>
 
            {/* Marketplace Link */}
-           <div className="nav-item" onClick={openMarketplace} style={{ color: '#A78BFA' }} title="Marketplace">
+           {/* <div className="nav-item" onClick={openMarketplace} style={{ color: '#A78BFA' }} title="Marketplace">
+              <ShoppingBag size={20} style={{ minWidth: '20px' }} /> 
+              <span className="nav-text">Marketplace</span>
+           </div> */}
+
+           <div className="nav-item"  style={{ color: '#A78BFA' }} title="Marketplace">
               <ShoppingBag size={20} style={{ minWidth: '20px' }} /> 
               <span className="nav-text">Marketplace</span>
            </div>

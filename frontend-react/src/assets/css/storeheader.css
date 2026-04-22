@@ -36,7 +36,7 @@
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 16px; 
+  gap: 6px; 
   flex: 1; 
   max-width: 50%; 
   overflow: hidden; 
@@ -44,10 +44,10 @@
 
 /* STRICT SQUARE LOGO */
 .brand-logo-img {
-  width: 60px !important;
-  height: 60px !important;
-  min-width: 60px !important;
-  max-width: 60px !important;
+  width: 75px !important;
+  height: 75px !important;
+  min-width: 75px !important;
+  max-width: 75px !important;
   object-fit: contain !important; 
   object-position: left center; 
   display: block;
