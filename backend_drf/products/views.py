@@ -1,4 +1,5 @@
 from api.utils.file_upload import save_file_to_server
+from api.utils.barcode import generate_barcode_image
 from .models import Item
 from rest_framework import generics, serializers
 from .serializers import ProductSerializer
@@ -34,3 +35,25 @@ class ItemDetailView(generics.RetrieveUpdateDestroyAPIView):
         if not business:
             raise serializers.ValidationError("No active business selected.")
         return Item.objects.filter(business=business)
+    
+
+from rest_framework.views import APIView
+from django.http import HttpResponse
+
+class DownloadBarcodeView(APIView):
+    def get(self, request, pk):
+        try:
+            item = Item.objects.get(pk=pk)
+        except Item.DoesNotExist:
+            return HttpResponse("Item not found", status=404)
+
+        if not item.barcode:
+            return HttpResponse("Barcode not available for this item", status=400)
+
+        image = generate_barcode_image(item.barcode)
+
+        response = HttpResponse(image, content_type="image/png")
+        response['Content-Disposition'] = f'attachment; filename="{item.item_name}_barcode.png"'
+        return response
+    
+    

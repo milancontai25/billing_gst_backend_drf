@@ -73,34 +73,53 @@ const Customers = () => {
     setShowModal(true);
   };
 
+  // In Customers.jsx
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Sanitize payload
     const payload = { ...formData };
-    
-    // Convert pin to number if it exists
     if (payload.pin) payload.pin = parseInt(payload.pin, 10);
-    // Remove password if empty (so we don't send empty string to backend if optional)
     if (!payload.password) delete payload.password;
 
     try {
       if (isEditing) {
-        await api.put(`/customers/${editId}/`, payload); // PUT
+        await api.put(`/customers/${editId}/`, payload);
         alert("Customer Updated Successfully!");
       } else {
-        await api.post('/customers/', payload); // POST
+        await api.post('/customers/', payload);
         alert("Customer Added Successfully!");
       }
       setShowModal(false);
       fetchCustomers(); 
     } catch (err) {
       console.error(err);
+      
+      // --- NEW ERROR HANDLING LOGIC ---
       if (err.response && err.response.data) {
-        alert(`Server Error: ${JSON.stringify(err.response.data)}`);
+        const errorData = err.response.data;
+        
+        // If it's still a raw HTML string (server crashed entirely), show a generic error
+        if (typeof errorData === 'string' && errorData.startsWith('<!DOCTYPE html>')) {
+            alert("Server Error: A database conflict occurred. Please check if this email/phone is already in use.");
+            return;
+        }
+
+        // If it's a structured JSON error from Django validation
+        let errorMessage = "Failed to save customer:\n";
+        for (const [field, messages] of Object.entries(errorData)) {
+           // Field might be 'email', messages might be ['A customer with this email already exists.']
+           const msgString = Array.isArray(messages) ? messages.join(" ") : messages;
+           // Format it nicely: "Email: A customer with this email already exists."
+           errorMessage += `- ${field.charAt(0).toUpperCase() + field.slice(1)}: ${msgString}\n`;
+        }
+        alert(errorMessage);
+        
       } else {
-        alert("Error saving customer.");
+        alert("Network error or failed to save customer.");
       }
+      // --- END NEW LOGIC ---
     }
   };
 

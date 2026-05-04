@@ -37,7 +37,8 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
     if (!element) return;
     try {
       setDownloading(true);
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+      // Increased scale slightly for better resolution on mobile renders
+      const canvas = await html2canvas(element, { scale: 3, useCORS: true, logging: false, backgroundColor: '#ffffff' });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const ratio = Math.min(pdf.internal.pageSize.getWidth() / canvas.width, pdf.internal.pageSize.getHeight() / canvas.height);
@@ -69,17 +70,15 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
 
   // --- DYNAMIC TAX LOGIC ---
   const businessTaxType = business?.tax_type?.toUpperCase() || 'NONE';
-  const showTax = businessTaxType !== 'NONE'; // TRUE if GST, VAT, SALES_TAX. FALSE if NONE.
+  const showTax = businessTaxType !== 'NONE';
 
   let taxLabel = 'TAX';
   if (businessTaxType === 'GST') taxLabel = 'GST';
   if (businessTaxType === 'VAT') taxLabel = 'VAT';
   if (businessTaxType === 'SALES_TAX' || businessTaxType === 'SALES TAX') taxLabel = 'SALES TAX';
 
-  // Change Document Title
   const documentTitle = showTax ? 'TAX INVOICE' : 'INVOICE';
 
-  // --- RECONSTRUCT TRUE LINEAR MATH USING DATABASE VALUES ---
   let trueTotalBase = 0;
   let trueTotalDisc = 0;
   let trueTotalTaxable = 0;
@@ -111,9 +110,19 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
 
   const hasAnyDiscount = trueTotalDisc > 0;
 
+  // --- Calculate column widths to ensure strict grid ---
+  // We have max 8 columns: Details, Rate, Qty, BaseAmt, Disc (optional), Taxable (opt), Tax (opt), Total
+  const getColWidths = () => {
+    if (showTax && hasAnyDiscount) return ['30%', '10%', '6%', '12%', '10%', '11%', '10%', '11%'];
+    if (showTax && !hasAnyDiscount) return ['35%', '12%', '8%', '14%', '11%', '10%', '10%'];
+    if (!showTax && hasAnyDiscount) return ['40%', '15%', '10%', '15%', '10%', '10%'];
+    return ['45%', '15%', '10%', '15%', '15%']; // Minimal columns
+  };
+  const w = getColWidths();
+
   return (
     <div className="modal-overlay" style={{zIndex: 1000}}>
-      <div className="modal-box" style={{ width: '950px', height: '95vh', display: 'flex', flexDirection: 'column', background:'#f8fafc' }}>
+      <div className="modal-box" style={{ width: '95%', maxWidth: '950px', height: '95vh', display: 'flex', flexDirection: 'column', background:'#f8fafc' }}>
         
         <div className="modal-header" style={{ background:'white', borderBottom: '1px solid #e2e8f0', padding: '15px 25px' }}>
           <h2 style={{ fontSize: '18px', fontWeight:'600' }}>{documentTitle} Preview</h2>
@@ -125,216 +134,217 @@ const InvoiceViewer = ({ invoiceId, onClose }) => {
           </div>
         </div>
 
-        <div className="scrollable-form" style={{ flex: 1, padding: '20px', display:'flex', justifyContent:'center' }}>
+        {/* Outer scrollable container limits the view for mobile */}
+        <div className="scrollable-form" style={{ flex: 1, padding: '20px', overflowX: 'auto', display: 'flex', justifyContent: 'center' }}>
           
-          <div ref={printRef} style={{ width: '210mm', minHeight: '297mm', background: 'white', padding: '50px', color: '#334155', fontFamily: '"Inter", sans-serif', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', position: 'relative' }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '30px', marginBottom: '30px' }}>
-              <div style={{ maxWidth: '60%' }}>
-                <div style={{ marginBottom: '15px' }}>
-                   {business?.logo_bucket_url ? (
-                      <img src={getImageUrl(business.logo_bucket_url)} alt="Logo" style={{ height: '45px', objectFit: 'contain', objectPosition: 'left' }}/>
-                   ) : (
-                      <div style={{ width: '45px', height: '45px', background: '#3b82f6', color: 'white', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>
-                        {business?.business_name?.charAt(0) || 'B'}
+          {/* Inner container enforces absolute min-width for html2canvas */}
+          <div style={{ minWidth: '794px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <div ref={printRef} style={{ width: '210mm', minHeight: '297mm', background: 'white', padding: '50px', color: '#334155', fontFamily: '"Inter", sans-serif', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', position: 'relative', boxSizing: 'border-box' }}>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '30px', marginBottom: '30px' }}>
+                <div style={{ maxWidth: '60%' }}>
+                  <div style={{ marginBottom: '15px' }}>
+                     {business?.logo_bucket_url ? (
+                        <img src={getImageUrl(business.logo_bucket_url)} alt="Logo" style={{ height: '45px', objectFit: 'contain', objectPosition: 'left' }}/>
+                     ) : (
+                        <div style={{ width: '45px', height: '45px', background: '#3b82f6', color: 'white', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>
+                          {business?.business_name?.charAt(0) || 'B'}
+                        </div>
+                     )}
+                  </div>
+                  <h2 style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {business?.business_name || 'Your Business Name'}
+                  </h2>
+                  <div style={{ lineHeight: '1.6', fontSize: '13px', color: '#64748b' }}>
+                    {business?.owner_name && <div>{business.owner_name}</div>}
+                    {business?.address}
+                    {(business?.district || business?.state) && <div>{business.district}, {business.state} {business.pin}</div>}
+                    {business?.country && <div>{business.country}</div>}
+                    {showTax && business?.tax_number && (
+                      <div style={{ marginTop:'4px', fontWeight: '600', color: '#475569' }}>
+                          {taxLabel} NO: {business.tax_number}
                       </div>
-                   )}
-                </div>
-                <h2 style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {business?.business_name || 'Your Business Name'}
-                </h2>
-                <div style={{ lineHeight: '1.6', fontSize: '13px', color: '#64748b' }}>
-                  {business?.owner_name && <div>{business.owner_name}</div>}
-                  {business?.address}
-                  {(business?.district || business?.state) && <div>{business.district}, {business.state} {business.pin}</div>}
-                  {business?.country && <div>{business.country}</div>}
-                  {showTax && business?.tax_number && (
-                    <div style={{ marginTop:'4px', fontWeight: '600', color: '#475569' }}>
-                        {taxLabel} NO: {business.tax_number}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '1px', margin: 0 }}>
-                    {documentTitle}
-                </h1>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
-              <div style={{ minWidth: '250px' }}>
-                <h3 style={{ fontSize: '12px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
-                  BILLED TO
-                </h3>
-                <div style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', marginBottom: '4px' }}>
-                  {customer_name || `Customer ID: ${customer}`}
-                </div>
-                <div style={{ lineHeight: '1.6', fontSize: '14px', color: '#64748b' }}>
-                  {customer_address || "Address Not Provided"}<br/>
-                  {customer_phone && <span>{customer_phone}<br/></span>}
-                  {customer_email}
-                </div>
-              </div>
-
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-                   <div style={{ background: badgeBg, color: badgeText, padding: '4px 16px', borderRadius: '9999px', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px' }}>
-                      {statusText}
-                   </div>
-                </div>
-                <table style={{ borderCollapse: 'collapse', float: 'right', fontSize: '14px' }}>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: '6px 20px 6px 0', color: '#64748b', textAlign: 'left' }}>Invoice #:</td>
-                      <td style={{ padding: '6px 0', fontWeight: '600', color: '#0f172a', textAlign: 'right' }}>{invoice_id}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '6px 20px 6px 0', color: '#64748b', textAlign: 'left' }}>Invoice Date:</td>
-                      <td style={{ padding: '6px 0', fontWeight: '600', color: '#0f172a', textAlign: 'right' }}>{new Date(displayDate).toLocaleDateString('en-GB')}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '6px 20px 6px 0', color: '#64748b', textAlign: 'left' }}>Payment Mode:</td>
-                      <td style={{ padding: '6px 0', fontWeight: '600', color: '#0f172a', textAlign: 'right' }}>{payment_mode || 'Cash'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '30px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #3b82f6' }}>
-                    <th style={{ textAlign: 'left', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Item Details</th>
-                    <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Rate</th>
-                    <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Qty</th>
-                    <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>BaseAmt</th>
-                    
-                    {hasAnyDiscount && (
-                      <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Disc</th>
                     )}
-                    
-                    {/* CONDITIONALLY RENDERED TAX COLUMNS */}
-                    {showTax && (
-                      <>
-                        <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', background: '#eef2ff' }}>Taxable</th>
-                        <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>{taxLabel}</th>
-                      </>
-                    )}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '1px', margin: 0 }}>
+                      {documentTitle}
+                  </h1>
+                </div>
+              </div>
 
-                    <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase' }}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {processedItems.map((item, index) => (
-                    <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <td style={{ padding: '16px 8px', verticalAlign: 'middle', fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>
-                        {item.item_name || `Item ID: ${item.item}`}
-                        {showTax && parseFloat(item.tax_percent) > 0 && (
-                          <div style={{fontSize: '11px', color: '#94a3b8', fontWeight: 'normal', marginTop: '2px'}}>{item.tax_type || taxLabel}</div>
-                        )}
-                      </td>
-                      <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#475569', fontSize: '14px' }}>₹{item.displayRate.toFixed(2)}</td>
-                      <td style={{ padding: '16px 8px', textAlign: 'center', verticalAlign: 'middle', color: '#475569', fontSize: '14px' }}>{item.quantity}</td>
-                      <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#475569', fontSize: '14px' }}>₹{item.displayBaseAmt.toFixed(2)}</td>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
+                <div style={{ minWidth: '250px' }}>
+                  <h3 style={{ fontSize: '12px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                    BILLED TO
+                  </h3>
+                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', marginBottom: '4px' }}>
+                    {customer_name || `Customer ID: ${customer}`}
+                  </div>
+                  <div style={{ lineHeight: '1.6', fontSize: '14px', color: '#64748b' }}>
+                    {customer_address || "Address Not Provided"}<br/>
+                    {customer_phone && <span>{customer_phone}<br/></span>}
+                    {customer_email}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                     <div style={{ background: badgeBg, color: badgeText, padding: '4px 16px', borderRadius: '9999px', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px' }}>
+                        {statusText}
+                     </div>
+                  </div>
+                  <table style={{ borderCollapse: 'collapse', float: 'right', fontSize: '14px' }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ padding: '6px 20px 6px 0', color: '#64748b', textAlign: 'left' }}>Invoice #:</td>
+                        <td style={{ padding: '6px 0', fontWeight: '600', color: '#0f172a', textAlign: 'right' }}>{invoice_id}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '6px 20px 6px 0', color: '#64748b', textAlign: 'left' }}>Invoice Date:</td>
+                        <td style={{ padding: '6px 0', fontWeight: '600', color: '#0f172a', textAlign: 'right' }}>{new Date(displayDate).toLocaleDateString('en-GB')}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '6px 20px 6px 0', color: '#64748b', textAlign: 'left' }}>Payment Mode:</td>
+                        <td style={{ padding: '6px 0', fontWeight: '600', color: '#0f172a', textAlign: 'right' }}>{payment_mode || 'Cash'}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '30px' }}>
+                {/* ENFORCED FIXED GRID */}
+                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #3b82f6' }}>
+                      <th style={{ width: w[0], textAlign: 'left', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Item Details</th>
+                      <th style={{ width: w[1], textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Rate</th>
+                      <th style={{ width: w[2], textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Qty</th>
+                      <th style={{ width: w[3], textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>BaseAmt</th>
                       
                       {hasAnyDiscount && (
-                        <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#64748b', fontSize: '14px' }}>
-                            {item.displayDiscAmount > 0 ? (
-                                <>-₹{item.displayDiscAmount.toFixed(2)} <span style={{fontSize:'12px'}}>({parseFloat(item.discount_percent).toFixed(1)}%)</span></>
-                            ) : (
-                                "-"
-                            )}
-                        </td>
+                        <th style={{ width: w[4], textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Disc</th>
                       )}
-
-                      {/* CONDITIONALLY RENDERED TAX CELLS */}
+                      
                       {showTax && (
                         <>
-                          <td style={{ padding: '16px 12px', textAlign: 'center', verticalAlign: 'middle', color: '#2563eb', fontSize: '15px', background: '#eef2ff', fontWeight: '600' }}>
-                            {item.displayTaxable.toFixed(2)}
-                          </td>
-                          <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#64748b', fontSize: '14px' }}>
-                              {parseFloat(item.tax_amount || 0) > 0 ? (
-                                  <>₹{parseFloat(item.tax_amount).toFixed(2)} <span style={{fontSize:'12px'}}>({parseFloat(item.tax_percent).toFixed(1)}%)</span></>
-                              ) : (
-                                  "-"
-                              )}
-                          </td>
+                          <th style={{ width: w[hasAnyDiscount ? 5 : 4], textAlign: 'center', padding: '12px 6px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', background: '#eef2ff' }}>Taxable</th>
+                          <th style={{ width: w[hasAnyDiscount ? 6 : 5], textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>{taxLabel}</th>
                         </>
                       )}
 
-                      <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#0f172a', fontSize: '15px', fontWeight: '700' }}>{parseFloat(item.total_value || 0).toFixed(2)}</td>
+                      <th style={{ width: w[w.length - 1], textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase' }}>Total</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {processedItems.map((item, index) => (
+                      <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ width: w[0], padding: '16px 8px', verticalAlign: 'middle', fontWeight: '600', color: '#0f172a', fontSize: '13px', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+                          <div>{item.item_name || `Item ID: ${item.item}`}</div>
+                          {showTax && parseFloat(item.tax_percent) > 0 && (
+                            <div style={{fontSize: '11px', color: '#94a3b8', fontWeight: 'normal', marginTop: '4px'}}>{item.tax_type || taxLabel}</div>
+                          )}
+                        </td>
+                        <td style={{ width: w[1], padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#475569', fontSize: '13px' }}>₹{item.displayRate.toFixed(2)}</td>
+                        <td style={{ width: w[2], padding: '16px 8px', textAlign: 'center', verticalAlign: 'middle', color: '#475569', fontSize: '13px' }}>{item.quantity}</td>
+                        <td style={{ width: w[3], padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#475569', fontSize: '13px' }}>₹{item.displayBaseAmt.toFixed(2)}</td>
+                        
+                        {hasAnyDiscount && (
+                          <td style={{ width: w[4], padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#64748b', fontSize: '13px' }}>
+                              {item.displayDiscAmount > 0 ? (
+                                  <><div>-₹{item.displayDiscAmount.toFixed(2)}</div> <div style={{fontSize:'10px'}}>({parseFloat(item.discount_percent).toFixed(1)}%)</div></>
+                              ) : (
+                                  <div style={{textAlign: 'right'}}>-</div>
+                              )}
+                          </td>
+                        )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              
-              <div style={{ width: '45%', paddingRight: '20px' }}>
-                {note && (
-                  <>
-                    <h4 style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</h4>
-                    <p style={{ color: '#475569', fontSize: '13px', lineHeight: '1.6' }}>{note}</p>
-                  </>
-                )}
+                        {showTax && (
+                          <>
+                            <td style={{ width: w[hasAnyDiscount ? 5 : 4], padding: '16px 6px', textAlign: 'center', verticalAlign: 'middle', color: '#2563eb', fontSize: '13px', background: '#eef2ff', fontWeight: '600' }}>
+                              ₹{item.displayTaxable.toFixed(2)}
+                            </td>
+                            <td style={{ width: w[hasAnyDiscount ? 6 : 5], padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#64748b', fontSize: '13px' }}>
+                                {parseFloat(item.tax_amount || 0) > 0 ? (
+                                    <><div>₹{parseFloat(item.tax_amount).toFixed(2)}</div> <div style={{fontSize:'10px'}}>({parseFloat(item.tax_percent).toFixed(1)}%)</div></>
+                                ) : (
+                                    <div style={{textAlign: 'right'}}>-</div>
+                                )}
+                            </td>
+                          </>
+                        )}
+
+                        <td style={{ width: w[w.length - 1], padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#0f172a', fontSize: '14px', fontWeight: '700' }}>₹{parseFloat(item.total_value || 0).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
-              <div style={{ width: '320px', background: '#f8fafc', borderRadius: '12px', padding: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
-                  <span>Total Base Amount</span><span>₹{trueTotalBase.toFixed(2)}</span>
-                </div>
-
-                {hasAnyDiscount && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
-                    <span>Total Discount</span><span style={{color:'#ef4444'}}>-₹{trueTotalDisc.toFixed(2)}</span>
-                  </div>
-                )}
-
-                {/* CONDITIONALLY RENDERED SUMMARY TAX ROWS */}
-                {showTax && (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
-                      <span>Total Taxable Amount</span><span>₹{trueTotalTaxable.toFixed(2)}</span>
-                    </div>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
-                      <span>Total {taxLabel}</span><span>₹{trueTotalTax.toFixed(2)}</span>
-                    </div>
-                  </>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
-                  <span>Round Off</span><span>{parseFloat(round_off || 0).toFixed(2)}</span>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 
-                <div style={{ borderTop: '1px dashed #cbd5e1', margin: '16px 0' }}></div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '18px', fontWeight: '800', color: '#3b82f6' }}>Net Payable</span>
-                  <span style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6' }}>{parseFloat(net_payable || 0).toFixed(2)}</span>
+                <div style={{ width: '45%', paddingRight: '20px' }}>
+                  {note && (
+                    <>
+                      <h4 style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</h4>
+                      <p style={{ color: '#475569', fontSize: '13px', lineHeight: '1.6' }}>{note}</p>
+                    </>
+                  )}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>
-                  <span>Payments ({payment_mode || 'Cash'})</span>
-                  <span>(₹{isPaid ? parseFloat(net_payable || 0).toFixed(2) : '0.00'})</span>
+                <div style={{ width: '320px', background: '#f8fafc', borderRadius: '12px', padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                    <span>Total Base Amount</span><span>₹{trueTotalBase.toFixed(2)}</span>
+                  </div>
+
+                  {hasAnyDiscount && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                      <span>Total Discount</span><span style={{color:'#ef4444'}}>-₹{trueTotalDisc.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {showTax && (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                        <span>Total Taxable Amount</span><span>₹{trueTotalTaxable.toFixed(2)}</span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                        <span>Total {taxLabel}</span><span>₹{trueTotalTax.toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                    <span>Round Off</span><span>₹{parseFloat(round_off || 0).toFixed(2)}</span>
+                  </div>
+                  
+                  <div style={{ borderTop: '1px dashed #cbd5e1', margin: '16px 0' }}></div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '18px', fontWeight: '800', color: '#3b82f6' }}>Net Payable</span>
+                    <span style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6' }}>₹{parseFloat(net_payable || 0).toFixed(2)}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>
+                    <span>Payments ({payment_mode || 'Cash'})</span>
+                    <span>(₹{isPaid ? parseFloat(net_payable || 0).toFixed(2) : '0.00'})</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div style={{ position: 'absolute', bottom: '40px', left: '40px', right: '40px', borderTop: '1px solid #e2e8f0', paddingTop: '15px', color: '#94a3b8', fontSize: '12px', textAlign: 'center' }}>
-              <p style={{ margin:0 }}>Thank you for your business!</p>
-            </div>
+              <div style={{ position: 'absolute', bottom: '40px', left: '40px', right: '40px', borderTop: '1px solid #e2e8f0', paddingTop: '15px', color: '#94a3b8', fontSize: '12px', textAlign: 'center' }}>
+                <p style={{ margin:0 }}>Thank you for your business!</p>
+              </div>
 
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 };
-
 
 export default InvoiceViewer;

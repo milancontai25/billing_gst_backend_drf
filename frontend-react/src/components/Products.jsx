@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import { Plus, Filter, Edit, Trash2, X, Save, UploadCloud, Film, Download, Upload } from 'lucide-react';
+import { Plus, Filter, Edit, Trash2, X, Save, Film, Download, Upload, Barcode } from 'lucide-react';
 
 // Helper to fix image paths
 const getImageUrl = (imagePath) => {
@@ -48,8 +48,8 @@ const Products = () => {
     tax_percent: 0, 
     area: '', customer_view: 'Special', 
     isShow: false,
-    best_selling: false, // <-- Added
-    trending: false,     // <-- Added
+    best_selling: false,
+    trending: false,
   };
   
   const [formData, setFormData] = useState(initialFormState);
@@ -98,6 +98,7 @@ const Products = () => {
             isService ? 'NA' : (item.hsn_sac_code_product || '-'),
             item.mrp_baseprice,
             item.gross_amount,
+            item.currency_symbol,
             item.price_includes_tax ? 'Yes' : 'No', 
             item.tax_percent || item.gst_percent || 0,
             item.tax_type || 'GST',
@@ -194,6 +195,26 @@ const Products = () => {
     reader.readAsText(file);
   };
 
+  // --- Handle Barcode Download ---
+  const handleDownloadBarcode = async (itemId, itemName) => {
+    try {
+      const response = await api.get(`/items/${itemId}/barcode/`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Barcode_${itemName.replace(/\s+/g, '_')}.png`); 
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (err) {
+      console.error("Error downloading barcode", err);
+      alert("Failed to download barcode. Please check if the barcode exists.");
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -230,8 +251,8 @@ const Products = () => {
       min_order_quantity_product: item.min_order_quantity_product || 1,
       max_order_quantity_product: item.max_order_quantity_product || 1,
       isShow: item.isShow || false,
-      best_selling: item.best_selling || false, // <-- Mapped
-      trending: item.trending || false // <-- Mapped
+      best_selling: item.best_selling || false, 
+      trending: item.trending || false 
     });
     setEditId(item.id);
     setIsEditing(true);
@@ -385,12 +406,13 @@ const Products = () => {
                 {/* Dynamically Hide the Includes Tax Column if NO TAX */}
                 {isTaxEnabled && <th>Includes Tax</th>}
                 <th>Online</th>
+                <th>Barcode</th> {/* <-- NEW COLUMN */}
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length === 0 ? (
-                <tr><td colSpan={isTaxEnabled ? "8" : "7"} className="text-center p-5">No items found matching your filters.</td></tr>
+                <tr><td colSpan={isTaxEnabled ? "9" : "8"} className="text-center p-5">No items found matching your filters.</td></tr>
               ) : (
                 filteredItems.map((row) => (
                     <tr key={row.id}>
@@ -414,7 +436,8 @@ const Products = () => {
                             : <span className="text-green-600 font-medium">{row.availability_status_service}</span>
                           }
                       </td>
-                      <td>₹{row.gross_amount}</td>
+                      
+                      <td>{row.currency_symbol}{row.gross_amount}</td>
                       
                       {/* Hide value if Tax is disabled globally */}
                       {isTaxEnabled && <td>{row.price_includes_tax ? "Yes" : "No"}</td>}
@@ -426,9 +449,26 @@ const Products = () => {
                               <span className="badge bg-gray-100 text-gray-500">Hidden</span>
                           )}
                       </td>
+
+                      {/* ✅ ONLY SHOW BARCODE DOWNLOAD FOR "GOODS" */}
+                      <td>
+                        {row.item_type?.toLowerCase() === 'goods' ? (
+                          <button 
+                            className="action-btn" 
+                            onClick={() => handleDownloadBarcode(row.id, row.item_name)}
+                            title="Download Barcode"
+                            style={{ color: '#4f46e5' }}
+                          >
+                            <Barcode size={18} />
+                          </button>
+                        ) : (
+                          <span className="text-gray-300">-</span>
+                        )}
+                      </td>
+
                       <td className="action-cells">
-                        <button className="action-btn edit" onClick={() => openEditModal(row)}><Edit size={16} /></button>
-                        <button className="action-btn delete" onClick={() => handleDelete(row.id)}><Trash2 size={16} /></button>
+                        <button className="action-btn edit" onClick={() => openEditModal(row)} title="Edit"><Edit size={16} /></button>
+                        <button className="action-btn delete" onClick={() => handleDelete(row.id)} title="Delete"><Trash2 size={16} /></button>
                       </td>
                     </tr>
                 ))

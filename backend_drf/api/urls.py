@@ -2,7 +2,7 @@ from django.urls import path
 from payments.views import BusinessPaymentConfigView
 from order.views import AddToCartView, CancelOrderView, CheckoutPreviewView, CheckoutView, CustomerOrderHistoryView, OrderDetailView, OrderItemListView, OrderListView, UpdateCartItemView, UpdateOrderStatusView, UpdatePaymentStatusView, ViewCartView, CreateRazorpayOrderView, VerifyRazorpayPaymentView, CreatePaypalOrderView, CapturePaypalOrderView
 from invoice.views import CustomerDetailByNameView, CustomerSearchListView, InvoiceDetailView, InvoiceItemListView, InvoiceListCreateView, ItemDetailByNameView, ItemSearchListView
-from products.views import ItemDetailView, ItemListCreateView
+from products.views import DownloadBarcodeView, ItemDetailView, ItemListCreateView
 from customers.views import CustomerAddressUpdateView, CustomerDetailView, CustomerForgotPasswordView, CustomerListCreateView, CustomerLoginOtpRequestView, CustomerLoginOtpVerifyView, CustomerLoginView, CustomerResetPasswordView, CustomerSignupView, CustomerTokenRefreshView
 from business_entity.views import BusinessSetupView, BusinessUpdateView, SwitchBusinessView
 from users import views as UserViews
@@ -31,6 +31,8 @@ urlpatterns = [
     path('products/<int:pk>/', ItemDetailView.as_view(), name='item-detail'),
     path('search/products/', ItemSearchListView.as_view(), name='item-search'),
     path('products/detail/', ItemDetailByNameView.as_view(), name='item-detail-by-name'),
+
+    path('items/<int:pk>/barcode/', DownloadBarcodeView.as_view()),
 
     path('customers/', CustomerListCreateView.as_view(), name='customer-list-create'),
     path('customers/<int:pk>/', CustomerDetailView.as_view(), name='customer-detail'),

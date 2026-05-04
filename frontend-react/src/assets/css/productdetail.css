@@ -268,7 +268,7 @@
     overflow-x: auto !important; 
     padding-bottom: 4px !important; 
     gap: 12px !important;
-    margin-bottom: 0 !important; /* Removes gap below thumbnails */
+    margin-bottom: 40px !important; /* Removes gap below thumbnails */
     -ms-overflow-style: none;  
     scrollbar-width: none;  
   }

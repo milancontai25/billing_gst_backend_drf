@@ -11,6 +11,8 @@ class ProductSerializer(serializers.ModelSerializer):
     price_includes_tax = serializers.SerializerMethodField()
     tax_type = serializers.SerializerMethodField()
 
+    barcode = serializers.CharField(read_only=True)
+
     item_image = serializers.ImageField(write_only=True, required=False)
     image_1 = serializers.ImageField(write_only=True, required=False)
     image_2 = serializers.ImageField(write_only=True, required=False)
@@ -25,6 +27,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'item_type', 'item_name', 'category', 'description',
             'currency_symbol',
             'currency_code',
+
+            'barcode', 
 
             # Pricing
             'mrp_baseprice', 'gross_amount', 'tax_percent', 'price_includes_tax', 'tax_type',

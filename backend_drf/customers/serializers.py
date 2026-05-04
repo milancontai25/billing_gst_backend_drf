@@ -9,6 +9,46 @@ class CustomerSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['business']
 
+    def validate(self, data):
+        # 1. Get the request object to access the current user/business context
+        request = self.context.get('request')
+        
+        # If there's no request context (e.g., during internal testing), skip validation
+        if not request or not hasattr(request, 'user'):
+            return data
+
+        # 2. Extract the active business
+        # Adjust this depending on how you've set up your User model to link to a Business
+        business = getattr(request.user, 'active_business', None)
+        
+        if not business:
+            raise serializers.ValidationError({"business": ["Active business context is missing."]})
+
+        email = data.get('email')
+        phone = data.get('phone')
+
+        # 3. Validation for Updates (PUT/PATCH)
+        if self.instance:
+            if email:
+                if Customer.objects.filter(business=business, email=email).exclude(pk=self.instance.pk).exists():
+                    raise serializers.ValidationError({"email": ["A customer with this email already exists."]})
+            
+            if phone:
+                if Customer.objects.filter(business=business, phone=phone).exclude(pk=self.instance.pk).exists():
+                    raise serializers.ValidationError({"phone": ["A customer with this phone number already exists."]})
+        
+        # 4. Validation for Creation (POST)
+        else:
+            if email:
+                if Customer.objects.filter(business=business, email=email).exists():
+                    raise serializers.ValidationError({"email": ["A customer with this email already exists."]})
+            
+            if phone:
+                if Customer.objects.filter(business=business, phone=phone).exists():
+                    raise serializers.ValidationError({"phone": ["A customer with this phone number already exists."]})
+
+        return data
+
 
 class CustomerSignupSerializer(serializers.ModelSerializer):
     class Meta:

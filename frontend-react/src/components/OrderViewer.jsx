@@ -23,7 +23,8 @@ const OrderViewer = ({ order, onClose }) => {
     if (!element) return;
     try {
       setDownloading(true);
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+      // Increased scale to 3 for sharper mobile rendering
+      const canvas = await html2canvas(element, { scale: 3, useCORS: true, logging: false, backgroundColor: '#ffffff' });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const ratio = Math.min(pdf.internal.pageSize.getWidth() / canvas.width, pdf.internal.pageSize.getHeight() / canvas.height);
@@ -61,9 +62,19 @@ const OrderViewer = ({ order, onClose }) => {
   // --- CHECK IF ANY DISCOUNT EXISTS ---
   const hasAnyDiscount = tDisc > 0 || order.order_items?.some(item => parseFloat(item.discount_amount || item.discount_percent || 0) > 0);
 
+  // --- Calculate column widths to ensure strict grid ---
+  const getColWidths = () => {
+    if (showTax && hasAnyDiscount) return ['30%', '10%', '6%', '12%', '10%', '11%', '10%', '11%'];
+    if (showTax && !hasAnyDiscount) return ['35%', '12%', '8%', '14%', '11%', '10%', '10%'];
+    if (!showTax && hasAnyDiscount) return ['40%', '15%', '10%', '15%', '10%', '10%'];
+    return ['45%', '15%', '10%', '15%', '15%']; // Minimal columns
+  };
+  const w = getColWidths();
+
   return (
     <div className="modal-overlay" style={{zIndex: 1000}}>
-      <div className="modal-box" style={{ width: '950px', height: '95vh', display: 'flex', flexDirection: 'column', background:'#f3f4f6' }}>
+      {/* Made modal-box responsive with width: '95%' */}
+      <div className="modal-box" style={{ width: '95%', maxWidth: '950px', height: '95vh', display: 'flex', flexDirection: 'column', background:'#f3f4f6' }}>
         
         <div className="modal-header" style={{ background:'white', borderBottom: '1px solid #e5e7eb', padding: '15px 25px' }}>
           <h2 style={{ fontSize: '18px', fontWeight:'600' }}>Order Summary Preview</h2>
@@ -75,242 +86,240 @@ const OrderViewer = ({ order, onClose }) => {
           </div>
         </div>
 
-        <div className="scrollable-form" style={{ flex: 1, padding: '20px', display:'flex', justifyContent:'center' }}>
+        {/* Outer scrollable container limits the view for mobile */}
+        <div className="scrollable-form" style={{ flex: 1, padding: '20px', overflowX: 'auto', display: 'flex', justifyContent: 'center' }}>
           
-          <div 
-            ref={printRef} 
-            style={{ width: '210mm', minHeight: '297mm', background: 'white', padding: '50px', color: '#374151', fontFamily: '"Inter", sans-serif', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', position: 'relative' }}
-          >
-            
-            {/* --- 1. BUSINESS HEADER & DOCUMENT TITLE --- */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #E5E7EB', paddingBottom: '30px', marginBottom: '30px' }}>
-              <div style={{ maxWidth: '60%' }}>
-                <div style={{ marginBottom: '15px' }}>
-                   {business?.logo_bucket_url ? (
-                      <img src={getImageUrl(business.logo_bucket_url)} alt="Logo" style={{ height: '45px', objectFit: 'contain', objectPosition: 'left' }}/>
-                   ) : (
-                      <div style={{ width: '45px', height: '45px', background: '#2563EB', color: 'white', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>
-                        {business?.business_name?.charAt(0) || 'B'}
-                      </div>
-                   )}
-                </div>
-                <h2 style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {business?.business_name || 'Your Business Name'}
-                </h2>
-                <div style={{ lineHeight: '1.6', fontSize: '13px', color: '#6B7280' }}>
-                  {business?.owner_name && <div>{business.owner_name}</div>}
-                  {business?.address}
-                  {(business?.district || business?.state) && <div>{business.district}, {business.state} {business.pin}</div>}
-                  {business?.country && <div>{business.country}</div>}
-                  
-                  {/* DYNAMIC TAX NUMBER */}
-                  {showTax && business?.tax_number && (
-                    <div style={{ marginTop:'4px', fontWeight: '600', color: '#374151' }}>
-                        {taxLabel} NO: {business.tax_number}
-                    </div>
-                  )}
-
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', letterSpacing: '1px', margin: 0 }}>ORDER SUMMARY</h1>
-              </div>
-            </div>
-
-            {/* --- 2. BILLED TO & META INFO --- */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
+          {/* Inner container enforces absolute min-width for html2canvas */}
+          <div style={{ minWidth: '794px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <div 
+              ref={printRef} 
+              style={{ width: '210mm', minHeight: '297mm', background: 'white', padding: '50px', color: '#374151', fontFamily: '"Inter", sans-serif', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', position: 'relative', boxSizing: 'border-box' }}
+            >
               
-              <div style={{ minWidth: '250px' }}>
-                <h3 style={{ fontSize: '12px', color: '#2563EB', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
-                  BILLED TO
-                </h3>
-                <div style={{ fontSize: '20px', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>
-                  {order.customer_name}
+              {/* --- 1. BUSINESS HEADER & DOCUMENT TITLE --- */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #E5E7EB', paddingBottom: '30px', marginBottom: '30px' }}>
+                <div style={{ maxWidth: '60%' }}>
+                  <div style={{ marginBottom: '15px' }}>
+                     {business?.logo_bucket_url ? (
+                        <img src={getImageUrl(business.logo_bucket_url)} alt="Logo" style={{ height: '45px', objectFit: 'contain', objectPosition: 'left' }}/>
+                     ) : (
+                        <div style={{ width: '45px', height: '45px', background: '#2563EB', color: 'white', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>
+                          {business?.business_name?.charAt(0) || 'B'}
+                        </div>
+                     )}
+                  </div>
+                  <h2 style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {business?.business_name || 'Your Business Name'}
+                  </h2>
+                  <div style={{ lineHeight: '1.6', fontSize: '13px', color: '#6B7280' }}>
+                    {business?.owner_name && <div>{business.owner_name}</div>}
+                    {business?.address}
+                    {(business?.district || business?.state) && <div>{business.district}, {business.state} {business.pin}</div>}
+                    {business?.country && <div>{business.country}</div>}
+                    
+                    {/* DYNAMIC TAX NUMBER */}
+                    {showTax && business?.tax_number && (
+                      <div style={{ marginTop:'4px', fontWeight: '600', color: '#374151' }}>
+                          {taxLabel} NO: {business.tax_number}
+                      </div>
+                    )}
+
+                  </div>
                 </div>
-                <div style={{ lineHeight: '1.6', fontSize: '14px', color: '#6B7280' }}>
-                  {order.customer_address || order.customer_district || "Address Not Provided"}<br/>
-                  {(order.customer_state || order.customer_phone) && <span>{order.customer_state} {order.customer_phone}<br/></span>}
-                  {order.customer_email}
+                <div style={{ textAlign: 'right' }}>
+                  <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', letterSpacing: '1px', margin: 0 }}>ORDER SUMMARY</h1>
                 </div>
               </div>
 
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-                   <div style={{ background: badgeBg, color: badgeText, padding: '4px 16px', borderRadius: '9999px', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px' }}>
-                      {statusText}
-                   </div>
+              {/* --- 2. BILLED TO & META INFO --- */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
+                
+                <div style={{ minWidth: '250px' }}>
+                  <h3 style={{ fontSize: '12px', color: '#2563EB', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                    BILLED TO
+                  </h3>
+                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>
+                    {order.customer_name}
+                  </div>
+                  <div style={{ lineHeight: '1.6', fontSize: '14px', color: '#6B7280' }}>
+                    {order.customer_address || order.customer_district || "Address Not Provided"}<br/>
+                    {(order.customer_state || order.customer_phone) && <span>{order.customer_state} {order.customer_phone}<br/></span>}
+                    {order.customer_email}
+                  </div>
                 </div>
-                <table style={{ borderCollapse: 'collapse', float: 'right', fontSize: '14px' }}>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: '6px 20px 6px 0', color: '#6B7280', textAlign: 'left' }}>Order #:</td>
-                      <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{order.order_number}</td>
-                    </tr>
-                    {order.invoice_id && (
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                     <div style={{ background: badgeBg, color: badgeText, padding: '4px 16px', borderRadius: '9999px', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px' }}>
+                        {statusText}
+                     </div>
+                  </div>
+                  <table style={{ borderCollapse: 'collapse', float: 'right', fontSize: '14px' }}>
+                    <tbody>
                       <tr>
-                        <td style={{ padding: '6px 20px 6px 0', color: '#6B7280', textAlign: 'left' }}>Invoice #:</td>
-                        <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{order.invoice_id}</td>
+                        <td style={{ padding: '6px 20px 6px 0', color: '#6B7280', textAlign: 'left' }}>Order #:</td>
+                        <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{order.order_number}</td>
                       </tr>
-                    )}
-                    <tr>
-                      <td style={{ padding: '6px 20px 6px 0', color: '#6B7280', textAlign: 'left' }}>Date:</td>
-                      <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{new Date(order.date).toLocaleDateString('en-GB')}</td>
+                      {order.invoice_id && (
+                        <tr>
+                          <td style={{ padding: '6px 20px 6px 0', color: '#6B7280', textAlign: 'left' }}>Invoice #:</td>
+                          <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{order.invoice_id}</td>
+                        </tr>
+                      )}
+                      <tr>
+                        <td style={{ padding: '6px 20px 6px 0', color: '#6B7280', textAlign: 'left' }}>Date:</td>
+                        <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{new Date(order.date).toLocaleDateString('en-GB')}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '6px 20px 6px 0', color: '#6B7280', textAlign: 'left' }}>Payment Mode:</td>
+                        <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{order.payment_method || order.payment_mode || 'N/A'}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* --- 3. DETAILED TABLE WITH FIXED GRID --- */}
+              <div style={{ marginBottom: '30px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #2563EB' }}>
+                      <th style={{ width: w[0], textAlign: 'left', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Item Details</th>
+                      <th style={{ width: w[1], textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Rate</th>
+                      <th style={{ width: w[2], textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Qty</th>
+                      <th style={{ width: w[3], textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>BaseAmt</th>
+                      
+                      {hasAnyDiscount && (
+                        <th style={{ width: w[4], textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Disc</th>
+                      )}
+
+                      {showTax && (
+                        <>
+                          <th style={{ width: w[hasAnyDiscount ? 5 : 4], textAlign: 'center', padding: '12px 6px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', background: '#eef2ff' }}>Taxable</th>
+                          <th style={{ width: w[hasAnyDiscount ? 6 : 5], textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>{taxLabel}</th>
+                        </>
+                      )}
+
+                      <th style={{ width: w[w.length - 1], textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#111827', textTransform: 'uppercase' }}>Total</th>
                     </tr>
-                    <tr>
-                      <td style={{ padding: '6px 20px 6px 0', color: '#6B7280', textAlign: 'left' }}>Payment Mode:</td>
-                      <td style={{ padding: '6px 0', fontWeight: '600', color: '#111827', textAlign: 'right' }}>{order.payments.method || order.payment_mode || 'N/A'}</td>
-                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.order_items?.map((item, index) => {
+                      const rate = parseFloat(item.rate || item.price || 0);
+                      const qty = parseInt(item.quantity || 1);
+                      const baseAmt = parseFloat(item.base_amount || (rate * qty));
+                      const discAmt = parseFloat(item.discount_amount || 0);
+                      const discPct = parseFloat(item.discount_percent || 0);
+                      const taxableAmt = parseFloat(item.taxable_amount || baseAmt);
+                      const taxAmt = parseFloat(item.tax_amount || 0);
+                      const taxPct = parseFloat(item.tax_percent || 0);
+                      const lineTotal = parseFloat(item.total_value || item.subtotal || baseAmt);
+
+                      return (
+                        <tr key={index} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                          <td style={{ width: w[0], padding: '16px 8px', verticalAlign: 'middle', fontWeight: '600', color: '#111827', fontSize: '13px', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+                            <div>{item.product_name || item.item_name}</div>
+                            {showTax && taxPct > 0 && (
+                              <div style={{fontSize: '11px', color: '#9CA3AF', fontWeight: 'normal', marginTop: '4px'}}>{item.tax_type || taxLabel}</div>
+                            )}
+                          </td>
+                          <td style={{ width: w[1], padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#4B5563', fontSize: '13px' }}>₹{rate.toFixed(2)}</td>
+                          <td style={{ width: w[2], padding: '16px 8px', textAlign: 'center', verticalAlign: 'middle', color: '#4B5563', fontSize: '13px' }}>{qty}</td>
+                          <td style={{ width: w[3], padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#4B5563', fontSize: '13px' }}>₹{baseAmt.toFixed(2)}</td>
+                          
+                          {hasAnyDiscount && (
+                            <td style={{ width: w[4], padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#6B7280', fontSize: '13px' }}>
+                                {discAmt > 0 ? (
+                                    <><div>-₹{discAmt.toFixed(2)}</div> <div style={{fontSize:'10px'}}>({discPct.toFixed(1)}%)</div></>
+                                ) : (
+                                    <div style={{textAlign: 'right'}}>-</div>
+                                )}
+                            </td>
+                          )}
+
+                          {showTax && (
+                            <>
+                              <td style={{ width: w[hasAnyDiscount ? 5 : 4], padding: '16px 6px', textAlign: 'center', verticalAlign: 'middle', color: '#4B5563', fontSize: '13px', background: '#eef2ff', fontWeight: '600', color: '#1D4ED8' }}>
+                                {taxableAmt.toFixed(2)}
+                              </td>
+                              <td style={{ width: w[hasAnyDiscount ? 6 : 5], padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#6B7280', fontSize: '13px' }}>
+                                  {taxAmt > 0 ? (
+                                    <><div>₹{taxAmt.toFixed(2)}</div> <div style={{fontSize:'10px'}}>({taxPct.toFixed(1)}%)</div></>
+                                  ) : (
+                                    <div style={{textAlign: 'right'}}>-</div>
+                                  )}
+                              </td>
+                            </>
+                          )}
+
+                          <td style={{ width: w[w.length - 1], padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px', fontWeight: '700', color: '#111827' }}>
+                            {lineTotal.toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
-            </div>
 
-            {/* --- 3. DETAILED TABLE --- */}
-            <div style={{ marginBottom: '30px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #2563EB' }}>
-                    <th style={{ textAlign: 'left', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Item Details</th>
-                    <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Rate</th>
-                    <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Qty</th>
-                    <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>BaseAmt</th>
-                    
-                    {/* CONDITIONALLY RENDER DISCOUNT COLUMN */}
-                    {hasAnyDiscount && (
-                      <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>Disc</th>
-                    )}
-
-                    {/* CONDITIONALLY RENDER TAX COLUMNS */}
-                    {showTax && (
-                      <>
-                        <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', background: '#eef2ff' }}>Taxable</th>
-                        <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' }}>{taxLabel}</th>
-                      </>
-                    )}
-
-                    <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#111827', textTransform: 'uppercase' }}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {order.order_items?.map((item, index) => {
-                    const rate = parseFloat(item.rate || item.price || 0);
-                    const qty = parseInt(item.quantity || 1);
-                    const baseAmt = parseFloat(item.base_amount || (rate * qty));
-                    const discAmt = parseFloat(item.discount_amount || 0);
-                    const discPct = parseFloat(item.discount_percent || 0);
-                    const taxableAmt = parseFloat(item.taxable_amount || baseAmt);
-                    const taxAmt = parseFloat(item.tax_amount || 0);
-                    const taxPct = parseFloat(item.tax_percent || 0);
-                    const lineTotal = parseFloat(item.total_value || item.subtotal || baseAmt);
-
-                    return (
-                      <tr key={index} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                        <td style={{ padding: '16px 8px', verticalAlign: 'middle', fontWeight: '600', color: '#111827', fontSize: '14px' }}>
-                          {item.product_name || item.item_name}
-                          {showTax && taxPct > 0 && (
-                            <div style={{fontSize: '11px', color: '#9CA3AF', fontWeight: 'normal', marginTop: '2px'}}>{item.tax_type || taxLabel}</div>
-                          )}
-                        </td>
-                        <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px' }}>₹{rate.toFixed(2)}</td>
-                        <td style={{ padding: '16px 8px', textAlign: 'center', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px' }}>{qty}</td>
-                        <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px' }}>₹{baseAmt.toFixed(2)}</td>
-                        
-                        {/* CONDITIONALLY RENDER DISCOUNT CELL */}
-                        {hasAnyDiscount && (
-                          <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#6B7280', fontSize: '14px' }}>
-                              {discAmt > 0 ? (
-                                  <>-₹{discAmt.toFixed(2)} <span style={{fontSize:'12px'}}>({discPct.toFixed(1)}%)</span></>
-                              ) : (
-                                  "-"
-                              )}
-                          </td>
-                        )}
-
-                        {/* CONDITIONALLY RENDER TAX CELLS */}
-                        {showTax && (
-                          <>
-                            <td style={{ padding: '16px 12px', textAlign: 'center', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px', background: '#eef2ff', fontWeight: '600', color: '#1D4ED8' }}>
-                              {taxableAmt.toFixed(2)}
-                            </td>
-                            <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#6B7280', fontSize: '14px' }}>
-                                {taxAmt > 0 ? (
-                                  <>₹{taxAmt.toFixed(2)} <span style={{fontSize:'12px'}}>({taxPct.toFixed(1)}%)</span></>
-                                ) : (
-                                  "-"
-                                )}
-                            </td>
-                          </>
-                        )}
-
-                        <td style={{ padding: '16px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#4B5563', fontSize: '14px', fontWeight: '700', color: '#111827' }}>
-                          {lineTotal.toFixed(2)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* --- 4. TOTALS CARD --- */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              
-              <div style={{ width: '45%', paddingRight: '20px' }}>
-                {order.special_notes && (
-                  <>
-                    <h4 style={{ fontSize: '12px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</h4>
-                    <p style={{ color: '#4B5563', fontSize: '13px', lineHeight: '1.6' }}>{order.special_notes}</p>
-                  </>
-                )}
-              </div>
-
-              <div style={{ width: '320px', background: '#F9FAFB', borderRadius: '12px', padding: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
-                  <span>Total Base Amount</span><span>₹{tBase.toFixed(2)}</span>
-                </div>
+              {/* --- 4. TOTALS CARD --- */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 
-                {/* CONDITIONALLY RENDER TOTAL DISCOUNT */}
-                {tDisc > 0 && (
+                <div style={{ width: '45%', paddingRight: '20px' }}>
+                  {order.special_notes && (
+                    <>
+                      <h4 style={{ fontSize: '12px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</h4>
+                      <p style={{ color: '#4B5563', fontSize: '13px', lineHeight: '1.6' }}>{order.special_notes}</p>
+                    </>
+                  )}
+                </div>
+
+                <div style={{ width: '320px', background: '#F9FAFB', borderRadius: '12px', padding: '24px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
-                    <span>Total Discount</span><span style={{color: '#EF4444'}}>-₹{tDisc.toFixed(2)}</span>
+                    <span>Total Base Amount</span><span>₹{tBase.toFixed(2)}</span>
                   </div>
-                )}
-
-                {/* CONDITIONALLY RENDER SUMMARY TAX ROWS */}
-                {showTax && (
-                  <>
+                  
+                  {tDisc > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
-                      <span>Total Taxable Amount</span><span>₹{tTaxable.toFixed(2)}</span>
+                      <span>Total Discount</span><span style={{color: '#EF4444'}}>-₹{tDisc.toFixed(2)}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
-                      <span>Total {taxLabel}</span><span>₹{tTax.toFixed(2)}</span>
-                    </div>
-                  </>
-                )}
+                  )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
-                  <span>Round Off</span><span>{tRound.toFixed(2)}</span>
-                </div>
-                
-                <div style={{ borderTop: '1px dashed #D1D5DB', margin: '16px 0' }}></div>
+                  {showTax && (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
+                        <span>Total Taxable Amount</span><span>₹{tTaxable.toFixed(2)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
+                        <span>Total {taxLabel}</span><span>₹{tTax.toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>Net Payable</span>
-                  <span style={{ fontSize: '22px', fontWeight: '800', color: '#2563EB' }}>{netPayable.toFixed(2)}</span>
-                </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#4B5563' }}>
+                    <span>Round Off</span><span>{tRound.toFixed(2)}</span>
+                  </div>
+                  
+                  <div style={{ borderTop: '1px dashed #D1D5DB', margin: '16px 0' }}></div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#6B7280', fontStyle: 'italic' }}>
-                  <span>Payments ({order.payment_method || order.payment_mode || 'N/A'})</span>
-                  <span>(₹{isPaid ? netPayable.toFixed(2) : '0.00'})</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>Net Payable</span>
+                    <span style={{ fontSize: '22px', fontWeight: '800', color: '#2563EB' }}>{netPayable.toFixed(2)}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#6B7280', fontStyle: 'italic' }}>
+                    <span>Payments ({order.payment_method || order.payment_mode || 'N/A'})</span>
+                    <span>(₹{isPaid ? netPayable.toFixed(2) : '0.00'})</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* --- 5. FOOTER --- */}
-            <div style={{ position: 'absolute', bottom: '40px', left: '40px', right: '40px', borderTop: '1px solid #E5E7EB', paddingTop: '15px', color: '#9CA3AF', fontSize: '12px', textAlign: 'center' }}>
-              <p style={{ margin:0 }}>Thank you for your order!</p>
-            </div>
+              {/* --- 5. FOOTER --- */}
+              <div style={{ position: 'absolute', bottom: '40px', left: '40px', right: '40px', borderTop: '1px solid #E5E7EB', paddingTop: '15px', color: '#9CA3AF', fontSize: '12px', textAlign: 'center' }}>
+                <p style={{ margin:0 }}>Thank you for your order!</p>
+              </div>
 
+            </div>
           </div>
         </div>
       </div>

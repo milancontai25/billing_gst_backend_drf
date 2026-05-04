@@ -1,11 +1,21 @@
+import uuid
 from django.db import models
 from business_entity.models import BusinessEntity
 from django.utils.text import slugify
 
+def generate_barcode():
+    return str(uuid.uuid4()).replace("-", "")[:12]
 
 class Item(models.Model):
     business = models.ForeignKey(BusinessEntity, on_delete=models.CASCADE, related_name="items")
-    item_type = models.CharField(max_length=20, blank=False, null=False)
+
+    ITEM_TYPE_CHOICES = (
+        ("Goods", "Goods"),
+        ("Service", "Service"),
+    )
+
+    item_type = models.CharField(max_length=20, choices=ITEM_TYPE_CHOICES)
+
     created_date = models.DateField(auto_now_add=True)
     item_image_url = models.URLField(blank=True, null=True)
     item_image_1 = models.URLField(blank=True, null=True)
@@ -45,6 +55,7 @@ class Item(models.Model):
     isShow = models.BooleanField(blank=False, null=False, default=False)
     best_selling = models.BooleanField(blank=False, null=False, default=False)
     trending = models.BooleanField(blank=False, null=False, default=False)
+    barcode = models.CharField(max_length=100, unique=True, blank=True, null=True)
 
     def __str__(self):
         return self.item_name
@@ -52,7 +63,29 @@ class Item(models.Model):
     class Meta:
         unique_together = ('business', 'slug')
 
+    # def save(self, *args, **kwargs):
+    #     if not self.slug:
+    #         base_slug = slugify(self.item_name)
+    #         slug = base_slug
+    #         counter = 1
+
+    #         existing_slugs = set(
+    #             Item.objects.filter(business=self.business, slug__startswith=base_slug)
+    #             .values_list("slug", flat=True)
+    #         )
+
+    #         while slug in existing_slugs:
+    #             slug = f"{base_slug}-{counter}"
+    #             counter += 1
+
+    #         self.slug = slug
+
+    #     super().save(*args, **kwargs)
+
+    
+
     def save(self, *args, **kwargs):
+        # ✅ Slug generation (your existing logic)
         if not self.slug:
             base_slug = slugify(self.item_name)
             slug = base_slug
@@ -68,6 +101,16 @@ class Item(models.Model):
                 counter += 1
 
             self.slug = slug
+
+        if self.item_type.lower() == "goods":
+            if not self.barcode:
+                while True:
+                    code = generate_barcode()
+                    if not Item.objects.filter(barcode=code).exists():
+                        self.barcode = code
+                        break
+        else:
+            self.barcode = None  # remove if service
 
         super().save(*args, **kwargs)
 

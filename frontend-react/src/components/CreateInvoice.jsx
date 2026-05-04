@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import { Trash2, X, Search, MapPin, Phone } from 'lucide-react';
+import { Trash2, X, MapPin, Phone } from 'lucide-react';
 
 const CreateInvoice = ({ onClose, onSuccess }) => {
   // --- GET BUSINESS TAX SETTINGS ---
@@ -30,7 +30,25 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
   const [activeSearchIndex, setActiveSearchIndex] = useState(null);
 
   const [showAddCust, setShowAddCust] = useState(false);
-  const [newCustData, setNewCustData] = useState({ name: '', phone_number: '', email: '', address: '', gst_number: '' });
+  
+  // --- EXPANDED QUICK ADD CUSTOMER STATE ---
+  const initialCustData = { 
+      name: '', 
+      category: '', 
+      email: '', 
+      phone: '', 
+      customer_type: 'Regular', 
+      gstin: '', 
+      date: new Date().toISOString().split('T')[0],
+      country: 'India', 
+      state: '', 
+      district: '', 
+      pin: '', 
+      address: '', 
+      note: '', 
+      password: '' 
+  };
+  const [newCustData, setNewCustData] = useState(initialCustData);
 
   // --- EXACT LINEAR MATH (EXCLUSIVE BASE) ---
   const calculateRowValues = (qty, baseRate, discPct, taxPct) => {
@@ -93,15 +111,51 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     setCustSearch('');
   };
 
-  const handleSaveNewCustomer = async () => {
+  // --- NEW CUSTOMER HANDLERS ---
+  const handleNewCustChange = (e) => {
+      const { name, value } = e.target;
+      setNewCustData({ ...newCustData, [name]: value });
+  };
+
+  // In CreateInvoice.jsx
+
+  const handleSaveNewCustomer = async (e) => {
+    e.preventDefault(); 
     if(!newCustData.name) return alert("Name is required");
+    
+    const payload = { ...newCustData };
+    if (payload.pin) payload.pin = parseInt(payload.pin, 10);
+    if (!payload.password) delete payload.password;
+
     try {
-        const res = await api.post('/customers/', newCustData);
-        alert("Customer Added!");
-        selectCustomer(res.data);
+        const res = await api.post('/customers/', payload);
+        alert("Customer Added Successfully!");
+        selectCustomer(res.data); 
         setShowAddCust(false);
-        setNewCustData({ name: '', phone_number: '', email: '', address: '', gst_number: '' });
-    } catch(err) { alert("Failed to add customer."); }
+        setNewCustData(initialCustData); 
+    } catch(err) { 
+        console.error(err);
+        
+        // --- NEW ERROR HANDLING LOGIC ---
+        if (err.response && err.response.data) {
+            const errorData = err.response.data;
+            
+            if (typeof errorData === 'string' && errorData.startsWith('<!DOCTYPE html>')) {
+                alert("Server Error: A database conflict occurred. Please check if this email/phone is already in use.");
+                return;
+            }
+
+            let errorMessage = "Failed to add customer:\n";
+            for (const [field, messages] of Object.entries(errorData)) {
+               const msgString = Array.isArray(messages) ? messages.join(" ") : messages;
+               errorMessage += `- ${field.charAt(0).toUpperCase() + field.slice(1)}: ${msgString}\n`;
+            }
+            alert(errorMessage);
+        } else {
+            alert("Network error or failed to add customer."); 
+        }
+        
+    }
   };
 
   const handleProdSearch = async (val, index) => {
@@ -123,7 +177,7 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     const newItems = [...items];
     const grossRate = parseFloat(prod.gross_amount) || parseFloat(prod.mrp_baseprice) || 0;
     
-    // ✅ FORCE TAX TO 0 IF BUSINESS TAX IS DISABLED
+    // FORCE TAX TO 0 IF BUSINESS TAX IS DISABLED
     let taxPct = isTaxEnabled ? (parseFloat(prod.tax_percent) || 0) : 0; 
     
     const discPct = parseFloat(prod.discount_percent) || 0;
@@ -320,7 +374,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
 
                           <td style={{ padding: '15px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
                               <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'4px'}}>
-                                  {/* ✅ DISABLED AND LOCKED IF NO TAX ENALBED IN SETTINGS */}
                                   <input 
                                     type="number" 
                                     value={item.tax_percent} 
@@ -431,21 +484,106 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
         </div>
       </div>
       
-      {/* QUICK ADD CUSTOMER MODAL */}
+      {/* --- EXTENDED QUICK ADD CUSTOMER MODAL --- */}
       {showAddCust && (
         <div className="modal-overlay" style={{zIndex: 1100}}>
-            <div className="modal-box" style={{width:'400px'}}>
+            <div className="modal-box extended-modal" style={{width:'800px', maxWidth: '90vw'}}>
                 <div className="modal-header">
-                    <h3>Quick Add Customer</h3>
-                    <button className="close-btn" onClick={() => setShowAddCust(false)}><X size={18}/></button>
+                    <h2>Quick Add Customer</h2>
+                    <button className="close-btn" onClick={() => setShowAddCust(false)}><X size={20}/></button>
                 </div>
-                <div className="setup-form" style={{padding:'20px'}}>
-                    <div className="form-group"><label>Name*</label><input value={newCustData.name} onChange={e=>setNewCustData({...newCustData, name:e.target.value})} /></div>
-                    <div className="form-group"><label>Phone</label><input value={newCustData.phone_number} onChange={e=>setNewCustData({...newCustData, phone_number:e.target.value})} /></div>
-                    <div className="form-group"><label>Address</label><input value={newCustData.address} onChange={e=>setNewCustData({...newCustData, address:e.target.value})} /></div>
-                    <div className="form-group"><label>GSTIN</label><input value={newCustData.gst_number} onChange={e=>setNewCustData({...newCustData, gst_number:e.target.value})} /></div>
-                    <button className="btn btn-blue" onClick={handleSaveNewCustomer} style={{marginTop:'10px', width:'100%'}}>Save & Select</button>
-                </div>
+                <form onSubmit={handleSaveNewCustomer} className="setup-form scrollable-form" style={{padding:'20px'}}>
+                    
+                    {/* Basic Info Section */}
+                    <div className="form-section-title">Basic Information</div>
+                    <div className="form-row">
+                      <div className="form-group half-width">
+                        <label>Customer Name*</label>
+                        <input type="text" name="name" value={newCustData.name} onChange={handleNewCustChange} required placeholder="Full Name" />
+                      </div>
+                      <div className="form-group half-width">
+                        <label>Customer Type</label>
+                        <select name="customer_type" value={newCustData.customer_type} onChange={handleNewCustChange}>
+                          <option value="Regular">Regular</option>
+                          <option value="Special">Special</option>
+                          <option value="Wholesale">Wholesale</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                       <div className="form-group half-width">
+                        <label>Category</label>
+                        <input type="text" name="category" value={newCustData.category} onChange={handleNewCustChange} placeholder="e.g. Business, Personal" />
+                      </div>
+                      <div className="form-group half-width">
+                         <label>Joining Date</label>
+                         <input type="date" name="date" value={newCustData.date} onChange={handleNewCustChange} />
+                      </div>
+                    </div>
+
+                    {/* Contact Section */}
+                    <div className="form-section-title">Contact Details</div>
+                    <div className="form-row">
+                      <div className="form-group half-width">
+                        <label>Email Address</label>
+                        <input type="email" name="email" value={newCustData.email} onChange={handleNewCustChange} />
+                      </div>
+                      <div className="form-group half-width">
+                        <label>Phone Number*</label>
+                        <input type="text" name="phone" value={newCustData.phone} onChange={handleNewCustChange} required />
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                       <div className="form-group half-width">
+                        <label>GSTIN (Optional)</label>
+                        <input type="text" name="gstin" value={newCustData.gstin} onChange={handleNewCustChange} placeholder="GST Number" />
+                      </div>
+                       <div className="form-group half-width">
+                        <label>Password (Login)</label>
+                        <input type="password" name="password" value={newCustData.password} onChange={handleNewCustChange} placeholder="Optional" />
+                      </div>
+                    </div>
+
+                    {/* Address Section */}
+                    <div className="form-section-title">Address & Location</div>
+                    <div className="form-group">
+                       <label>Street Address</label>
+                       <input type="text" name="address" value={newCustData.address} onChange={handleNewCustChange} placeholder="Building, Street, Area" />
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group half-width">
+                        <label>District/City</label>
+                        <input type="text" name="district" value={newCustData.district} onChange={handleNewCustChange} />
+                      </div>
+                      <div className="form-group half-width">
+                        <label>State</label>
+                        <input type="text" name="state" value={newCustData.state} onChange={handleNewCustChange} />
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group half-width">
+                        <label>Country</label>
+                        <input type="text" name="country" value={newCustData.country} onChange={handleNewCustChange} />
+                      </div>
+                      <div className="form-group half-width">
+                        <label>Pincode</label>
+                        <input type="number" name="pin" value={newCustData.pin} onChange={handleNewCustChange} />
+                      </div>
+                    </div>
+
+                     <div className="form-group">
+                        <label>Notes</label>
+                        <input type="text" name="note" value={newCustData.note} onChange={handleNewCustChange} placeholder="Internal notes..." />
+                      </div>
+
+                    <button type="submit" className="btn-primary" style={{marginTop:'10px', width:'100%'}}>
+                       Save & Select
+                    </button>
+                </form>
             </div>
         </div>
       )}
