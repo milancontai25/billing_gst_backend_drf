@@ -212,5 +212,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",
     "http://72.62.241.108",
     "https://statgrow.cloud",
-    "http://10.48.234.74:5173"
+    "http://10.48.234.74:5173",
+    "https://enterprize.statgrow.in",
+    "http://3.27.129.212:5173",
 ]
