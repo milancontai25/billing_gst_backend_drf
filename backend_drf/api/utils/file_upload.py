@@ -43,7 +43,7 @@ def upload_file_to_s3(file, folder_name="uploads"):
         ext = ""
 
     safe_name = f"{slugify(name)}-{uuid.uuid4().hex[:8]}{ext}"
-    file_path = f"{folder_name}/{safe_name}"
+    file_path = f"media/{folder_name}/{safe_name}"
 
     saved_path = default_storage.save(file_path, file)
 

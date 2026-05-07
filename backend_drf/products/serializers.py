@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Item
 from business_entity.serializers import BusinessEntitySerializer
 from api.utils.file_upload import upload_file_to_s3
+from django.core.files.uploadedfile import UploadedFile
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -100,7 +101,7 @@ class ProductSerializer(serializers.ModelSerializer):
         item = Item.objects.create(**validated_data)
 
         for field, image in images.items():
-            if image:
+            if image and isinstance(image, UploadedFile):
                 setattr(item, field, upload_file_to_s3(image, "items"))
 
         item.save()
@@ -121,7 +122,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
         # Update images
         for field, image in images.items():
-            if image:
+            if image and isinstance(image, UploadedFile):
                 setattr(instance, field, upload_file_to_s3(image, "items"))
 
         instance.save()
