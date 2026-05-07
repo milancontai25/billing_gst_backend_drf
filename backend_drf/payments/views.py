@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from api.utils.file_upload import save_file_to_server
+from api.utils.file_upload import upload_file_to_s3
 from business_entity.models import BusinessEntity
 from .models import BusinessPaymentConfig
 from .serializers import BusinessPaymentConfigSerializer
@@ -49,7 +49,7 @@ class BusinessPaymentConfigView(APIView):
 
         # ✅ HANDLE FILE UPLOAD (MISSING IN YOUR CODE)
         if "upi_qrcode" in request.FILES:
-            data["upi_qrcode_url"] = save_file_to_server(
+            data["upi_qrcode_url"] = upload_file_to_s3(
                 request.FILES["upi_qrcode"], "upi_qr"
             )
 
@@ -81,7 +81,7 @@ class BusinessPaymentConfigView(APIView):
 
         # ✅ HANDLE FILE UPLOAD
         if "upi_qrcode" in request.FILES:
-            data["upi_qrcode_url"] = save_file_to_server(
+            data["upi_qrcode_url"] = upload_file_to_s3(
                 request.FILES["upi_qrcode"], "upi_qr"
             )
 

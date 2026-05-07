@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Item
 from business_entity.serializers import BusinessEntitySerializer
-from api.utils.file_upload import save_file_to_server
+from api.utils.file_upload import upload_file_to_s3
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -101,7 +101,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
         for field, image in images.items():
             if image:
-                setattr(item, field, save_file_to_server(image, "items"))
+                setattr(item, field, upload_file_to_s3(image, "items"))
 
         item.save()
         return item
@@ -122,7 +122,7 @@ class ProductSerializer(serializers.ModelSerializer):
         # Update images
         for field, image in images.items():
             if image:
-                setattr(instance, field, save_file_to_server(image, "items"))
+                setattr(instance, field, upload_file_to_s3(image, "items"))
 
         instance.save()
         return instance

@@ -111,7 +111,8 @@ const StoreFront = () => {
                  });
                  setContactInfo({
                      email: biz.user?.email || `contact@${slug}.com`, 
-                     phone: biz.user?.phone ? `+91 ${biz.user.phone}` : ''
+                     phone: biz.user?.phone ? `${biz.user.phone}` : ''
+                    //  phone: biz.user?.phone ? `+91 ${biz.user.phone}` : ''
                  });
              } else {
                  setBusinessName(toTitleCase(slug.replace('-', ' ')));

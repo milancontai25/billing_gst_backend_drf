@@ -1,4 +1,3 @@
-from api.utils.file_upload import save_file_to_server
 from api.utils.barcode import generate_barcode_image
 from .models import Item
 from rest_framework import generics, serializers

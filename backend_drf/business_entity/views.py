@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from django.contrib.auth.models import update_last_login
 from django.utils.text import slugify
 from django.contrib.sites.models import Site
-from api.utils.file_upload import save_file_to_server
+from api.utils.file_upload import upload_file_to_s3
 import os
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -32,6 +32,111 @@ def generate_unique_slug(name):
         counter += 1
 
     return slug
+
+
+# class BusinessSetupView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     parser_classes = (MultiPartParser, FormParser)
+
+#     def get(self, request):
+#         user = request.user
+#         businesses = BusinessEntity.objects.filter(user=user)
+
+#         user_data = UserSerializer(user).data
+#         business_data = BusinessEntitySerializer(businesses, many=True).data
+
+#         return Response(
+#             {
+#                 "user": user_data,
+#                 "businesses": business_data
+#             },
+#             status=status.HTTP_200_OK
+#         )
+
+#     def post(self, request):
+#         user = request.user
+#         # Make a mutable copy of the data
+#         data = request.data.copy()
+
+#         if "business_name" not in data or not data["business_name"]:
+#             return Response({"error": "business_name is required"}, status=400)
+
+#         # ---------- Generate SLUG ----------
+#         # Logic updated to use the new function and key
+#         data["slug"] = generate_unique_slug(data["business_name"])
+
+#         # ---------- File Upload Handling ----------
+#         logo_file = request.FILES.get("logo_file")
+#         kyc_file = request.FILES.get("kyc_file")
+#         banner_1 = request.FILES.get("banner_1")
+#         banner_2 = request.FILES.get("banner_2")
+#         banner_3 = request.FILES.get("banner_3")
+#         # upi_qrcode = request.FILES.get("upi_qrcode")
+
+#         # Assuming 'save_file_to_hostinger' is a method defined in this class or a mixin
+#         if logo_file:
+#             logo_url = self.save_file_to_hostinger(request, logo_file, "business_logo")
+#             data["logo_bucket_url"] = logo_url
+
+#         if kyc_file:
+#             kyc_url = self.save_file_to_hostinger(request, kyc_file, "kyc_docs")
+#             data["kyc_bucket_url"] = kyc_url
+
+#         if banner_1:
+#             banner_1_url = self.save_file_to_hostinger(request, banner_1, "business_banners")
+#             data["banner_1_url"] = banner_1_url
+
+#         if banner_2:
+#             banner_2_url = self.save_file_to_hostinger(request, banner_2, "business_banners")
+#             data["banner_2_url"] = banner_2_url
+
+#         if banner_3:
+#             banner_3_url = self.save_file_to_hostinger(request, banner_3, "business_banners")
+#             data["banner_3_url"] = banner_3_url
+
+#         # if upi_qrcode:
+#         #     upi_qrcode_url = self.save_file_to_hostinger(request, upi_qrcode, "upi_qrcode")
+#         #     data["upi_qrcode_url"] = upi_qrcode_url
+
+#         serializer = BusinessEntitySerializer(data=data)
+
+#         if serializer.is_valid():
+#             business = serializer.save(user=user)
+
+#             # Set as active business if the user doesn't have one selected yet
+#             if user.active_business is None:
+#                 user.active_business = business
+#                 user.save()
+
+#             return Response({
+#                 "message": "Business created successfully.",
+#                 "business": serializer.data,
+#                 "active_business_set": True
+#             }, status=201)
+
+#         return Response(serializer.errors, status=400)
+    
+    
+#     # -----------------------------------------
+#     # Save file to Hostinger VPS & return URL
+#     # -----------------------------------------
+#     def save_file_to_hostinger(self, request, file, folder_name):
+
+#         upload_path = os.path.join(settings.MEDIA_ROOT, folder_name)
+
+#         if not os.path.exists(upload_path):
+#             os.makedirs(upload_path)
+
+#         file_path = os.path.join(upload_path, file.name)
+
+#         with open(file_path, "wb+") as destination:
+#             for chunk in file.chunks():
+#                 destination.write(chunk)
+
+#         file_url = f"{settings.SERVER_URL}{settings.MEDIA_URL}{folder_name}/{file.name}"
+
+#         return file_url
+
 
 
 class BusinessSetupView(APIView):
@@ -65,38 +170,30 @@ class BusinessSetupView(APIView):
         # Logic updated to use the new function and key
         data["slug"] = generate_unique_slug(data["business_name"])
 
+        
         # ---------- File Upload Handling ----------
         logo_file = request.FILES.get("logo_file")
         kyc_file = request.FILES.get("kyc_file")
         banner_1 = request.FILES.get("banner_1")
         banner_2 = request.FILES.get("banner_2")
         banner_3 = request.FILES.get("banner_3")
-        # upi_qrcode = request.FILES.get("upi_qrcode")
 
-        # Assuming 'save_file_to_hostinger' is a method defined in this class or a mixin
         if logo_file:
-            logo_url = self.save_file_to_hostinger(request, logo_file, "business_logo")
-            data["logo_bucket_url"] = logo_url
+            data["logo_bucket_url"] = upload_file_to_s3(logo_file, "business_logo")
 
         if kyc_file:
-            kyc_url = self.save_file_to_hostinger(request, kyc_file, "kyc_docs")
-            data["kyc_bucket_url"] = kyc_url
+            data["kyc_bucket_url"] = upload_file_to_s3(kyc_file, "kyc_docs")
 
         if banner_1:
-            banner_1_url = self.save_file_to_hostinger(request, banner_1, "business_banners")
-            data["banner_1_url"] = banner_1_url
+            data["banner_1_url"] = upload_file_to_s3(banner_1, "business_banners")
 
         if banner_2:
-            banner_2_url = self.save_file_to_hostinger(request, banner_2, "business_banners")
-            data["banner_2_url"] = banner_2_url
+            data["banner_2_url"] = upload_file_to_s3(banner_2, "business_banners")
 
         if banner_3:
-            banner_3_url = self.save_file_to_hostinger(request, banner_3, "business_banners")
-            data["banner_3_url"] = banner_3_url
+            data["banner_3_url"] = upload_file_to_s3(banner_3, "business_banners")
 
-        # if upi_qrcode:
-        #     upi_qrcode_url = self.save_file_to_hostinger(request, upi_qrcode, "upi_qrcode")
-        #     data["upi_qrcode_url"] = upi_qrcode_url
+                
 
         serializer = BusinessEntitySerializer(data=data)
 
@@ -115,27 +212,8 @@ class BusinessSetupView(APIView):
             }, status=201)
 
         return Response(serializer.errors, status=400)
-    
-    
-    # -----------------------------------------
-    # Save file to Hostinger VPS & return URL
-    # -----------------------------------------
-    def save_file_to_hostinger(self, request, file, folder_name):
 
-        upload_path = os.path.join(settings.MEDIA_ROOT, folder_name)
 
-        if not os.path.exists(upload_path):
-            os.makedirs(upload_path)
-
-        file_path = os.path.join(upload_path, file.name)
-
-        with open(file_path, "wb+") as destination:
-            for chunk in file.chunks():
-                destination.write(chunk)
-
-        file_url = f"{settings.SERVER_URL}{settings.MEDIA_URL}{folder_name}/{file.name}"
-
-        return file_url
 
 
 class BusinessUpdateView(APIView):
@@ -156,27 +234,28 @@ class BusinessUpdateView(APIView):
         data.pop("kyc_bucket_url", None)
 
         if "logo_file" in request.FILES:
-            data["logo_bucket_url"] = save_file_to_server(
+            data["logo_bucket_url"] = upload_file_to_s3(
                 request.FILES["logo_file"], "business_logo"
             )
 
         if "banner_1" in request.FILES:
-            data["banner_1_url"] = save_file_to_server(
+            data["banner_1_url"] = upload_file_to_s3(
                 request.FILES["banner_1"], "business_banners"
             )
 
         if "banner_2" in request.FILES:
-            data["banner_2_url"] = save_file_to_server(
+            data["banner_2_url"] = upload_file_to_s3(
                 request.FILES["banner_2"], "business_banners"
             )
 
         if "banner_3" in request.FILES:
-            data["banner_3_url"] = save_file_to_server(
+            data["banner_3_url"] = upload_file_to_s3(
                 request.FILES["banner_3"], "business_banners"
             )
 
+
         # if "upi_qrcode" in request.FILES:
-        #     data["upi_qrcode_url"] = save_file_to_server(
+        #     data["upi_qrcode_url"] = upload_file_to_s3(
         #         request.FILES["upi_qrcode"], "upi_qrcode"
         #     )
 

@@ -1,6 +1,6 @@
 import uuid
 from api.views import CustomerJWTAuthentication
-from api.utils.file_upload import save_file_to_server
+from api.utils.file_upload import upload_file_to_s3
 from api.utils.tax_calculator import calculate_item_values
 from users.permissions import IsUserOrAdmin
 from business_entity.models import BusinessEntity
@@ -498,7 +498,7 @@ class CheckoutView(APIView):
                     status=400
                 )
 
-            payment_proof_url = save_file_to_server(
+            payment_proof_url = upload_file_to_s3(
                 payment_proof_file,
                 folder_name="payment_proofs"
             )
