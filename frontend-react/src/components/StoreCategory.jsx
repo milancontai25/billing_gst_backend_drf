@@ -47,8 +47,14 @@ const StoreCategory = () => {
   // --- HELPERS ---
   const formatUrl = (path) => {
     if (!path) return null;
-    const filename = path.split(/[/\\]/).pop();
-    return `${API_BASE_URL}/media/business_logo/${filename}`; 
+    
+    // If the path is already a full S3 URL (starts with http/https), return it directly
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+    }
+    
+    // Fallback just in case older data returns a relative path like "/media/..."
+    return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`; 
   };
 
   const toTitleCase = (str) => {
