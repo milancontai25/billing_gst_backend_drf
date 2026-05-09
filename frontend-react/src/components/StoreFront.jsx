@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios'; 
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'; 
-import { Loader2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react'; // Added Chevrons
+import { Loader2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react'; 
 import StoreHeader from './StoreHeader';
 import StoreFooter from './StoreFooter';
 import AuthCustomer from './AuthCustomer';
@@ -51,9 +51,16 @@ const StoreFront = () => {
 
   const formatUrl = (path) => {
     if (!path) return null;
-    const filename = path.split(/[/\\]/).pop();
-    return `${API_BASE_URL}/media/business_logo/${filename}`; 
+    
+    // If the path is already a full S3 URL (starts with http/https), return it directly
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+    }
+    
+    // Fallback just in case older data returns a relative path like "/media/..."
+    return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`; 
   };
+
 
   const toTitleCase = (str) => {
     if (!str) return '';
@@ -112,7 +119,6 @@ const StoreFront = () => {
                  setContactInfo({
                      email: biz.user?.email || `contact@${slug}.com`, 
                      phone: biz.user?.phone ? `${biz.user.phone}` : ''
-                    //  phone: biz.user?.phone ? `+91 ${biz.user.phone}` : ''
                  });
              } else {
                  setBusinessName(toTitleCase(slug.replace('-', ' ')));
@@ -308,14 +314,39 @@ const StoreFront = () => {
       />
 
       <div className="main-section-bg">
-          <div className="hero-wrapper">
+          {/* ✅ ENFORCED 16:9 ASPECT RATIO ON HERO WRAPPER */}
+          <div 
+             className="hero-wrapper" 
+             style={{ 
+                 width: '100%', 
+                 aspectRatio: '16 / 9', 
+                 position: 'relative', 
+                 overflow: 'hidden',
+                 maxHeight: '80vh' // Optional: Prevents it from getting too absurdly huge on ultrawide monitors
+             }}
+          >
               {banners.length > 0 ? (
-                <div className="hero-slider">
+                <div className="hero-slider" style={{ height: '100%', width: '100%' }}>
                     {banners.map((banner, index) => (
-                        <div key={index} className={`hero-slide ${index === currentBannerIndex ? 'active' : ''}`} style={{ backgroundImage: `url(${banner})` }}></div>
+                        <div 
+                           key={index} 
+                           className={`hero-slide ${index === currentBannerIndex ? 'active' : ''}`} 
+                           style={{ 
+                               backgroundImage: `url(${banner})`, 
+                               backgroundSize: 'cover', 
+                               backgroundPosition: 'center',
+                               height: '100%',
+                               width: '100%',
+                               position: 'absolute',
+                               top: 0,
+                               left: 0,
+                               opacity: index === currentBannerIndex ? 1 : 0,
+                               transition: 'opacity 0.5s ease-in-out'
+                           }}
+                        ></div>
                     ))}
                     {banners.length > 1 && (
-                        <div className="slider-dots">
+                        <div className="slider-dots" style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
                             {banners.map((_, idx) => (
                                 <span key={idx} className={`dot ${idx === currentBannerIndex ? 'active' : ''}`} onClick={() => setCurrentBannerIndex(idx)}></span>
                             ))}
@@ -323,7 +354,7 @@ const StoreFront = () => {
                     )}
                 </div>
               ) : (
-                 <div className="store-hero-fallback">
+                 <div className="store-hero-fallback" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                      <div className="hero-content">
                          <h1>Welcome to <br/><span>{businessName}</span></h1>
                          <p>Quality products, honest savings. Delivered to your door.</p>
