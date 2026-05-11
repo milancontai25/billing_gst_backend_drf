@@ -51,6 +51,42 @@ class ItemDetailByNameView(APIView):
             return Response({"error": "Item not found."}, status=404)
 
         return Response(ProductSerializer(item).data)
+    
+
+class ItemDetailByBarcodeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        barcode = request.query_params.get("barcode")
+
+        if not barcode:
+            return Response(
+                {"error": "Barcode is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        business = request.user.active_business
+
+        if not business:
+            return Response(
+                {"error": "No active business selected."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            item = Item.objects.get(
+                business=business,
+                barcode=barcode,
+                item_type__iexact="goods"
+            )
+
+        except Item.DoesNotExist:
+            return Response(
+                {"error": "Item not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response(ProductSerializer(item).data)
 
 
 class CustomerSearchListView(generics.ListAPIView):

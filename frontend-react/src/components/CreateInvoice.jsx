@@ -1,10 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import { Trash2, X, MapPin, Phone } from 'lucide-react';
+import { Trash2, X, MapPin, Phone, Camera } from 'lucide-react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+
+// --- CAMERA SCANNER COMPONENT (SIMPLIFIED FOR LAPTOPS) ---
+const CameraScannerModal = ({ onScan, onClose }) => {
+  useEffect(() => {
+    const scanner = new Html5QrcodeScanner(
+      "reader",
+      { fps: 10, qrbox: 250 }, 
+      false
+    );
+
+    scanner.render(
+      (decodedText) => {
+        scanner.clear(); 
+        onScan(decodedText);
+      },
+      (error) => {} // Ignore continuous scanning errors
+    );
+
+    return () => {
+      try { scanner.clear(); } catch (e) { console.error(e); }
+    };
+  }, [onScan]);
+
+  return (
+    <div className="modal-overlay" style={{ zIndex: 2000 }}>
+      <div className="modal-box" style={{ width: '500px', maxWidth: '95vw', padding: '20px', background: 'white' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+          <div>
+              <h3 style={{ margin: 0, color: '#111827' }}>Scan Barcode</h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#6b7280' }}>
+                 Hold barcode 6-10 inches from camera.
+              </p>
+          </div>
+          <button className="close-btn" onClick={onClose}><X size={20} /></button>
+        </div>
+        <div id="reader" style={{ width: '100%', borderRadius: '8px', overflow: 'hidden' }}></div>
+      </div>
+    </div>
+  );
+};
+
 
 const CreateInvoice = ({ onClose, onSuccess }) => {
-  // --- GET BUSINESS TAX SETTINGS ---
   const { data: dashboardData } = useOutletContext();
   const activeBusiness = dashboardData?.active_business;
   const isTaxEnabled = activeBusiness?.tax_type && activeBusiness.tax_type !== 'NONE';
@@ -30,27 +71,16 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
   const [activeSearchIndex, setActiveSearchIndex] = useState(null);
 
   const [showAddCust, setShowAddCust] = useState(false);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+  const [scannerTargetIndex, setScannerTargetIndex] = useState(null);
   
-  // --- EXPANDED QUICK ADD CUSTOMER STATE ---
   const initialCustData = { 
-      name: '', 
-      category: '', 
-      email: '', 
-      phone: '', 
-      customer_type: 'Regular', 
-      gstin: '', 
-      date: new Date().toISOString().split('T')[0],
-      country: 'India', 
-      state: '', 
-      district: '', 
-      pin: '', 
-      address: '', 
-      note: '', 
-      password: '' 
+      name: '', category: '', email: '', phone: '', customer_type: 'Regular', 
+      gstin: '', date: new Date().toISOString().split('T')[0], country: 'India', 
+      state: '', district: '', pin: '', address: '', note: '', password: '' 
   };
   const [newCustData, setNewCustData] = useState(initialCustData);
 
-  // --- EXACT LINEAR MATH (EXCLUSIVE BASE) ---
   const calculateRowValues = (qty, baseRate, discPct, taxPct) => {
     const q = parseFloat(qty) || 0;
     const r = parseFloat(baseRate) || 0; 
@@ -72,7 +102,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     };
   };
 
-  // --- DYNAMIC SUMMARY ---
   const summary = items.reduce((acc, item) => {
     acc.totalBase += parseFloat(item.baseAmt || 0);
     acc.totalDisc += parseFloat(item.discAmt || 0);
@@ -85,7 +114,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
   const netPayable = Math.round(summary.totalValue);
   const roundOff = netPayable - summary.totalValue;
 
-  // --- HANDLERS ---
   const handleCustSearch = async (val) => {
     setCustSearch(val);
     if (val.length > 1) {
@@ -111,13 +139,10 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     setCustSearch('');
   };
 
-  // --- NEW CUSTOMER HANDLERS ---
   const handleNewCustChange = (e) => {
       const { name, value } = e.target;
       setNewCustData({ ...newCustData, [name]: value });
   };
-
-  // In CreateInvoice.jsx
 
   const handleSaveNewCustomer = async (e) => {
     e.preventDefault(); 
@@ -134,17 +159,12 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
         setShowAddCust(false);
         setNewCustData(initialCustData); 
     } catch(err) { 
-        console.error(err);
-        
-        // --- NEW ERROR HANDLING LOGIC ---
         if (err.response && err.response.data) {
             const errorData = err.response.data;
-            
             if (typeof errorData === 'string' && errorData.startsWith('<!DOCTYPE html>')) {
-                alert("Server Error: A database conflict occurred. Please check if this email/phone is already in use.");
+                alert("Server Error: Database conflict.");
                 return;
             }
-
             let errorMessage = "Failed to add customer:\n";
             for (const [field, messages] of Object.entries(errorData)) {
                const msgString = Array.isArray(messages) ? messages.join(" ") : messages;
@@ -154,61 +174,98 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
         } else {
             alert("Network error or failed to add customer."); 
         }
-        
     }
   };
 
+  // =======================================================
+  // 1. SEARCH BY NAME (Triggered by normal typing)
+  // =======================================================
   const handleProdSearch = async (val, index) => {
     const newItems = [...items];
     newItems[index].name = val;
     setItems(newItems);
+
     if (val.length > 1) {
       setActiveSearchIndex(index);
       try {
+        // 🔥 FIXED: Using search/products/ to get the dropdown list properly
         const res = await api.get(`/search/products/?search=${val}`);
-        setProdResults(res.data);
+        const results = Array.isArray(res.data) ? res.data : (res.data.results || []);
+        setProdResults(results);
       } catch (err) { console.error(err); }
     } else {
       setProdResults([]);
     }
   };
 
-  const selectProduct = (prod, index) => {
-    const newItems = [...items];
-    const grossRate = parseFloat(prod.gross_amount) || parseFloat(prod.mrp_baseprice) || 0;
+  // =======================================================
+  // 2. SEARCH BY BARCODE (Triggered by Scanner 'Enter' or Camera)
+  // =======================================================
+  const handleBarcodeSearch = async (barcodeVal, index) => {
+    if (!barcodeVal || barcodeVal.trim() === '') return;
     
-    // FORCE TAX TO 0 IF BUSINESS TAX IS DISABLED
-    let taxPct = isTaxEnabled ? (parseFloat(prod.tax_percent) || 0) : 0; 
-    
-    const discPct = parseFloat(prod.discount_percent) || 0;
-    const includesTax = prod.price_includes_tax || false;
-    const taxType = prod.tax_type || 'GST';
+    try {
+      // 🎯 Directly calls your barcode API
+      const res = await api.get(`/items/by-barcode/?barcode=${barcodeVal}`);
+      const product = res.data; 
 
-    // EXTRACT BASE RATE
-    let baseRate = grossRate;
-    if (includesTax && taxPct > 0) {
-        baseRate = grossRate / (1 + taxPct / 100);
+      if (product && product.id) {
+          selectProduct(product, index);
+          
+          if (index === items.length - 1) {
+              setTimeout(() => addItem(), 50); 
+          }
+      }
+    } catch (err) {
+      console.error("Barcode search error:", err);
+      // Fails silently if they just typed a name and hit enter accidentally
     }
+  };
 
-    const calc = calculateRowValues(newItems[index].qty, baseRate, discPct, taxPct);
+  // --- CAMERA SCAN CALLBACK ---
+  const onCameraScanResult = (decodedText) => {
+    setShowCameraScanner(false);
+    if (scannerTargetIndex !== null) {
+      handleBarcodeSearch(decodedText, scannerTargetIndex);
+    }
+  };
 
-    newItems[index] = {
-      ...newItems[index],
-      item_id: prod.id, 
-      name: prod.item_name, 
-      hsn: prod.hsn_sac_code_product || '',
-      rate: baseRate.toFixed(2), 
-      tax_percent: taxPct || '', 
-      tax_type: taxType, 
-      price_includes_tax: includesTax, 
-      discount_percent: discPct || '', 
-      baseAmt: calc.baseAmt, 
-      discAmt: calc.discAmt, 
-      taxableAmt: calc.taxableAmt, 
-      taxAmt: calc.taxAmt, 
-      amount: calc.totalAmt
-    };
-    setItems(newItems);
+  const selectProduct = (prod, index) => {
+    setItems(prevItems => {
+        const newItems = [...prevItems];
+        const grossRate = parseFloat(prod.gross_amount) || parseFloat(prod.mrp_baseprice) || 0;
+        
+        let taxPct = isTaxEnabled ? (parseFloat(prod.tax_percent) || 0) : 0; 
+        const discPct = parseFloat(prod.discount_percent) || 0;
+        const includesTax = prod.price_includes_tax || false;
+        const taxType = prod.tax_type || 'GST';
+
+        let baseRate = grossRate;
+        if (includesTax && taxPct > 0) {
+            baseRate = grossRate / (1 + taxPct / 100);
+        }
+
+        const calc = calculateRowValues(newItems[index].qty, baseRate, discPct, taxPct);
+
+        newItems[index] = {
+          ...newItems[index],
+          item_id: prod.id, 
+          name: prod.item_name, 
+          hsn: prod.hsn_sac_code_product || '',
+          rate: baseRate.toFixed(2), 
+          tax_percent: taxPct || '', 
+          tax_type: taxType, 
+          price_includes_tax: includesTax, 
+          discount_percent: discPct || '', 
+          baseAmt: calc.baseAmt, 
+          discAmt: calc.discAmt, 
+          taxableAmt: calc.taxableAmt, 
+          taxAmt: calc.taxAmt, 
+          amount: calc.totalAmt
+        };
+        return newItems;
+    });
+
     setProdResults([]);
     setActiveSearchIndex(null);
   };
@@ -228,7 +285,7 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     setItems(newItems);
   };
 
-  const addItem = () => setItems([...items, { item_id: null, name: '', qty: 1, rate: '', discount_percent: '', tax_percent: '', tax_type: 'GST', price_includes_tax: false, baseAmt: '0.00', discAmt: '0.00', taxableAmt: '0.00', taxAmt: '0.00', amount: '0.00' }]);
+  const addItem = () => setItems(prev => [...prev, { item_id: null, name: '', qty: 1, rate: '', discount_percent: '', tax_percent: '', tax_type: 'GST', price_includes_tax: false, baseAmt: '0.00', discAmt: '0.00', taxableAmt: '0.00', taxAmt: '0.00', amount: '0.00' }]);
   const removeItem = (index) => setItems(items.filter((_, i) => i !== index));
 
   const handleSubmit = async () => {
@@ -276,6 +333,7 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
 
         <div className="invoice-form scrollable-form" style={{padding: '20px', display:'flex', flexDirection:'column', gap:'20px'}}>
           
+          {/* Customer / Header Setup */}
           <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
              <div className="form-row" style={{marginBottom: '15px'}}>
                <div className="form-group"><label>Invoice ID</label><input value={formData.invoice_id} onChange={e => setFormData({...formData, invoice_id: e.target.value})} style={{border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px'}} /></div>
@@ -319,6 +377,7 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
              </div>
           </div>
 
+          {/* ITEM TABLE */}
           <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
@@ -338,7 +397,35 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                   {items.map((item, index) => (
                       <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
                           <td style={{ padding: '15px 8px', verticalAlign: 'middle', position:'relative'}}>
-                              <input value={item.name} onChange={(e) => handleProdSearch(e.target.value, index)} placeholder="Search Item..." style={{width:'100%', padding:'8px', border: '1px solid #cbd5e1', borderRadius: '4px'}}/>
+                              <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                                <input 
+                                  value={item.name} 
+                                  onChange={(e) => handleProdSearch(e.target.value, index)} 
+                                  onKeyDown={(e) => {
+                                      // 🚀 Trigger Barcode Search ONLY on Enter
+                                      if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          handleBarcodeSearch(item.name, index);
+                                      }
+                                  }}
+                                  autoFocus={index === items.length - 1}
+                                  placeholder="Search name or scan barcode..." 
+                                  style={{width:'100%', padding:'8px', border: '1px solid #cbd5e1', borderRadius: '4px'}}
+                                />
+                                
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setScannerTargetIndex(index);
+                                    setShowCameraScanner(true);
+                                  }}
+                                  style={{ padding: '8px', background: '#eff6ff', color: '#3b82f6', border: '1px solid #bfdbfe', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  title="Scan Barcode with Camera"
+                                >
+                                  <Camera size={18} />
+                                </button>
+                              </div>
+
                               {activeSearchIndex === index && prodResults.length > 0 && (
                                   <div className="search-dropdown" style={{top:'100%', left:0, width:'100%', zIndex:100}}>
                                       {prodResults.map(p => (
@@ -381,12 +468,8 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                                     placeholder="0" 
                                     disabled={!isTaxEnabled}
                                     style={{
-                                        width:'100%', 
-                                        textAlign:'center', 
-                                        padding:'6px', 
-                                        fontSize:'13px', 
-                                        border: '1px solid #cbd5e1', 
-                                        borderRadius: '4px',
+                                        width:'100%', textAlign:'center', padding:'6px', fontSize:'13px', 
+                                        border: '1px solid #cbd5e1', borderRadius: '4px',
                                         backgroundColor: !isTaxEnabled ? '#f1f5f9' : 'white',
                                         cursor: !isTaxEnabled ? 'not-allowed' : 'auto'
                                     }} 
@@ -414,7 +497,7 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
             </button>
           </div>
 
-          {/* --- SUMMARY BOX --- */}
+          {/* SUMMARY BOX */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ width: '45%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
@@ -484,7 +567,7 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
         </div>
       </div>
       
-      {/* --- EXTENDED QUICK ADD CUSTOMER MODAL --- */}
+      {/* QUICK ADD CUSTOMER MODAL */}
       {showAddCust && (
         <div className="modal-overlay" style={{zIndex: 1100}}>
             <div className="modal-box extended-modal" style={{width:'800px', maxWidth: '90vw'}}>
@@ -493,8 +576,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                     <button className="close-btn" onClick={() => setShowAddCust(false)}><X size={20}/></button>
                 </div>
                 <form onSubmit={handleSaveNewCustomer} className="setup-form scrollable-form" style={{padding:'20px'}}>
-                    
-                    {/* Basic Info Section */}
                     <div className="form-section-title">Basic Information</div>
                     <div className="form-row">
                       <div className="form-group half-width">
@@ -510,7 +591,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                         </select>
                       </div>
                     </div>
-
                     <div className="form-row">
                        <div className="form-group half-width">
                         <label>Category</label>
@@ -521,8 +601,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                          <input type="date" name="date" value={newCustData.date} onChange={handleNewCustChange} />
                       </div>
                     </div>
-
-                    {/* Contact Section */}
                     <div className="form-section-title">Contact Details</div>
                     <div className="form-row">
                       <div className="form-group half-width">
@@ -534,7 +612,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                         <input type="text" name="phone" value={newCustData.phone} onChange={handleNewCustChange} required />
                       </div>
                     </div>
-
                     <div className="form-row">
                        <div className="form-group half-width">
                         <label>GSTIN (Optional)</label>
@@ -545,14 +622,11 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                         <input type="password" name="password" value={newCustData.password} onChange={handleNewCustChange} placeholder="Optional" />
                       </div>
                     </div>
-
-                    {/* Address Section */}
                     <div className="form-section-title">Address & Location</div>
                     <div className="form-group">
                        <label>Street Address</label>
                        <input type="text" name="address" value={newCustData.address} onChange={handleNewCustChange} placeholder="Building, Street, Area" />
                     </div>
-
                     <div className="form-row">
                       <div className="form-group half-width">
                         <label>District/City</label>
@@ -563,7 +637,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                         <input type="text" name="state" value={newCustData.state} onChange={handleNewCustChange} />
                       </div>
                     </div>
-
                     <div className="form-row">
                       <div className="form-group half-width">
                         <label>Country</label>
@@ -574,18 +647,24 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                         <input type="number" name="pin" value={newCustData.pin} onChange={handleNewCustChange} />
                       </div>
                     </div>
-
                      <div className="form-group">
                         <label>Notes</label>
                         <input type="text" name="note" value={newCustData.note} onChange={handleNewCustChange} placeholder="Internal notes..." />
                       </div>
-
                     <button type="submit" className="btn-primary" style={{marginTop:'10px', width:'100%'}}>
                        Save & Select
                     </button>
                 </form>
             </div>
         </div>
+      )}
+
+      {/* 📸 CAMERA SCANNER MODAL */}
+      {showCameraScanner && (
+        <CameraScannerModal 
+          onScan={onCameraScanResult} 
+          onClose={() => setShowCameraScanner(false)} 
+        />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 from django.urls import path
 from payments.views import BusinessPaymentConfigView
 from order.views import AddToCartView, CancelOrderView, CheckoutPreviewView, CheckoutView, CustomerOrderHistoryView, OrderDetailView, OrderItemListView, OrderListView, UpdateCartItemView, UpdateOrderStatusView, UpdatePaymentStatusView, ViewCartView, CreateRazorpayOrderView, VerifyRazorpayPaymentView, CreatePaypalOrderView, CapturePaypalOrderView
-from invoice.views import CustomerDetailByNameView, CustomerSearchListView, InvoiceDetailView, InvoiceItemListView, InvoiceListCreateView, ItemDetailByNameView, ItemSearchListView
+from invoice.views import CustomerDetailByNameView, CustomerSearchListView, InvoiceDetailView, InvoiceItemListView, InvoiceListCreateView, ItemDetailByBarcodeView, ItemDetailByNameView, ItemSearchListView
 from products.views import DownloadBarcodeView, ItemDetailView, ItemListCreateView
 from customers.views import CustomerAddressUpdateView, CustomerDetailView, CustomerForgotPasswordView, CustomerListCreateView, CustomerLoginOtpRequestView, CustomerLoginOtpVerifyView, CustomerLoginView, CustomerResetPasswordView, CustomerSignupView, CustomerTokenRefreshView
 from business_entity.views import BusinessSetupView, BusinessUpdateView, SwitchBusinessView
@@ -31,6 +31,10 @@ urlpatterns = [
     path('products/<int:pk>/', ItemDetailView.as_view(), name='item-detail'),
     path('search/products/', ItemSearchListView.as_view(), name='item-search'),
     path('products/detail/', ItemDetailByNameView.as_view(), name='item-detail-by-name'),
+    path(
+        "items/by-barcode/",
+        ItemDetailByBarcodeView.as_view(),
+    ),
 
     path('items/<int:pk>/barcode/', DownloadBarcodeView.as_view()),
 
