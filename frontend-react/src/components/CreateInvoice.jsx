@@ -2,15 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { Trash2, X, MapPin, Phone, Camera } from 'lucide-react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import '../assets/css/CreateInvoice.css'; // <--- IMPORT THE NEW CSS
 
-// --- CAMERA SCANNER COMPONENT (SIMPLIFIED FOR LAPTOPS) ---
+// --- CAMERA SCANNER COMPONENT ---
 const CameraScannerModal = ({ onScan, onClose }) => {
   useEffect(() => {
     const scanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: 250 }, 
-      false
+      "reader", { fps: 10, qrbox: 250 }, false
     );
 
     scanner.render(
@@ -18,7 +17,7 @@ const CameraScannerModal = ({ onScan, onClose }) => {
         scanner.clear(); 
         onScan(decodedText);
       },
-      (error) => {} // Ignore continuous scanning errors
+      (error) => {} 
     );
 
     return () => {
@@ -28,22 +27,19 @@ const CameraScannerModal = ({ onScan, onClose }) => {
 
   return (
     <div className="modal-overlay" style={{ zIndex: 2000 }}>
-      <div className="modal-box" style={{ width: '500px', maxWidth: '95vw', padding: '20px', background: 'white' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+      <div className="modal-box invoice-camera-modal">
+        <div className="invoice-header-flex">
           <div>
-              <h3 style={{ margin: 0, color: '#111827' }}>Scan Barcode</h3>
-              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#6b7280' }}>
-                 Hold barcode 6-10 inches from camera.
-              </p>
+              <h3>Scan Barcode</h3>
+              <p>Hold barcode 6-10 inches from camera.</p>
           </div>
           <button className="close-btn" onClick={onClose}><X size={20} /></button>
         </div>
-        <div id="reader" style={{ width: '100%', borderRadius: '8px', overflow: 'hidden' }}></div>
+        <div id="reader"></div>
       </div>
     </div>
   );
 };
-
 
 const CreateInvoice = ({ onClose, onSuccess }) => {
   const { data: dashboardData } = useOutletContext();
@@ -177,9 +173,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     }
   };
 
-  // =======================================================
-  // 1. SEARCH BY NAME (Triggered by normal typing)
-  // =======================================================
   const handleProdSearch = async (val, index) => {
     const newItems = [...items];
     newItems[index].name = val;
@@ -188,7 +181,6 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     if (val.length > 1) {
       setActiveSearchIndex(index);
       try {
-        // 🔥 FIXED: Using search/products/ to get the dropdown list properly
         const res = await api.get(`/search/products/?search=${val}`);
         const results = Array.isArray(res.data) ? res.data : (res.data.results || []);
         setProdResults(results);
@@ -198,31 +190,20 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     }
   };
 
-  // =======================================================
-  // 2. SEARCH BY BARCODE (Triggered by Scanner 'Enter' or Camera)
-  // =======================================================
   const handleBarcodeSearch = async (barcodeVal, index) => {
     if (!barcodeVal || barcodeVal.trim() === '') return;
-    
     try {
-      // 🎯 Directly calls your barcode API
       const res = await api.get(`/items/by-barcode/?barcode=${barcodeVal}`);
       const product = res.data; 
-
       if (product && product.id) {
           selectProduct(product, index);
-          
-          if (index === items.length - 1) {
-              setTimeout(() => addItem(), 50); 
-          }
+          if (index === items.length - 1) setTimeout(() => addItem(), 50); 
       }
     } catch (err) {
       console.error("Barcode search error:", err);
-      // Fails silently if they just typed a name and hit enter accidentally
     }
   };
 
-  // --- CAMERA SCAN CALLBACK ---
   const onCameraScanResult = (decodedText) => {
     setShowCameraScanner(false);
     if (scannerTargetIndex !== null) {
@@ -325,27 +306,33 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-box" style={{width: '1100px', maxWidth: '98vw', background:'#f8fafc'}}>
-        <div className="modal-header" style={{ background:'white', borderBottom: '1px solid #e2e8f0', padding: '15px 25px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight:'600' }}>Create New Invoice</h2>
+      <div className="modal-box invoice-modal-box">
+        <div className="modal-header">
+          <h2>Create New Invoice</h2>
           <button className="close-btn" onClick={onClose}><X size={20}/></button>
         </div>
 
-        <div className="invoice-form scrollable-form" style={{padding: '20px', display:'flex', flexDirection:'column', gap:'20px'}}>
+        <div className="invoice-form-body scrollable-form">
           
           {/* Customer / Header Setup */}
-          <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-             <div className="form-row" style={{marginBottom: '15px'}}>
-               <div className="form-group"><label>Invoice ID</label><input value={formData.invoice_id} onChange={e => setFormData({...formData, invoice_id: e.target.value})} style={{border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px'}} /></div>
-               <div className="form-group"><label>Date</label><input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} style={{border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px'}} /></div>
+          <div className="invoice-panel">
+             <div className="form-row">
+               <div className="form-group half-width">
+                 <label>Invoice ID</label>
+                 <input className="form-input" value={formData.invoice_id} onChange={e => setFormData({...formData, invoice_id: e.target.value})} />
+               </div>
+               <div className="form-group half-width">
+                 <label>Date</label>
+                 <input className="form-input" type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+               </div>
              </div>
 
              <div className="form-group relative">
                <label>Customer Details*</label>
                {!selectedCustomer ? (
-                   <div style={{display:'flex', gap:'10px'}}>
-                       <div style={{flex:1, position:'relative'}}>
-                           <input type="text" placeholder="Search Customer..." value={custSearch} onChange={(e) => handleCustSearch(e.target.value)} style={{border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px', width: '100%'}}/>
+                   <div className="customer-search-wrapper">
+                       <div className="customer-search-input-box">
+                           <input className="form-input" type="text" placeholder="Search Customer..." value={custSearch} onChange={(e) => handleCustSearch(e.target.value)}/>
                            {custResults.length > 0 && (
                                <div className="search-dropdown">
                                    {custResults.map(c => (
@@ -357,212 +344,196 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                                </div>
                            )}
                        </div>
-                       <button className="btn btn-blue" style={{width:'auto', padding:'0 20px'}} onClick={() => setShowAddCust(true)}>+ New</button>
+                       <button className="btn btn-blue btn-new-customer" onClick={() => setShowAddCust(true)}>+ New</button>
                    </div>
                ) : (
-                   <div className="customer-info-card" style={{border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc'}}>
-                       <div className="info-header">
-                           <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                               <div className="avatar-circle" style={{background:'#3b82f6'}}>{selectedCustomer.name.charAt(0)}</div>
-                               <div><div style={{fontWeight:'bold', fontSize:'15px'}}>{selectedCustomer.name}</div></div>
+                   <div className="selected-customer-card">
+                       <div className="selected-customer-header">
+                           <div className="selected-customer-name">
+                               <div className="selected-customer-avatar">{selectedCustomer.name.charAt(0)}</div>
+                               <div style={{fontWeight:'bold', fontSize:'15px'}}>{selectedCustomer.name}</div>
                            </div>
-                           <button className="btn-icon-small" onClick={removeCustomer}><X size={16}/></button>
+                           <button className="btn-icon-small text-danger" onClick={removeCustomer}><X size={18}/></button>
                        </div>
-                       <div className="info-grid">
-                           <div className="info-item"><Phone size={14}/> {selectedCustomer.phone || 'N/A'}</div>
-                           <div className="info-item"><MapPin size={14}/> {selectedCustomer.address || 'No Address'}</div>
+                       <div className="selected-customer-info">
+                           <div className="info-badge"><Phone size={14}/> {selectedCustomer.phone || 'N/A'}</div>
+                           <div className="info-badge"><MapPin size={14}/> {selectedCustomer.address || 'No Address'}</div>
                        </div>
                    </div>
                )}
              </div>
           </div>
 
-          {/* ITEM TABLE */}
-          <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #3b82f6' }}>
-                  <th style={{ textAlign: 'left', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Item Details</th>
-                  <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', width: '90px' }}>Rate</th>
-                  <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', width: '70px' }}>Qty</th>
-                  <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>BaseAmt</th>
-                  <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', width: '100px' }}>Disc %</th>
-                  <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', background: '#eef2ff' }}>Taxable</th>
-                  <th style={{ textAlign: 'center', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', width: '100px' }}>Tax %</th>
-                  <th style={{ textAlign: 'right', padding: '12px 8px', fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase' }}>Total</th>
-                  <th style={{ width: '40px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                  {items.map((item, index) => (
-                      <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '15px 8px', verticalAlign: 'middle', position:'relative'}}>
-                              <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                                <input 
-                                  value={item.name} 
-                                  onChange={(e) => handleProdSearch(e.target.value, index)} 
-                                  onKeyDown={(e) => {
-                                      // 🚀 Trigger Barcode Search ONLY on Enter
-                                      if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          handleBarcodeSearch(item.name, index);
-                                      }
-                                  }}
-                                  autoFocus={index === items.length - 1}
-                                  placeholder="Search name or scan barcode..." 
-                                  style={{width:'100%', padding:'8px', border: '1px solid #cbd5e1', borderRadius: '4px'}}
-                                />
-                                
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setScannerTargetIndex(index);
-                                    setShowCameraScanner(true);
-                                  }}
-                                  style={{ padding: '8px', background: '#eff6ff', color: '#3b82f6', border: '1px solid #bfdbfe', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                  title="Scan Barcode with Camera"
-                                >
-                                  <Camera size={18} />
-                                </button>
-                              </div>
-
-                              {activeSearchIndex === index && prodResults.length > 0 && (
-                                  <div className="search-dropdown" style={{top:'100%', left:0, width:'100%', zIndex:100}}>
-                                      {prodResults.map(p => (
-                                          <div key={p.id} className="search-item" onClick={() => selectProduct(p, index)}>
-                                              {p.item_name} (₹{p.gross_amount || p.mrp_baseprice})
-                                          </div>
-                                      ))}
-                                  </div>
-                              )}
-                          </td>
-                          <td style={{ padding: '15px 8px', textAlign: 'right', verticalAlign: 'middle' }}>
-                              <input type="number" value={item.rate} onChange={(e) => handleItemChange(index, 'rate', e.target.value)} style={{width:'100%', padding:'8px', textAlign:'right', border: '1px solid #cbd5e1', borderRadius: '4px'}}/>
-                          </td>
-                          <td style={{ padding: '15px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
-                              <input type="number" value={item.qty} onChange={(e) => handleItemChange(index, 'qty', e.target.value)} style={{width:'100%', padding:'8px', textAlign:'center', border: '1px solid #cbd5e1', borderRadius: '4px'}}/>
-                          </td>
-                          <td style={{ padding: '15px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#475569', fontSize: '14px' }}>
-                              ₹{item.baseAmt}
-                          </td>
-                          
-                          <td style={{ padding: '15px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
-                              <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'4px'}}>
-                                  <input type="number" value={item.discount_percent} onChange={(e) => handleItemChange(index, 'discount_percent', e.target.value)} placeholder="0" style={{width:'100%', textAlign:'center', padding:'6px', fontSize:'13px', border: '1px solid #cbd5e1', borderRadius: '4px'}} title="Disc %"/>
-                                  <div style={{fontSize:'12px', color:'#ef4444', height: '16px'}}>
-                                      {parseFloat(item.discAmt) > 0 ? `-₹${item.discAmt}` : ''}
-                                  </div>
-                              </div>
-                          </td>
-
-                          <td style={{ padding: '15px 12px', textAlign: 'center', verticalAlign: 'middle', color: '#2563eb', fontSize: '15px', fontWeight: '600', background: '#eef2ff' }}>
-                              {item.taxableAmt}
-                          </td>
-
-                          <td style={{ padding: '15px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
-                              <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'4px'}}>
+          {/* RESPONSIVE ITEM TABLE */}
+          <div className="invoice-panel">
+            <div className="table-responsive-wrapper">
+              <table className="invoice-table">
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', minWidth: '200px' }}>Item Details</th>
+                    <th className="text-right" style={{ width: '90px' }}>Rate</th>
+                    <th className="text-center" style={{ width: '70px' }}>Qty</th>
+                    <th className="text-right" style={{ minWidth: '80px' }}>BaseAmt</th>
+                    <th className="text-center" style={{ width: '90px' }}>Disc %</th>
+                    <th className="text-center bg-highlight" style={{ minWidth: '80px' }}>Taxable</th>
+                    <th className="text-center" style={{ width: '90px' }}>Tax %</th>
+                    <th className="text-right" style={{ minWidth: '80px' }}>Total</th>
+                    <th style={{ width: '40px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                    {items.map((item, index) => (
+                        <tr key={index}>
+                            <td>
+                                <div className="table-input-group">
                                   <input 
-                                    type="number" 
-                                    value={item.tax_percent} 
-                                    onChange={(e) => handleItemChange(index, 'tax_percent', e.target.value)} 
-                                    placeholder="0" 
-                                    disabled={!isTaxEnabled}
-                                    style={{
-                                        width:'100%', textAlign:'center', padding:'6px', fontSize:'13px', 
-                                        border: '1px solid #cbd5e1', borderRadius: '4px',
-                                        backgroundColor: !isTaxEnabled ? '#f1f5f9' : 'white',
-                                        cursor: !isTaxEnabled ? 'not-allowed' : 'auto'
-                                    }} 
-                                    title="Tax %"
+                                    className="form-input"
+                                    value={item.name} 
+                                    onChange={(e) => handleProdSearch(e.target.value, index)} 
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleBarcodeSearch(item.name, index);
+                                        }
+                                    }}
+                                    autoFocus={index === items.length - 1}
+                                    placeholder="Search or Scan..." 
                                   />
-                                  <div style={{fontSize:'12px', color:'#64748b', height: '16px'}}>
-                                      {parseFloat(item.taxAmt) > 0 ? `₹${item.taxAmt}` : ''}
-                                  </div>
-                              </div>
-                          </td>
+                                  <button
+                                    type="button"
+                                    className="btn-camera"
+                                    onClick={() => {
+                                      setScannerTargetIndex(index);
+                                      setShowCameraScanner(true);
+                                    }}
+                                  >
+                                    <Camera size={18} />
+                                  </button>
+                                </div>
 
-                          <td style={{ padding: '15px 8px', textAlign: 'right', verticalAlign: 'middle', color: '#0f172a', fontSize: '15px', fontWeight: '700' }}>
-                              {item.amount}
-                          </td>
-                          <td style={{ padding: '15px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
-                              <button onClick={() => removeItem(index)} style={{ border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', padding: '6px', borderRadius: '4px', cursor: 'pointer' }}><Trash2 size={16}/></button>
-                          </td>
-                      </tr>
-                  ))}
-              </tbody>
-            </table>
+                                {activeSearchIndex === index && prodResults.length > 0 && (
+                                    <div className="search-dropdown" style={{top:'100%', left:0, width:'100%', zIndex:100}}>
+                                        {prodResults.map(p => (
+                                            <div key={p.id} className="search-item" onClick={() => selectProduct(p, index)}>
+                                                {p.item_name} (₹{p.gross_amount || p.mrp_baseprice})
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </td>
+                            <td>
+                                <input className="form-input text-right" type="number" value={item.rate} onChange={(e) => handleItemChange(index, 'rate', e.target.value)}/>
+                            </td>
+                            <td>
+                                <input className="form-input text-center" type="number" value={item.qty} onChange={(e) => handleItemChange(index, 'qty', e.target.value)}/>
+                            </td>
+                            <td className="text-right table-base-amt">
+                                ₹{item.baseAmt}
+                            </td>
+                            <td>
+                                <div className="table-input-col">
+                                    <input className="form-input text-center" type="number" value={item.discount_percent} onChange={(e) => handleItemChange(index, 'discount_percent', e.target.value)} placeholder="0"/>
+                                    <div className="table-sub-text text-danger">
+                                        {parseFloat(item.discAmt) > 0 ? `-₹${item.discAmt}` : ''}
+                                    </div>
+                                </div>
+                            </td>
+                            <td className="text-center table-taxable-amt">
+                                {item.taxableAmt}
+                            </td>
+                            <td>
+                                <div className="table-input-col">
+                                    <input 
+                                      className="form-input text-center"
+                                      type="number" 
+                                      value={item.tax_percent} 
+                                      onChange={(e) => handleItemChange(index, 'tax_percent', e.target.value)} 
+                                      placeholder="0" 
+                                      disabled={!isTaxEnabled}
+                                    />
+                                    <div className="table-sub-text text-muted">
+                                        {parseFloat(item.taxAmt) > 0 ? `₹${item.taxAmt}` : ''}
+                                    </div>
+                                </div>
+                            </td>
+                            <td className="text-right table-total-amt">
+                                {item.amount}
+                            </td>
+                            <td className="text-center">
+                                <button className="btn-remove-row" onClick={() => removeItem(index)}><Trash2 size={16}/></button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
             
-            <button type="button" onClick={addItem} style={{marginTop:'15px', fontSize:'14px', color: '#3b82f6', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer', width:'100%', padding:'10px', border:'1px dashed #cbd5e1', borderRadius:'8px'}}>
+            <button type="button" className="btn-add-row" onClick={addItem}>
                 + Add Item
             </button>
           </div>
 
-          {/* SUMMARY BOX */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ width: '45%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
-                   <label style={{fontSize: '12px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px', display: 'block'}}>Notes</label>
-                   <textarea value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} style={{width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '10px'}} rows="2" placeholder="Thanks for your business!"></textarea>
+          {/* RESPONSIVE SUMMARY BOX */}
+          <div className="invoice-summary-row">
+              <div className="invoice-notes-col">
+                <div className="invoice-panel">
+                   <label className="elegant-overline">Notes</label>
+                   <textarea className="form-input" value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} rows="2" placeholder="Thanks for your business!"></textarea>
                 </div>
                 
-                <div style={{ background: 'white', padding: '20px', borderRadius: '8px', display: 'flex', gap:'15px', border: '1px solid #e2e8f0'}}>
+                <div className="invoice-panel" style={{display: 'flex', gap:'15px'}}>
                    <div style={{flex:1}}>
-                      <label style={{fontSize: '12px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px', display: 'block'}}>Payment Mode</label>
-                      <select style={{width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '10px'}} value={formData.payment_mode} onChange={e => setFormData({...formData, payment_mode: e.target.value})}>
+                      <label className="elegant-overline">Payment Mode</label>
+                      <select className="form-input" value={formData.payment_mode} onChange={e => setFormData({...formData, payment_mode: e.target.value})}>
                           <option>Cash</option><option>UPI</option><option>Card</option><option>Bank Transfer</option>
                       </select>
                    </div>
                    <div style={{flex:1}}>
-                      <label style={{fontSize: '12px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px', display: 'block'}}>Status</label>
-                      <select style={{width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '10px'}} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                      <label className="elegant-overline">Status</label>
+                      <select className="form-input" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
                           <option>Paid</option><option>Unpaid</option>
                       </select>
                    </div>
                 </div>
               </div>
 
-              <div style={{ width: '320px', background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+              <div className="invoice-totals-col">
+                <div className="summary-line">
                   <span>Total Base Amount</span><span>₹{summary.totalBase.toFixed(2)}</span>
                 </div>
-
                 {summary.totalDisc > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
-                    <span>Total Discount</span><span style={{color:'#ef4444'}}>-₹{summary.totalDisc.toFixed(2)}</span>
+                  <div className="summary-line">
+                    <span>Total Discount</span><span className="text-danger">-₹{summary.totalDisc.toFixed(2)}</span>
                   </div>
                 )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                <div className="summary-line">
                   <span>Total Taxable Amount</span><span>₹{summary.totalTaxable.toFixed(2)}</span>
                 </div>
-
                 {summary.totalTax > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                  <div className="summary-line">
                     <span>Total Tax</span><span>₹{summary.totalTax.toFixed(2)}</span>
                   </div>
                 )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                <div className="summary-line">
                   <span>Round Off</span><span>{roundOff.toFixed(2)}</span>
                 </div>
                 
-                <div style={{ borderTop: '1px dashed #cbd5e1', margin: '16px 0' }}></div>
+                <div className="summary-divider"></div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '18px', fontWeight: '800', color: '#3b82f6' }}>Net Payable</span>
-                  <span style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6' }}>{netPayable.toFixed(2)}</span>
+                <div className="summary-net">
+                  <span className="summary-net-label">Net Payable</span>
+                  <span className="summary-net-value">{netPayable.toFixed(2)}</span>
                 </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>
+                <div className="summary-footer">
                   <span>Payments ({formData.payment_mode})</span>
                   <span>(₹{formData.status === 'Paid' ? netPayable.toFixed(2) : '0.00'})</span>
                 </div>
               </div>
           </div>
 
-          <div style={{display:'flex', justifyContent:'flex-end', gap:'10px', marginTop:'10px', padding:'20px 0'}}>
-             <button className="btn btn-gray" onClick={onClose} style={{padding:'10px 30px'}}>Cancel</button>
-             <button className="btn btn-blue" onClick={handleSubmit} style={{padding:'10px 30px'}}>Save Invoice</button>
+          <div className="invoice-actions">
+             <button className="btn btn-gray" onClick={onClose}>Cancel</button>
+             <button className="btn btn-blue" onClick={handleSubmit}>Save Invoice</button>
           </div>
         </div>
       </div>
@@ -580,11 +551,11 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                     <div className="form-row">
                       <div className="form-group half-width">
                         <label>Customer Name*</label>
-                        <input type="text" name="name" value={newCustData.name} onChange={handleNewCustChange} required placeholder="Full Name" />
+                        <input className="form-input" type="text" name="name" value={newCustData.name} onChange={handleNewCustChange} required placeholder="Full Name" />
                       </div>
                       <div className="form-group half-width">
                         <label>Customer Type</label>
-                        <select name="customer_type" value={newCustData.customer_type} onChange={handleNewCustChange}>
+                        <select className="form-input" name="customer_type" value={newCustData.customer_type} onChange={handleNewCustChange}>
                           <option value="Regular">Regular</option>
                           <option value="Special">Special</option>
                           <option value="Wholesale">Wholesale</option>
@@ -594,62 +565,62 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                     <div className="form-row">
                        <div className="form-group half-width">
                         <label>Category</label>
-                        <input type="text" name="category" value={newCustData.category} onChange={handleNewCustChange} placeholder="e.g. Business, Personal" />
+                        <input className="form-input" type="text" name="category" value={newCustData.category} onChange={handleNewCustChange} placeholder="e.g. Business, Personal" />
                       </div>
                       <div className="form-group half-width">
                          <label>Joining Date</label>
-                         <input type="date" name="date" value={newCustData.date} onChange={handleNewCustChange} />
+                         <input className="form-input" type="date" name="date" value={newCustData.date} onChange={handleNewCustChange} />
                       </div>
                     </div>
                     <div className="form-section-title">Contact Details</div>
                     <div className="form-row">
                       <div className="form-group half-width">
                         <label>Email Address</label>
-                        <input type="email" name="email" value={newCustData.email} onChange={handleNewCustChange} />
+                        <input className="form-input" type="email" name="email" value={newCustData.email} onChange={handleNewCustChange} />
                       </div>
                       <div className="form-group half-width">
                         <label>Phone Number*</label>
-                        <input type="text" name="phone" value={newCustData.phone} onChange={handleNewCustChange} required />
+                        <input className="form-input" type="text" name="phone" value={newCustData.phone} onChange={handleNewCustChange} required />
                       </div>
                     </div>
                     <div className="form-row">
                        <div className="form-group half-width">
                         <label>GSTIN (Optional)</label>
-                        <input type="text" name="gstin" value={newCustData.gstin} onChange={handleNewCustChange} placeholder="GST Number" />
+                        <input className="form-input" type="text" name="gstin" value={newCustData.gstin} onChange={handleNewCustChange} placeholder="GST Number" />
                       </div>
                        <div className="form-group half-width">
                         <label>Password (Login)</label>
-                        <input type="password" name="password" value={newCustData.password} onChange={handleNewCustChange} placeholder="Optional" />
+                        <input className="form-input" type="password" name="password" value={newCustData.password} onChange={handleNewCustChange} placeholder="Optional" />
                       </div>
                     </div>
                     <div className="form-section-title">Address & Location</div>
                     <div className="form-group">
                        <label>Street Address</label>
-                       <input type="text" name="address" value={newCustData.address} onChange={handleNewCustChange} placeholder="Building, Street, Area" />
+                       <input className="form-input" type="text" name="address" value={newCustData.address} onChange={handleNewCustChange} placeholder="Building, Street, Area" />
                     </div>
                     <div className="form-row">
                       <div className="form-group half-width">
                         <label>District/City</label>
-                        <input type="text" name="district" value={newCustData.district} onChange={handleNewCustChange} />
+                        <input className="form-input" type="text" name="district" value={newCustData.district} onChange={handleNewCustChange} />
                       </div>
                       <div className="form-group half-width">
                         <label>State</label>
-                        <input type="text" name="state" value={newCustData.state} onChange={handleNewCustChange} />
+                        <input className="form-input" type="text" name="state" value={newCustData.state} onChange={handleNewCustChange} />
                       </div>
                     </div>
                     <div className="form-row">
                       <div className="form-group half-width">
                         <label>Country</label>
-                        <input type="text" name="country" value={newCustData.country} onChange={handleNewCustChange} />
+                        <input className="form-input" type="text" name="country" value={newCustData.country} onChange={handleNewCustChange} />
                       </div>
                       <div className="form-group half-width">
                         <label>Pincode</label>
-                        <input type="number" name="pin" value={newCustData.pin} onChange={handleNewCustChange} />
+                        <input className="form-input" type="number" name="pin" value={newCustData.pin} onChange={handleNewCustChange} />
                       </div>
                     </div>
                      <div className="form-group">
                         <label>Notes</label>
-                        <input type="text" name="note" value={newCustData.note} onChange={handleNewCustChange} placeholder="Internal notes..." />
+                        <input className="form-input" type="text" name="note" value={newCustData.note} onChange={handleNewCustChange} placeholder="Internal notes..." />
                       </div>
                     <button type="submit" className="btn-primary" style={{marginTop:'10px', width:'100%'}}>
                        Save & Select
