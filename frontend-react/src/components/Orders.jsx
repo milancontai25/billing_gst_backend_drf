@@ -142,7 +142,7 @@ const Orders = () => {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content smart-mobile-stack">
       {/* 1. STATS CARDS */}
       <div className="stats-grid orders-stats">
         <StatBox title="Total Orders" value={stats.total} color="bg-blue-50" />

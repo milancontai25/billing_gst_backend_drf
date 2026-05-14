@@ -335,7 +335,7 @@ const Products = () => {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content smart-mobile-stack">
       <input 
         type="file" 
         accept=".csv" 

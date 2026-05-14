@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../assets/css/landing.css';
-import logoImage from '../assets/images/statgrow-logo.png';
+import logoImage from '../assets/images/logo-enterprize.png';
 import { ShoppingCart, Search, Store, User, Settings, LogOut, Package, ChevronDown, Loader2, Facebook, Instagram, Youtube, Twitter, Mail, Phone, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const LandingPage = () => {

@@ -124,9 +124,6 @@
 
 
 
-/* --- HEADER & NAVIGATION (Fixed Positioning) --- */
-/* src/assets/css/landing.css */
-
 /* ... (Keep your existing Variables and Reset) ... */
 
 /* --- HEADER & NAVIGATION --- */
@@ -171,7 +168,7 @@
 
 .landing-scope header .logo-img {
     /* 1. Base Height: Fills most of the 72px header */
-    height: 60px; 
+    height: 40px; 
     width: auto;
     object-fit: contain;
     display: block;
@@ -709,7 +706,7 @@
 }
 
 .landing-scope .footer-logo-img {
-    height: 50px; /* Slightly smaller than header */
+    height: 30px; /* Slightly smaller than header */
     width: auto;
     object-fit: contain;
     display: block;

@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { Trash2, X, MapPin, Phone, Camera } from 'lucide-react';
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import '../assets/css/CreateInvoice.css'; // <--- IMPORT THE NEW CSS
+import '../assets/css/CreateInvoice.css'; // Make sure path is correct!
 
 // --- CAMERA SCANNER COMPONENT ---
 const CameraScannerModal = ({ onScan, onClose }) => {
@@ -317,11 +317,11 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
           {/* Customer / Header Setup */}
           <div className="invoice-panel">
              <div className="form-row">
-               <div className="form-group half-width">
+               <div className="form-group">
                  <label>Invoice ID</label>
                  <input className="form-input" value={formData.invoice_id} onChange={e => setFormData({...formData, invoice_id: e.target.value})} />
                </div>
-               <div className="form-group half-width">
+               <div className="form-group">
                  <label>Date</label>
                  <input className="form-input" type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
                </div>
@@ -481,14 +481,14 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                    <textarea className="form-input" value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} rows="2" placeholder="Thanks for your business!"></textarea>
                 </div>
                 
-                <div className="invoice-panel" style={{display: 'flex', gap:'15px'}}>
-                   <div style={{flex:1}}>
+                <div className="invoice-panel form-row" style={{margin: 0}}>
+                   <div className="form-group">
                       <label className="elegant-overline">Payment Mode</label>
                       <select className="form-input" value={formData.payment_mode} onChange={e => setFormData({...formData, payment_mode: e.target.value})}>
                           <option>Cash</option><option>UPI</option><option>Card</option><option>Bank Transfer</option>
                       </select>
                    </div>
-                   <div style={{flex:1}}>
+                   <div className="form-group">
                       <label className="elegant-overline">Status</label>
                       <select className="form-input" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
                           <option>Paid</option><option>Unpaid</option>
@@ -549,11 +549,11 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                 <form onSubmit={handleSaveNewCustomer} className="setup-form scrollable-form" style={{padding:'20px'}}>
                     <div className="form-section-title">Basic Information</div>
                     <div className="form-row">
-                      <div className="form-group half-width">
+                      <div className="form-group">
                         <label>Customer Name*</label>
                         <input className="form-input" type="text" name="name" value={newCustData.name} onChange={handleNewCustChange} required placeholder="Full Name" />
                       </div>
-                      <div className="form-group half-width">
+                      <div className="form-group">
                         <label>Customer Type</label>
                         <select className="form-input" name="customer_type" value={newCustData.customer_type} onChange={handleNewCustChange}>
                           <option value="Regular">Regular</option>
@@ -563,57 +563,57 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                       </div>
                     </div>
                     <div className="form-row">
-                       <div className="form-group half-width">
+                       <div className="form-group">
                         <label>Category</label>
                         <input className="form-input" type="text" name="category" value={newCustData.category} onChange={handleNewCustChange} placeholder="e.g. Business, Personal" />
                       </div>
-                      <div className="form-group half-width">
+                      <div className="form-group">
                          <label>Joining Date</label>
                          <input className="form-input" type="date" name="date" value={newCustData.date} onChange={handleNewCustChange} />
                       </div>
                     </div>
                     <div className="form-section-title">Contact Details</div>
                     <div className="form-row">
-                      <div className="form-group half-width">
+                      <div className="form-group">
                         <label>Email Address</label>
                         <input className="form-input" type="email" name="email" value={newCustData.email} onChange={handleNewCustChange} />
                       </div>
-                      <div className="form-group half-width">
+                      <div className="form-group">
                         <label>Phone Number*</label>
                         <input className="form-input" type="text" name="phone" value={newCustData.phone} onChange={handleNewCustChange} required />
                       </div>
                     </div>
                     <div className="form-row">
-                       <div className="form-group half-width">
+                       <div className="form-group">
                         <label>GSTIN (Optional)</label>
                         <input className="form-input" type="text" name="gstin" value={newCustData.gstin} onChange={handleNewCustChange} placeholder="GST Number" />
                       </div>
-                       <div className="form-group half-width">
+                       <div className="form-group">
                         <label>Password (Login)</label>
                         <input className="form-input" type="password" name="password" value={newCustData.password} onChange={handleNewCustChange} placeholder="Optional" />
                       </div>
                     </div>
                     <div className="form-section-title">Address & Location</div>
-                    <div className="form-group">
+                    <div className="form-group" style={{marginBottom: '15px'}}>
                        <label>Street Address</label>
                        <input className="form-input" type="text" name="address" value={newCustData.address} onChange={handleNewCustChange} placeholder="Building, Street, Area" />
                     </div>
                     <div className="form-row">
-                      <div className="form-group half-width">
+                      <div className="form-group">
                         <label>District/City</label>
                         <input className="form-input" type="text" name="district" value={newCustData.district} onChange={handleNewCustChange} />
                       </div>
-                      <div className="form-group half-width">
+                      <div className="form-group">
                         <label>State</label>
                         <input className="form-input" type="text" name="state" value={newCustData.state} onChange={handleNewCustChange} />
                       </div>
                     </div>
                     <div className="form-row">
-                      <div className="form-group half-width">
+                      <div className="form-group">
                         <label>Country</label>
                         <input className="form-input" type="text" name="country" value={newCustData.country} onChange={handleNewCustChange} />
                       </div>
-                      <div className="form-group half-width">
+                      <div className="form-group">
                         <label>Pincode</label>
                         <input className="form-input" type="number" name="pin" value={newCustData.pin} onChange={handleNewCustChange} />
                       </div>

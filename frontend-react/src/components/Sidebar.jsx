@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import logoImage from '../assets/images/statgrow-logo.png';
-import logo from '../assets/images/logo.png';
+import logoImage from '../assets/images/logo-enterprize.png';
+import logo from '../assets/images/logo-eze.png';
 import { 
   LayoutDashboard, ShoppingCart, Users, FileText, Boxes, 
   BarChart2, ChevronDown, ChevronUp, PlusCircle, Settings, Store,

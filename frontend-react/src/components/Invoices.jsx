@@ -3,6 +3,7 @@ import api from '../api/axiosConfig';
 import CreateInvoice from './CreateInvoice';
 import InvoiceViewer from './InvoiceViewer'; 
 import { Plus, Printer, Eye, Filter, FileSpreadsheet } from 'lucide-react';
+import '../assets/css/Invoices.css'; // <--- ADD THIS LINE HERE
 
 const Invoices = () => {
   const [invoices, setInvoices] = useState([]);
@@ -58,7 +59,7 @@ const Invoices = () => {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content smart-mobile-stack">
       <div className="action-bar">
         <h2 className="section-title">Invoices & Bills</h2>
         <div className="action-buttons">

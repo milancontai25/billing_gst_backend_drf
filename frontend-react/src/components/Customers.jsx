@@ -135,7 +135,7 @@ const Customers = () => {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content smart-mobile-stack">
       {/* Top Action Bar */}
       <div className="action-bar">
         <h2 className="section-title">Customers</h2>
