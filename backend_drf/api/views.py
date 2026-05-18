@@ -210,15 +210,19 @@ class DashboardView(APIView):
         from django.db.models import Sum
         from decimal import Decimal
 
+
         invoice_taxable = Invoice.objects.filter(
-            business=active_business
+            business=active_business,
+            status="Paid"
         ).aggregate(
             total=Sum("total_taxable_amount")
         )["total"] or Decimal("0.00")
 
+
         order_taxable = Order.objects.filter(
-            business=active_business
-        ).aggregate(
+            business=active_business,
+            payments__status="Success"
+        ).distinct().aggregate(
             total=Sum("total_taxable_amount")
         )["total"] or Decimal("0.00")
 

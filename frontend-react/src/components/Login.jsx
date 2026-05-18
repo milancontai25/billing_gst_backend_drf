@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios'; // For login, we can use raw axios or the instance
 import { Link, useNavigate } from 'react-router-dom';
+import { jwtDecode } from "jwt-decode";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const Login = () => {
   };
 
   // Handle Submit
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
@@ -32,8 +33,6 @@ const Login = () => {
         
         console.log('Login Successful:', response.data);
         
-        // --- UPDATED LOGIC HERE ---
-        // Django SimpleJWT returns: { access: "...", refresh: "..." }
         const accessToken = response.data.access;
         const refreshToken = response.data.refresh;
         
@@ -42,7 +41,25 @@ const Login = () => {
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('refreshToken', refreshToken);
             
-            navigate('/dashboard'); 
+            // 👇 --- NEW RBAC ROUTING LOGIC --- 👇
+            try {
+                // Decode the token to read the payload
+                const decodedToken = jwtDecode(accessToken);
+                console.log("Decoded Token Data:", decodedToken);
+
+                // Check for admin status. 
+                // Note: Change 'is_superuser' to whatever claim your Django backend uses.
+                if (decodedToken.is_superuser === true || decodedToken.is_staff === true) {
+                    navigate('/admin/users'); // Route to Admin Portal
+                } else {
+                    navigate('/dashboard');   // Route to Business Dashboard
+                }
+            } catch (decodeError) {
+                console.error("Failed to decode token", decodeError);
+                navigate('/dashboard'); // Fallback route
+            }
+            
+
         } else {
             setError("Login failed: Invalid server response.");
         }

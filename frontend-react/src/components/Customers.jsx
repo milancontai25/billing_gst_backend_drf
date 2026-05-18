@@ -35,7 +35,8 @@ const Customers = () => {
     try {
       setLoading(true);
       const res = await api.get('/customers/'); // GET
-      setCustomers(res.data);
+      const dataArray = Array.isArray(res.data) ? res.data : (res.data.results || []);
+      setCustomers(dataArray);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching customers", err);

@@ -58,8 +58,13 @@ const Products = () => {
     try {
       setLoading(true);
       const res = await api.get('/products/');
-      setItems(res.data);
-      setFilteredItems(res.data); 
+      
+      // Extract the array
+      const dataArray = Array.isArray(res.data) ? res.data : (res.data.results || []);
+      
+      setItems(dataArray);
+      setFilteredItems(dataArray); // 🚨 FIX: Pass dataArray here, NOT res.data!
+      
       setLoading(false);
     } catch (err) {
       console.error("Error fetching inventory", err);

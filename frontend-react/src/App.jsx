@@ -17,6 +17,8 @@ import Orders from './components/Orders';
 import LandingPage from './components/LandingPage';
 import StoreProductDetail from './components/StoreProductDetail';
 import MarketplaceList from './components/MarketplaceList';
+import AdminLayout from './components/AdminLayout';
+import AdminUsers from './components/AdminUsers';
 
 
 function App() {
@@ -54,6 +56,10 @@ function App() {
           <Route path="/:slug/item/:itemSlug" element={<StoreProductDetail />} />
           <Route path="/:slug/checkout" element={<Checkout />} />
           <Route path="/:slug/orders" element={<OrderHistory />} />
+
+          <Route path="/admin" element={<AdminLayout />}> {/* Create a simple layout for admin sidebar */}
+            <Route path="users" element={<AdminUsers />} />
+          </Route>
 
           <Route path='/store/marketplace' element={<MarketplaceList />} />
         </Routes>

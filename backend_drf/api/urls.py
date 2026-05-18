@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from payments.views import BusinessPaymentConfigView
 from order.views import AddToCartView, CancelOrderView, CheckoutPreviewView, CheckoutView, CustomerOrderHistoryView, OrderDetailView, OrderItemListView, OrderListView, UpdateCartItemView, UpdateOrderStatusView, UpdatePaymentStatusView, ViewCartView, CreateRazorpayOrderView, VerifyRazorpayPaymentView, CreatePaypalOrderView, CapturePaypalOrderView
 from invoice.views import CustomerDetailByNameView, CustomerSearchListView, InvoiceDetailView, InvoiceItemListView, InvoiceListCreateView, ItemDetailByBarcodeView, ItemDetailByNameView, ItemSearchListView
@@ -8,14 +8,23 @@ from business_entity.views import BusinessSetupView, BusinessUpdateView, SwitchB
 from users import views as UserViews
 from .views import DashboardView, GoodsItemListView, ItemAllListView, ItemListView, AppRunView, ItemDetailBySlugView, ItemSummaryBySlugView, ServiceItemListView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'admin/users', UserViews.AdminUserViewSet, basename='admin-users')
+
 
 urlpatterns = [
     path('', AppRunView.as_view(), name='run'),
     path('register/', UserViews.RegisterView.as_view(), name='auth_register'),
 
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    # path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+
+    path('token/', UserViews.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),    
     path('token/verify/', TokenVerifyView.as_view(), name='token-verify'),
+
+    path('', include(router.urls)),
 
     path('forgot-password/', UserViews.ForgotPasswordView.as_view(), name='forgot_password'),
     path('reset-password/', UserViews.ResetPasswordView.as_view(), name='reset_password'),

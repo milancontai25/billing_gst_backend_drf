@@ -32,8 +32,9 @@ const Orders = () => {
     try {
       setLoading(true);
       const res = await api.get('/orders/');
-      setOrders(res.data);
-      calculateStats(res.data);
+      const dataArray = Array.isArray(res.data) ? res.data : (res.data.results || []);
+      setOrders(dataArray);
+      calculateStats(dataArray); // Make sure you pass the fixed array to your stats calculator too!
       setLoading(false);
     } catch (err) {
       console.error("Error fetching orders", err);

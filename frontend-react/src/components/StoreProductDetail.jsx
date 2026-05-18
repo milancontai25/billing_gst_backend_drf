@@ -133,7 +133,7 @@ const StoreProductDetail = () => {
                 });
                 setContactInfo({
                      email: biz.user?.email || '', 
-                     phone: biz.user?.phone ? `+91 ${biz.user.phone}` : ''
+                     phone: biz.user?.phone ? `${biz.user.phone}` : ''
                  });
             } else {
                 setBusinessName(slug.toUpperCase());

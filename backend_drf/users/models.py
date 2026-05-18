@@ -19,12 +19,12 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
-        """
-        Create and save a SuperUser with the given email and password.
-        """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('role', 'super_admin')
+        extra_fields.setdefault('status', 'active')
+
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -52,8 +52,25 @@ class User(AbstractBaseUser, PermissionsMixin):
     # If you must keep 'username', ensure it's not used for authentication.
     # The 'password' field is handled by AbstractBaseUser.
     
-    # role = models.CharField(max_length=20, default='user')
-    # status = models.CharField(max_length=20, default="active")
+    # ROLE_CHOICES = [
+    #     ('super_admin', 'Super Admin'),
+    #     # ('admin', 'Admin'),
+    #     # ('manager', 'Manager'),
+    #     # ('staff', 'Staff'),
+    #     ('user', 'User'),
+    # ]
+    
+    role = models.CharField(max_length=20, default='user')
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('active', 'Active'),
+            ('inactive', 'Inactive'),
+            ('suspended', 'Suspended')
+        ],
+        default='active'
+    )
     
     # Required for PermissionsMixin and Admin Panel
     is_staff = models.BooleanField(default=False)

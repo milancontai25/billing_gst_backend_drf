@@ -18,8 +18,9 @@ const Invoices = () => {
   const fetchInvoices = async () => {
     try {
       const res = await api.get('/invoices/');
-      setInvoices(res.data);
-      setFilteredInvoices(res.data);
+      const dataArray = Array.isArray(res.data) ? res.data : (res.data.results || []);
+      setInvoices(dataArray);
+      setFilteredInvoices(dataArray);
     } catch (err) {
       console.error("Error fetching invoices:", err);
     }
