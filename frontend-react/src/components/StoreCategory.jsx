@@ -107,7 +107,7 @@ const StoreCategory = () => {
             });
             setContactInfo({
                 email: biz.user?.email || biz.email || `contact@${slug}.com`, 
-                phone: biz.user?.phone || biz.phone ? `+91 ${biz.user?.phone || biz.phone}` : ''
+                phone: biz.user?.phone || biz.phone ? `${biz.user?.phone || biz.phone}` : ''
             });
         } else {
             setBusinessName(toTitleCase(slug.replace('-', ' ')));

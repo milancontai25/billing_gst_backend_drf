@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom'; // ✅ ADDED useLocation
 import { ArrowLeft, CreditCard, Loader2, CheckCircle, User, Phone, Mail, Upload, FileText, ShieldCheck } from 'lucide-react';
 import '../assets/css/storefront.css';
 
 const Checkout = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation(); // ✅ Catch the state passed from Buy Now
+
+  // ✅ Extract Buy Now data from router state (if it exists)
+  const isBuyNow = location.state?.isBuyNow || false;
+  const buyNowItem = location.state?.buyNowItems?.[0] || null;
+
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   
   // Form State
-  const [paymentMethod, setPaymentMethod] = useState('CASH'); // 'CASH' or 'ONLINE'
-  const [onlineType, setOnlineType] = useState('UPI'); // 'GATEWAY' or 'UPI'
+  const [paymentMethod, setPaymentMethod] = useState('CASH'); 
+  const [onlineType, setOnlineType] = useState('UPI'); 
   const [specialNotes, setSpecialNotes] = useState('');
   const [attachment, setAttachment] = useState(null);
   const [paymentProof, setPaymentProof] = useState(null);
@@ -32,7 +38,14 @@ const Checkout = () => {
 
       try {
         setLoading(true);
-        const res = await axios.get(`${API_BASE_URL}/api/v1/customer/cart/checkout/preview/`, config);
+        
+        // ✅ 1. DYNAMIC PREVIEW URL (Handles both Cart and Buy Now)
+        let previewUrl = `${API_BASE_URL}/api/v1/customer/cart/checkout/preview/`;
+        if (isBuyNow && buyNowItem) {
+            previewUrl += `?is_buy_now=true&item_id=${buyNowItem.product_id}&quantity=${buyNowItem.quantity}`;
+        }
+
+        const res = await axios.get(previewUrl, config);
         const data = res.data;
         setPreview(data);
 
@@ -50,12 +63,12 @@ const Checkout = () => {
         setLoading(false);
       } catch (err) {
         console.error(err);
-        alert("Failed to load checkout preview.");
+        alert(err.response?.data?.error || "Failed to load checkout preview.");
         navigate(`/${slug}`);
       }
     };
     fetchPreview();
-  }, [slug, navigate]);
+  }, [slug, navigate, isBuyNow, buyNowItem]); // ✅ Added dependencies
 
   // --- RAZORPAY INTEGRATION ---
   const loadRazorpayScript = () => {
@@ -78,15 +91,23 @@ const Checkout = () => {
 
     const token = localStorage.getItem('customer_token');
     try {
+      // ✅ 2. Pass Buy Now data to Gateway Order creation
+      const payload = { special_notes: specialNotes };
+      if (isBuyNow && buyNowItem) {
+          payload.is_buy_now = true;
+          payload.item_id = buyNowItem.product_id;
+          payload.quantity = buyNowItem.quantity;
+      }
+
       const orderRes = await axios.post(
         `${API_BASE_URL}/api/v1/customer/cart/checkout/create-gateway-order/`,
-        { special_notes: specialNotes },
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const { rzp_order_id, amount, currency } = orderRes.data;
       const options = {
-        key: preview.payment.gateway.public_key, // Exact path from your API
+        key: preview.payment.gateway.public_key, 
         amount: amount,
         currency: currency,
         name: preview.customer.name,
@@ -115,7 +136,7 @@ const Checkout = () => {
           email: preview.customer.email,
           contact: preview.customer.phone,
         },
-        theme: { color: "#0EA5E9" } // Light Blue theme
+        theme: { color: "#0EA5E9" } 
       };
 
       const paymentObject = new window.Razorpay(options);
@@ -127,14 +148,14 @@ const Checkout = () => {
       });
     } catch (err) {
       console.error(err);
-      alert("Failed to initiate payment gateway.");
+      alert(err.response?.data?.error || "Failed to initiate payment gateway.");
       setPlacingOrder(false);
     }
   };
 
 // --- MASTER SUBMIT HANDLER ---
   const handlePlaceOrder = async () => {
-    // 1. FRONTEND VALIDATION: Prevent 400 error if user forgets screenshot
+    // 1. FRONTEND VALIDATION
     if (paymentMethod === 'ONLINE' && onlineType === 'UPI' && !paymentProof) {
       alert("Please upload your payment screenshot before confirming the order.");
       return;
@@ -157,12 +178,17 @@ const Checkout = () => {
     try {
       const formData = new FormData();
       
-      // ✅ THE FIX: Send the exact method Django expects ('CASH' or 'UPI')
       const finalMethodToSend = paymentMethod === 'ONLINE' ? onlineType : 'CASH';
       formData.append('payment_method', finalMethodToSend); 
-      
       formData.append('special_notes', specialNotes);
       
+      // ✅ 3. APPEND BUY NOW DATA TO FORMDATA
+      if (isBuyNow && buyNowItem) {
+          formData.append('is_buy_now', 'true');
+          formData.append('item_id', buyNowItem.product_id);
+          formData.append('quantity', buyNowItem.quantity);
+      }
+
       if (attachment) {
           formData.append('attachment', attachment); 
       }
@@ -183,16 +209,14 @@ const Checkout = () => {
     } catch (err) {
       console.error("Backend Error Details:", err.response?.data || err);
       
-      // ✅ BETTER ERROR ALERT: Show exactly what Django is complaining about
       const errorData = err.response?.data;
-      if (errorData && typeof errorData === 'object') {
-          // Extracts Django error like: "payment_proof: This field is required."
+      if (errorData && typeof errorData === 'object' && !errorData.error) {
           const errorMessages = Object.entries(errorData)
               .map(([key, msg]) => `${key.replace('_', ' ')}: ${msg}`)
               .join('\n');
           alert(`Failed to place order. Please fix the following:\n\n${errorMessages}`);
       } else {
-          alert("Failed to place order. Please check your inputs.");
+          alert(errorData?.error || "Failed to place order. Please check your inputs.");
       }
       
       setPlacingOrder(false);
@@ -207,7 +231,6 @@ const Checkout = () => {
 
   if (loading) return <div className="loading-container"><Loader2 className="animate-spin" /> Loading...</div>;
 
-  // Clean data extraction based on your 4 API cases
   const availableMethods = preview?.payment?.available_methods || [];
   const allowCash = availableMethods.includes('CASH') || availableMethods.length === 0;
   const allowGateway = availableMethods.includes('GATEWAY') && !!preview?.payment?.gateway;
@@ -269,46 +292,46 @@ const Checkout = () => {
                     {/* Online Sub-Options & Upload Box */}
                     {paymentMethod === 'ONLINE' && hasOnlineOptions && (
                         <div className="online-sub-options" style={{ padding: '16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0', marginTop: '10px' }}>
-                            
-                            {allowGateway && (
-                                <label className={`payment-option ${onlineType === 'GATEWAY' ? 'active' : ''}`} style={{ background: 'white', marginBottom: '12px' }}>
-                                    <input type="radio" name="online_type" checked={onlineType === 'GATEWAY'} onChange={() => setOnlineType('GATEWAY')} />
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <ShieldCheck size={18} color="#0EA5E9" />
-                                        <span>Cards, UPI, Netbanking (Instant)</span>
-                                    </div>
-                                </label>
-                            )}
+                           
+                           {allowGateway && (
+                               <label className={`payment-option ${onlineType === 'GATEWAY' ? 'active' : ''}`} style={{ background: 'white', marginBottom: '12px' }}>
+                                   <input type="radio" name="online_type" checked={onlineType === 'GATEWAY'} onChange={() => setOnlineType('GATEWAY')} />
+                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                       <ShieldCheck size={18} color="#0EA5E9" />
+                                       <span>Cards, UPI, Netbanking (Instant)</span>
+                                   </div>
+                               </label>
+                           )}
 
-                            {allowUpi && (
-                                <label className={`payment-option ${onlineType === 'UPI' ? 'active' : ''}`} style={{ background: 'white', marginBottom: '0' }}>
-                                    <input type="radio" name="online_type" checked={onlineType === 'UPI'} onChange={() => setOnlineType('UPI')} />
-                                    <span>Manual UPI Transfer</span>
-                                </label>
-                            )}
+                           {allowUpi && (
+                               <label className={`payment-option ${onlineType === 'UPI' ? 'active' : ''}`} style={{ background: 'white', marginBottom: '0' }}>
+                                   <input type="radio" name="online_type" checked={onlineType === 'UPI'} onChange={() => setOnlineType('UPI')} />
+                                   <span>Manual UPI Transfer</span>
+                               </label>
+                           )}
 
-                            {onlineType === 'UPI' && qrCodeUrl && (
-                                <div className="qr-payment-box">
-                                    <div className="qr-wrapper">
-                                        <img src={qrCodeUrl} alt="Pay via UPI" className="upi-qr-img" />
-                                    </div>
-                                    <p className="qr-instruction">
-                                        Scan to pay <strong>₹{preview?.summary?.net_payable || preview?.net_payable || preview?.summary?.total_value || preview?.total_value || 0}</strong> 
-                                        {upiId ? ` to ${upiId}` : ''}
-                                    </p>
-                                    
-                                    <div className="file-upload-box">
-                                        <label className="upload-label">Upload Payment Screenshot <span className="req">*</span></label>
-                                        <div className="custom-file-input">
-                                            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setPaymentProof)} />
-                                            <div className="file-display">
-                                                <Upload size={16} /> 
-                                                <span>{paymentProof ? paymentProof.name : "Choose File"}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                           {onlineType === 'UPI' && qrCodeUrl && (
+                               <div className="qr-payment-box">
+                                   <div className="qr-wrapper">
+                                       <img src={qrCodeUrl} alt="Pay via UPI" className="upi-qr-img" />
+                                   </div>
+                                   <p className="qr-instruction">
+                                       Scan to pay <strong>₹{preview?.summary?.net_payable || preview?.net_payable || preview?.summary?.total_value || preview?.total_value || 0}</strong> 
+                                       {upiId ? ` to ${upiId}` : ''}
+                                   </p>
+                                   
+                                   <div className="file-upload-box">
+                                       <label className="upload-label">Upload Payment Screenshot <span className="req">*</span></label>
+                                       <div className="custom-file-input">
+                                           <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setPaymentProof)} />
+                                           <div className="file-display">
+                                               <Upload size={16} /> 
+                                               <span>{paymentProof ? paymentProof.name : "Choose File"}</span>
+                                           </div>
+                                       </div>
+                                   </div>
+                               </div>
+                           )}
                         </div>
                     )}
 

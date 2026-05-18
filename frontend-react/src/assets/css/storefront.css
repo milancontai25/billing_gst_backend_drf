@@ -1233,3 +1233,235 @@ body { margin: 0; padding: 0; }
     font-size: 22px !important;
   }
 }
+
+
+/* ==========================================================================
+   ELEGANT CUSTOMER AUTHENTICATION MODAL (COMPACT TO PREVENT SCROLLING)
+   ========================================================================== */
+
+.store-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(17, 24, 39, 0.7); 
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.auth-box {
+  background: #FFFFFF;
+  width: 100%;
+  max-width: 440px;
+  
+  /* INCREASED: Gives the Sign Up form more vertical space to breathe */
+  max-height: 99vh; 
+  
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow-y: auto; 
+  overflow-x: hidden;
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+/* Elegant thin scrollbar (just in case they are on a very tiny screen) */
+.auth-box::-webkit-scrollbar { width: 6px; }
+.auth-box::-webkit-scrollbar-track { background: transparent; }
+.auth-box::-webkit-scrollbar-thumb { background-color: #D1D5DB; border-radius: 10px; }
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- FIX 1: TABS ARE SHORTER & STICKY --- */
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid #E5E7EB;
+  position: sticky; 
+  top: 0;
+  z-index: 10;
+  background: #FFFFFF;
+}
+
+.auth-tab {
+  flex: 1;
+  text-align: center;
+  padding: 14px 0; /* Reduced from 20px */
+  font-weight: 600;
+  font-size: 15px;
+  color: #6B7280;
+  cursor: pointer;
+  background: #F9FAFB; 
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.auth-tab.active {
+  color: #111827;
+  background: #FFFFFF; 
+  border-bottom: 2px solid #111827; 
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 14px; /* Adjusted to match new tab height */
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  z-index: 20; 
+  transition: color 0.2s;
+}
+
+.close-modal-btn:hover { color: #111827; }
+
+/* --- FIX 2: TIGHTER CONTENT PADDING --- */
+.auth-content {
+  padding: 20px 24px; /* Reduced from 32px to save space */
+}
+
+/* Left-aligned headers */
+.auth-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 4px 0; /* Reduced */
+  text-align: left; 
+}
+
+.auth-subtitle {
+  font-size: 14px;
+  color: #6B7280;
+  text-align: left; 
+  margin: 0 0 16px 0; /* Reduced from 24px */
+}
+
+/* Method Toggle */
+.method-toggle {
+  display: flex;
+  background: #F3F4F6;
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 16px; /* Reduced from 24px */
+}
+
+.method-toggle button {
+  flex: 1;
+  padding: 8px 0; /* Reduced from 10px */
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.method-toggle button.active {
+  background: #FFFFFF;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* --- FIX 3: MORE COMPACT INPUTS --- */
+.auth-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Tighter gap between fields */
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  color: #9CA3AF;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 14px 12px 40px; /* Reduced vertical padding */
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  font-size: 14px; /* Reduced from 15px */
+  color: #111827;
+  transition: border-color 0.2s;
+  outline: none;
+  background: #FFFFFF;
+}
+
+.input-group input:focus {
+  border-color: #111827; 
+}
+
+.send-otp-btn {
+  position: absolute;
+  right: 6px;
+  background: #F3F4F6;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.send-otp-btn:hover { background: #E5E7EB; color: #111827; }
+
+/* Main Action Button */
+.primary-auth-btn {
+  width: 100%;
+  padding: 14px; /* Reduced from 16px */
+  background: #111827; 
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: center;
+}
+
+.primary-auth-btn:hover:not(:disabled) {
+  background: #000000;
+  transform: translateY(-1px);
+}
+
+.primary-auth-btn:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+}
+
+/* Footer Links */
+.auth-footer {
+  margin-top: 16px; /* Reduced from 24px */
+  text-align: center;
+  font-size: 13px; /* Smaller text */
+  color: #6B7280;
+}
+
+.auth-link {
+  color: #111827;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.auth-link:hover { opacity: 0.7; }
+.flex-center { display: flex; align-items: center; justify-content: center; }

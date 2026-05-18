@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Star, Share2, Heart, Minus, Plus, Loader2, Copy, PlayCircle } from 'lucide-react';
+import { Star, Share2, Heart, Minus, Plus, Loader2, PlayCircle } from 'lucide-react';
 import customerApi from '../api/customerAxios'; 
 import StoreHeader from './StoreHeader';
 import StoreFooter from './StoreFooter';
 import CartDrawer from './CartDrawer';
 import AuthCustomer from './AuthCustomer';
-import '../assets/css/productdetail.css';
+import '../assets/css/storefront.css';
 
 const StoreProductDetail = () => {
   const { slug, itemSlug } = useParams();
@@ -162,6 +162,7 @@ const StoreProductDetail = () => {
     setIsLoggedIn(false); setUser(null); setIsDropdownOpen(false);
   };
 
+  // --- CART ACTION ---
   const handleAddToCart = async () => {
     if (!isLoggedIn) { alert("Please Login first!"); setShowAuthCustomer(true); return; }
     try {
@@ -176,11 +177,46 @@ const StoreProductDetail = () => {
     }
   };
 
+  // --- BUY NOW ACTION (Saves to cart as backup, then bypasses to checkout) ---
+  const handleBuyNow = async () => {
+    if (!isLoggedIn) { 
+        alert("Please Login first to buy!"); 
+        setShowAuthCustomer(true); 
+        return; 
+    }
+    
+    try {
+        setAdding(true);
+        
+        // 1. Save to database cart as a backup (in case they click back)
+        await customerApi.post(`customer/cart/add/`, { item: product.id, quantity: quantity });
+        
+        // 2. Instantly navigate to checkout for just this item
+        navigate(`/${slug}/checkout`, { 
+            state: { 
+                isBuyNow: true, 
+                buyNowItems: [{
+                    product_id: product.id,
+                    item_name: product.item_name,
+                    gross_amount: product.gross_amount,
+                    quantity: quantity,
+                    image: activeMedia?.url || product.item_image_url
+                }]
+            } 
+        });
+    } catch (err) {
+        console.error("Buy Now Error:", err);
+        alert("Failed to process Buy Now");
+    } finally {
+        setAdding(false);
+    }
+  };
+
+  // --- SHARE ACTION ---
   const handleShare = async () => {
     const currentUrl = window.location.href;
     const shareTitle = `${product.item_name} - ${businessName}`;
     
-    // Use the native Web Share API if available (works great on mobile!)
     if (navigator.share) {
       try {
         await navigator.share({
@@ -192,7 +228,6 @@ const StoreProductDetail = () => {
         console.log("Error sharing:", err);
       }
     } else {
-      // Fallback for older desktop browsers: Copy to clipboard
       try {
         await navigator.clipboard.writeText(currentUrl);
         alert("Link copied to clipboard!");
@@ -211,7 +246,6 @@ const StoreProductDetail = () => {
   const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
   const currency = product.currency_symbol || '₹';
 
-
   // NEW: Determine if it's a Product or Service Description
   const descriptionTitle = (() => {
     if (!hasProducts && hasServices) return "Service Description";
@@ -221,7 +255,6 @@ const StoreProductDetail = () => {
     }
     return "Product Description"; // Default fallback
   })();
-
 
   return (
     <div className="product-detail-page elegant-theme">
@@ -313,7 +346,6 @@ const StoreProductDetail = () => {
             <div className="info-header">
                 <h1 className="detail-title">{product.item_name}</h1>
                 <div className="icon-actions">
-                    {/* ADD THE onClick HERE */}
                     <button className="icon-btn" onClick={handleShare}>
                         <Share2 size={20} />
                     </button>
@@ -352,10 +384,12 @@ const StoreProductDetail = () => {
                 <button className="btn-add-cart-big" onClick={handleAddToCart} disabled={adding}>
                     {adding ? 'ADDING...' : 'ADD TO CART'}
                 </button>
-                <button className="btn-buy-now-big">BUY NOW</button>
+                <button className="btn-buy-now-big" onClick={handleBuyNow} disabled={adding}>
+                    BUY NOW
+                </button>
             </div>
 
-            {/* --- MOVED HELP SECTION HERE (Right Column) --- */}
+            {/* --- HELP SECTION (Right Column) --- */}
             <div className="help-box-right">
                 <h5>Have a question? We can help.</h5>
                 <p className="help-timing">24*7</p>
@@ -384,7 +418,6 @@ const StoreProductDetail = () => {
           </div>
           
           <div className="desc-body">
-              {/* NEW: Dynamic Subtitle */}
               <h4 className="desc-subtitle">{descriptionTitle}</h4>
               
               {product.description ? (
@@ -396,7 +429,6 @@ const StoreProductDetail = () => {
               )}
           </div>
       </div>
-
 
       <StoreFooter 
         slug={slug}

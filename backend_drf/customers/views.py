@@ -64,14 +64,19 @@ class CustomerSignupView(generics.CreateAPIView):
 
         customer = serializer.save(business=business)
 
+        # Generate JWT tokens
+        tokens = generate_customer_tokens(customer)
+
         return Response(
             {
                 "message": "Customer registered successfully",
                 "customer": {
+                    "id": customer.id,
                     "name": customer.name,
                     "email": customer.email,
                     "phone": customer.phone,
-                }
+                },
+                "tokens": tokens
             },
             status=status.HTTP_201_CREATED
         )
@@ -165,7 +170,19 @@ class CustomerLoginView(generics.GenericAPIView):
 
         tokens = generate_customer_tokens(customer)
 
-        return Response(tokens)
+        return Response(
+            {
+                "message": "Login successful",
+                "customer": {
+                    "id": customer.id,
+                    "name": customer.name,
+                    "email": customer.email,
+                    "phone": customer.phone,
+                },
+                "tokens": tokens
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 class CustomerTokenRefreshView(APIView):
@@ -299,16 +316,17 @@ class CustomerLoginOtpRequestView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        try:
-            customer = Customer.objects.get(
-                business=business,
-                email=serializer.validated_data['email']
-            )
-        except Customer.DoesNotExist:
-            return Response(
-                {"detail": "Customer not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        email = serializer.validated_data['email']
+
+        # Create customer if not exists
+        customer, created = Customer.objects.get_or_create(
+            business=business,
+            email=email,
+            defaults={
+                "name": request.data.get("name", ""),
+                "phone": request.data.get("phone", "")
+            }
+        )
 
         otp = str(random.randint(100000, 999999))
         customer.set_otp(otp)
@@ -322,9 +340,13 @@ class CustomerLoginOtpRequestView(generics.GenericAPIView):
         )
 
         return Response(
-            {"message": "OTP sent successfully"},
+            {
+                "message": "OTP sent successfully",
+                "is_new_customer": created
+            },
             status=status.HTTP_200_OK
         )
+    
 
 class CustomerLoginOtpVerifyView(generics.GenericAPIView):
     serializer_class = CustomerLoginOtpVerifySerializer
@@ -340,7 +362,7 @@ class CustomerLoginOtpVerifyView(generics.GenericAPIView):
                 {"detail": "Business not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -354,6 +376,17 @@ class CustomerLoginOtpVerifyView(generics.GenericAPIView):
 
         tokens = generate_customer_tokens(customer)
 
-        return Response(tokens)
-
-
+        return Response(
+            {
+                "message": "Login successful",
+                "customer": {
+                    "id": customer.id,
+                    "name": customer.name,
+                    "email": customer.email,
+                    "phone": customer.phone,
+                },
+                "tokens": tokens
+            },
+            status=status.HTTP_200_OK
+        )
+    

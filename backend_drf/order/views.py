@@ -237,16 +237,35 @@ class CheckoutPreviewView(APIView):
         customer = request.user
         business = customer.business
 
-        # ---------------- CART ----------------
-        try:
-            cart = Cart.objects.get(customer=customer, business=business)
-        except Cart.DoesNotExist:
-            return Response({"error": "Cart is empty"}, status=400)
+        # ---------------- CHECKOUT MODE: BUY NOW vs CART ----------------
+        is_buy_now = request.query_params.get("is_buy_now", "false").lower() == "true"
+        
+        items_to_process = []
 
-        cart_items = cart.items.select_related("item")
+        if is_buy_now:
+            # --- BUY NOW LOGIC ---
+            item_id = request.query_params.get("item_id")
+            try:
+                quantity = int(request.query_params.get("quantity", 1))
+                item = Item.objects.get(id=item_id, business=business)
+                items_to_process.append({"item": item, "quantity": quantity})
+            except (Item.DoesNotExist, ValueError, TypeError):
+                return Response({"error": "Invalid item or quantity for Buy Now"}, status=400)
+        else:
+            # --- NORMAL CART LOGIC ---
+            try:
+                cart = Cart.objects.get(customer=customer, business=business)
+                cart_items = cart.items.select_related("item")
+                
+                if not cart_items.exists():
+                    return Response({"error": "Cart is empty"}, status=400)
+                    
+                for ci in cart_items:
+                    items_to_process.append({"item": ci.item, "quantity": ci.quantity})
+                    
+            except Cart.DoesNotExist:
+                return Response({"error": "Cart is empty"}, status=400)
 
-        if not cart_items.exists():
-            return Response({"error": "Cart is empty"}, status=400)
 
         # ---------------- TOTALS ----------------
         total_base = Decimal("0.00")
@@ -258,11 +277,12 @@ class CheckoutPreviewView(APIView):
         items = []
 
         # ---------------- LOOP ----------------
-        for ci in cart_items:
-            item = ci.item
+        for data in items_to_process:
+            item = data["item"]
+            qty = data["quantity"]
 
             # ✅ STOCK CHECK
-            if item.item_type == "Goods" and item.quantity_product < ci.quantity:
+            if item.item_type == "Goods" and item.quantity_product < qty:
                 return Response(
                     {"error": f"Not enough stock for {item.item_name}"},
                     status=400
@@ -270,7 +290,7 @@ class CheckoutPreviewView(APIView):
 
             values = calculate_item_values(
                 price=item.gross_amount,
-                qty=ci.quantity,
+                qty=qty,
                 discount_percent=getattr(item, "discount_percent", 0),
                 tax_percent=item.tax_percent,
                 includes_tax=business.price_includes_tax
@@ -279,7 +299,7 @@ class CheckoutPreviewView(APIView):
             items.append({
                 "item_id": item.id,
                 "name": item.item_name,
-                "qty": ci.quantity,
+                "qty": qty,
                 **values
             })
 
@@ -352,10 +372,8 @@ class CheckoutPreviewView(APIView):
 
             "payment": payment_data
         })
-    
 
 
-from rest_framework.parsers import MultiPartParser, FormParser
 
 class CheckoutView(APIView):
     authentication_classes = [CustomerJWTAuthentication]
@@ -368,26 +386,47 @@ class CheckoutView(APIView):
         business = customer.business
 
         payment_method = request.data.get("payment_method", "").upper().strip()
-
         if payment_method not in ["CASH", "UPI"]:
             return Response({"error": "Invalid payment method"}, status=400)
 
         # ✅ UPI PROOF FILE
         payment_proof_file = request.FILES.get("payment_proof")
 
-        # ---------------- CART LOCK ----------------
-        try:
-            cart = Cart.objects.select_for_update().get(
-                customer=customer,
-                business=business
-            )
-        except Cart.DoesNotExist:
-            return Response({"error": "Cart empty"}, status=400)
+        # ---------------- CHECKOUT MODE: BUY NOW vs CART ----------------
+        # Because of MultiPartParser, booleans often come through as strings like "true"
+        is_buy_now = str(request.data.get("is_buy_now", "false")).lower() == "true"
+        
+        items_to_process = []
+        cart = None # Keep track of the cart so we know if we need to clear it
 
-        cart_items = cart.items.select_related("item")
+        if is_buy_now:
+            # --- BUY NOW LOGIC ---
+            item_id = request.data.get("item_id")
+            try:
+                quantity = int(request.data.get("quantity", 1))
+                # Fetch just this single item
+                # Assuming you have an Item model imported
+                item = Item.objects.get(id=item_id, business=business) 
+                items_to_process.append({"item": item, "quantity": quantity})
+            except (Item.DoesNotExist, ValueError, TypeError):
+                return Response({"error": "Invalid item or quantity for Buy Now"}, status=400)
+        else:
+            # --- NORMAL CART LOGIC ---
+            try:
+                cart = Cart.objects.select_for_update().get(
+                    customer=customer,
+                    business=business
+                )
+                cart_items = cart.items.select_related("item")
+                if not cart_items.exists():
+                    return Response({"error": "Cart empty"}, status=400)
+                
+                # Add all cart items to our processing list
+                for ci in cart_items:
+                    items_to_process.append({"item": ci.item, "quantity": ci.quantity})
+            except Cart.DoesNotExist:
+                return Response({"error": "Cart empty"}, status=400)
 
-        if not cart_items.exists():
-            return Response({"error": "Cart empty"}, status=400)
 
         # ---------------- TOTALS ----------------
         totals = {
@@ -401,10 +440,12 @@ class CheckoutView(APIView):
         order_items_data = []
 
         # ---------------- CALCULATION ----------------
-        for ci in cart_items:
-            item = ci.item
+        # Now we loop through `items_to_process` regardless of where they came from
+        for data in items_to_process:
+            item = data["item"]
+            qty = data["quantity"]
 
-            if item.item_type == "Goods" and item.quantity_product < ci.quantity:
+            if item.item_type == "Goods" and item.quantity_product < qty:
                 return Response(
                     {"error": f"Not enough stock for {item.item_name}"},
                     status=400
@@ -412,13 +453,13 @@ class CheckoutView(APIView):
 
             values = calculate_item_values(
                 price=item.gross_amount,
-                qty=ci.quantity,
+                qty=qty,
                 discount_percent=getattr(item, "discount_percent", 0),
                 tax_percent=item.tax_percent,
                 includes_tax=business.price_includes_tax
             )
 
-            order_items_data.append((item, ci.quantity, values))
+            order_items_data.append((item, qty, values))
 
             totals["base"] += values["base_amount"]
             totals["discount"] += values["discount_amount"]
@@ -461,36 +502,29 @@ class CheckoutView(APIView):
                 item.save(update_fields=["quantity_product"])
 
             OrderItem.objects.create(
-            order=order,
-            item=item,
-            item_name=item.item_name,
-            quantity=qty,
-            rate=item.gross_amount,
-
-            discount_percent=getattr(item, "discount_percent", 0),
-            discount_amount=values["discount_amount"],
-
-            tax_percent=item.tax_percent,
-            tax_amount=values["tax_amount"],
-
-            tax_type=business.tax_type,   # ✅ FIXED
-            price_includes_tax=business.price_includes_tax,  # ✅ FIXED
-
-            base_amount=values["base_amount"],
-            taxable_amount=values["taxable_amount"],
-            total_value=values["total_value"],
-        )        
+                order=order,
+                item=item,
+                item_name=item.item_name,
+                quantity=qty,
+                rate=item.gross_amount,
+                discount_percent=getattr(item, "discount_percent", 0),
+                discount_amount=values["discount_amount"],
+                tax_percent=item.tax_percent,
+                tax_amount=values["tax_amount"],
+                tax_type=business.tax_type,
+                price_includes_tax=business.price_includes_tax,
+                base_amount=values["base_amount"],
+                taxable_amount=values["taxable_amount"],
+                total_value=values["total_value"],
+            )        
             
-        
         # ---------------- PAYMENT LOGIC ----------------
         payment_status = "Pending"
         payment_proof_url = None
 
-        # ✅ CASH
         if payment_method == "CASH":
             payment_status = "Pending"
 
-        # ✅ UPI
         elif payment_method == "UPI":
             if not payment_proof_file:
                 return Response(
@@ -503,7 +537,6 @@ class CheckoutView(APIView):
                 folder_name="payment_proofs"
             )
 
-        # ---------------- CREATE PAYMENT ----------------
         Payment.objects.create(
             order=order,
             method=payment_method,
@@ -512,8 +545,20 @@ class CheckoutView(APIView):
             payment_proof_url=payment_proof_url
         )
 
-        # ---------------- CLEAR CART ----------------
-        cart.items.all().delete()
+        # ---------------- CLEAR CART OR REMOVE BUY NOW ITEM ----------------
+        try:
+            # Grab the user's cart
+            user_cart = Cart.objects.get(customer=customer, business=business)
+            
+            if is_buy_now:
+                # If they used Buy Now, ONLY delete the specific item they just bought
+                user_cart.items.filter(item_id=item_id).delete()
+            else:
+                # If they used normal checkout, clear the whole cart
+                user_cart.items.all().delete()
+                
+        except Cart.DoesNotExist:
+            pass # No cart to clean up, which is fine
 
         return Response({
             "message": "Order placed successfully",

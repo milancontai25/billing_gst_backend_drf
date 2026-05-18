@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { X, Mail, Lock, KeyRound, User, Phone, Loader2, ArrowLeft } from 'lucide-react';
-import '../assets/css/storefront.css'; 
 
 const AuthCustomer = ({ isOpen, onClose, onLoginSuccess }) => {
   const { slug } = useParams();
   
   const [authMode, setAuthMode] = useState('login'); 
-  const [loginMethod, setLoginMethod] = useState('password'); 
+  const [loginMethod, setLoginMethod] = useState('otp'); 
   const [isLoading, setIsLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
 
@@ -66,11 +65,17 @@ const AuthCustomer = ({ isOpen, onClose, onLoginSuccess }) => {
             phone: authForm.phone,
             password: authForm.password
         });
-        alert("Account created! Please login.");
-        resetState('login');
+        
+        // If API returns tokens on signup, log them in instantly!
+        if (res.data && (res.data.tokens || res.data.access)) {
+            handleSuccess(res.data);
+        } else {
+            alert("Account created! Please login.");
+            resetState('login');
+        }
       } 
       
-      // 2. LOGIN (OTP)
+      // 2. LOGIN (OTP) - Handles both registered and new "anytime OTP" users
       else if (authMode === 'login' && loginMethod === 'otp') {
         if (!otpSent) return alert("Please send OTP first.");
         res = await axios.post(`${API_BASE}/login/otp/verify/`, {
@@ -105,7 +110,7 @@ const AuthCustomer = ({ isOpen, onClose, onLoginSuccess }) => {
 
     } catch (err) {
       console.error(err);
-      const msg = err.response?.data?.error || err.response?.data?.detail || "Action failed";
+      const msg = err.response?.data?.error || err.response?.data?.detail || err.response?.data?.message || "Action failed";
       alert(msg);
     } finally {
       setIsLoading(false);
@@ -114,22 +119,21 @@ const AuthCustomer = ({ isOpen, onClose, onLoginSuccess }) => {
 
 
   const handleSuccess = (data) => {
-    // 1. Extract Token (Based on your JSON response)
-    const token = data.access; 
+    // 1. Extract Tokens (Prioritizes new nested structure, falls back to flat structure)
+    const token = data.tokens?.access || data.access; 
+    const refresh = data.tokens?.refresh || data.refresh; 
     
     if (token) {
-        // 2. Save Token
+        // 2. Save Tokens
         localStorage.setItem('customer_token', token);
-        localStorage.setItem('customer_refresh', data.refresh); // Save refresh token too
+        if (refresh) localStorage.setItem('customer_refresh', refresh);
 
-        // 3. Save Name (CRITICAL FIX)
-        // Since API doesn't return name, use the email from the form state or a default
-        const displayName = authForm.name || authForm.email || 'Customer';
+        // 3. Extract Name (Prioritizes new customer object, falls back to form state, then email prefix)
+        const displayName = data.customer?.name || authForm.name || (authForm.email ? authForm.email.split('@')[0] : 'Customer');
         localStorage.setItem('customer_name', displayName);
         
         // 4. Update Parent & Close
-        alert("Login Successful!");
-        onLoginSuccess(); // This triggers the checkLoginStatus in Storefront.jsx
+        onLoginSuccess(); 
         onClose();        
     } else {
         console.error("Missing token in response:", data);
@@ -151,7 +155,7 @@ const AuthCustomer = ({ isOpen, onClose, onLoginSuccess }) => {
         )}
 
         <div className="auth-content">
-          <h2>
+          <h2 className="auth-title">
             {authMode === 'login' && 'Welcome Back'}
             {authMode === 'signup' && 'Create Account'}
             {authMode === 'forgot' && 'Forgot Password'}
@@ -168,12 +172,12 @@ const AuthCustomer = ({ isOpen, onClose, onLoginSuccess }) => {
           {/* Toggle Login Method */}
           {authMode === 'login' && (
             <div className="method-toggle">
-              <button className={loginMethod === 'password' ? 'active' : ''} onClick={() => setLoginMethod('password')}>Password</button>
-              <button className={loginMethod === 'otp' ? 'active' : ''} onClick={() => setLoginMethod('otp')}>OTP</button>
+              <button type="button" className={loginMethod === 'otp' ? 'active' : ''} onClick={() => setLoginMethod('otp')}>OTP</button>
+              <button type="button" className={loginMethod === 'password' ? 'active' : ''} onClick={() => setLoginMethod('password')}>Password</button>
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="auth-form-body">
             
             {/* Name & Phone (Signup) */}
             {authMode === 'signup' && (
@@ -225,7 +229,7 @@ const AuthCustomer = ({ isOpen, onClose, onLoginSuccess }) => {
             )}
 
             <button type="submit" className="primary-auth-btn" disabled={isLoading}>
-              {isLoading ? <Loader2 size={18} className="animate-spin"/> : 
+              {isLoading ? <Loader2 size={18} className="animate-spin" style={{ margin: '0 auto' }}/> : 
                 (authMode === 'forgot' ? 'Send OTP' : 
                  authMode === 'reset' ? 'Reset Password' : 
                  authMode === 'login' ? 'Login' : 'Create Account')
@@ -234,16 +238,18 @@ const AuthCustomer = ({ isOpen, onClose, onLoginSuccess }) => {
           </form>
 
           <div className="auth-footer">
-            {authMode === 'login' && (
+            {/* ADDED: && loginMethod === 'password' to hide on OTP tab */}
+            {authMode === 'login' && loginMethod === 'password' && (
               <>
-                <p>Don't have an account? <span onClick={() => resetState('signup')}>Sign Up</span></p>
-                <p style={{marginTop:'10px'}}><span onClick={() => resetState('forgot')}>Forgot Password?</span></p>
+                <p>Don't have an account? <span className="auth-link" onClick={() => resetState('signup')}>Sign Up</span></p>
+                <p style={{marginTop:'10px'}}><span className="auth-link" onClick={() => resetState('forgot')}>Forgot Password?</span></p>
               </>
             )}
+            
             {(authMode === 'signup' || authMode === 'forgot' || authMode === 'reset') && (
-               <p className="flex-center">
+               <p className="flex-center auth-link" onClick={() => resetState('login')}>
                   <ArrowLeft size={14} style={{marginRight:5}}/> 
-                  <span onClick={() => resetState('login')}>Back to Login</span>
+                  <span>Back to Login</span>
                </p>
             )}
           </div>
