@@ -3,6 +3,11 @@ import { useOutletContext } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { Plus, Filter, Edit, Trash2, X, Save, Film, Download, Upload, Barcode } from 'lucide-react';
 
+// 👇 ADD THESE TWO LINES 👇
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+
+
 // Helper to fix image paths
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
@@ -337,6 +342,23 @@ const Products = () => {
     setTypeFilter('All');
     setCategoryFilter('All');
     setShowFilter(false);
+  };
+
+  // --- QUILL RICH TEXT EDITOR CONFIG ---
+  const quillModules = {
+    toolbar: [
+      [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'script': 'sub'}, { 'script': 'super' }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      ['clean'] 
+    ],
+  };
+
+  const handleDescriptionChange = (content) => {
+    setFormData({ ...formData, description: content });
   };
 
   return (
@@ -697,9 +719,15 @@ const Products = () => {
                  </div>
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: '60px' }}>
                  <label>Description</label>
-                 <textarea name="description" value={formData.description} onChange={handleInputChange} className="form-control" rows="2"></textarea>
+                 <ReactQuill 
+                     theme="snow" 
+                     value={formData.description} 
+                     onChange={handleDescriptionChange} 
+                     modules={quillModules}
+                     style={{ height: '150px' }} 
+                 />
               </div>
 
               <button type="submit" className="btn-primary">

@@ -313,40 +313,56 @@ const StoreFront = () => {
         hasServices={hasServices}
       />
 
+      {/* HERO SECTION */}
       <div className="main-section-bg">
-          {/* ✅ ENFORCED 16:9 ASPECT RATIO ON HERO WRAPPER */}
           <div 
              className="hero-wrapper" 
              style={{ 
                  width: '100%', 
-                 aspectRatio: '16 / 9', 
-                 position: 'relative', 
-                 overflow: 'hidden',
-                 maxHeight: '80vh' // Optional: Prevents it from getting too absurdly huge on ultrawide monitors
+                 height: 'auto',        /* ✅ FORCES height to adjust to the image */
+                 maxHeight: 'none',     /* ✅ OVERRIDES any CSS file limits */
+                 overflow: 'visible',   /* ✅ PREVENTS the CSS file from cropping edges */
+                 position: 'relative' 
              }}
           >
               {banners.length > 0 ? (
-                <div className="hero-slider" style={{ height: '100%', width: '100%' }}>
+                <div className="hero-slider" style={{ position: 'relative', width: '100%', height: 'auto' }}>
+                    
+                    {/* ✅ THE TRICK: This invisible image forces the container to stretch 
+                        to the EXACT perfect height of the current banner on every screen size. */}
+                    <img 
+                        src={banners[currentBannerIndex]} 
+                        alt="spacer" 
+                        style={{ 
+                            width: '100%', 
+                            height: 'auto', 
+                            display: 'block', 
+                            visibility: 'hidden' // Takes up space so the box grows, but stays invisible
+                        }} 
+                    />
+                    
+                    {/* The visible fading banners */}
                     {banners.map((banner, index) => (
-                        <div 
+                        <img 
                            key={index} 
-                           className={`hero-slide ${index === currentBannerIndex ? 'active' : ''}`} 
+                           src={banner}
+                           alt={`Banner ${index}`}
                            style={{ 
-                               backgroundImage: `url(${banner})`, 
-                               backgroundSize: 'cover', 
-                               backgroundPosition: 'center',
-                               height: '100%',
-                               width: '100%',
                                position: 'absolute',
                                top: 0,
                                left: 0,
+                               width: '100%',
+                               height: '100%',
+                               objectFit: 'contain', /* ✅ GUARANTEES 0% cropping */
                                opacity: index === currentBannerIndex ? 1 : 0,
-                               transition: 'opacity 0.5s ease-in-out'
+                               transition: 'opacity 0.5s ease-in-out',
+                               pointerEvents: index === currentBannerIndex ? 'auto' : 'none'
                            }}
-                        ></div>
+                        />
                     ))}
+                    
                     {banners.length > 1 && (
-                        <div className="slider-dots" style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
+                        <div className="slider-dots" style={{ position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
                             {banners.map((_, idx) => (
                                 <span key={idx} className={`dot ${idx === currentBannerIndex ? 'active' : ''}`} onClick={() => setCurrentBannerIndex(idx)}></span>
                             ))}
@@ -354,7 +370,7 @@ const StoreFront = () => {
                     )}
                 </div>
               ) : (
-                 <div className="store-hero-fallback" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                 <div className="store-hero-fallback" style={{ padding: '80px 20px', textAlign: 'center', background: '#111827', color: 'white' }}>
                      <div className="hero-content">
                          <h1>Welcome to <br/><span>{businessName}</span></h1>
                          <p>Quality products, honest savings. Delivered to your door.</p>
@@ -362,6 +378,7 @@ const StoreFront = () => {
                  </div>
               )}
           </div>
+      
 
           <section className="explore-section">
             {categories.length > 0 && (

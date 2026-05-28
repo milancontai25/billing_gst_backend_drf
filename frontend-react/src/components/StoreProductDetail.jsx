@@ -421,9 +421,11 @@ const StoreProductDetail = () => {
               <h4 className="desc-subtitle">{descriptionTitle}</h4>
               
               {product.description ? (
-                  <p className="desc-text" style={{ whiteSpace: 'pre-wrap' }}>
-                      {product.description}
-                  </p>
+                  // 👇 THE FIX IS HERE 👇
+                  <div 
+                      className="desc-text" 
+                      dangerouslySetInnerHTML={{ __html: product.description }} 
+                  />
               ) : (
                   <p className="desc-text">No description available.</p>
               )}

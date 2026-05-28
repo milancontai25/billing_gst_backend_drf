@@ -1393,10 +1393,11 @@ body { margin: 0; padding: 0; }
 
 .input-group input {
   width: 100%;
-  padding: 12px 14px 12px 40px; /* Reduced vertical padding */
+  /* ✅ INCREASED right padding to 40px so text doesn't hit the eye icon */
+  padding: 12px 40px 12px 40px; 
   border: 1px solid #D1D5DB;
   border-radius: 8px;
-  font-size: 14px; /* Reduced from 15px */
+  font-size: 14px; 
   color: #111827;
   transition: border-color 0.2s;
   outline: none;
@@ -1405,6 +1406,25 @@ body { margin: 0; padding: 0; }
 
 .input-group input:focus {
   border-color: #111827; 
+}
+
+/* ✅ NEW: Styles the eye icon button */
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.password-toggle-btn:hover {
+  color: #111827;
 }
 
 .send-otp-btn {

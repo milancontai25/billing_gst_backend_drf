@@ -78,13 +78,12 @@
   height: 100%;
 }
 
-/* --- DECREASED HEADER LOGO SIZE --- */
 .landing-scope header .logo-img {
-  height: 25px; /* Reduced */
+  height: 25px;
   width: auto;
   object-fit: contain;
   display: block;
-  transform: scale(1.8); /* Reduced scaling */
+  transform: scale(1.6); /* Reduced scaling */
   transform-origin: left center;
   margin-top: 5px; 
 }
@@ -281,12 +280,11 @@
 .landing-scope .check-icon { color: var(--accent-green); font-size: 14px; margin-top: 2px; flex-shrink: 0; }
 .landing-scope .plan-cta { text-align: center; text-decoration: none; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; padding: 13px; border-radius: 10px; transition: 0.2s; display: block; border: 1px solid var(--border); }
 
-/* --- RESTORED PRICING BUTTON STATES --- */
+/* Pricing Button States Restored */
 .landing-scope .plan-cta.dark { background: var(--bg-alt); color: var(--text-main); }
 .landing-scope .plan-cta.dark:hover { border-color: var(--text-main); background: var(--text-main); color: #fff;}
 .landing-scope .plan-cta.accent { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: #fff; border: none; }
 .landing-scope .plan-cta.accent:hover { box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); transform: translateY(-1px); }
-
 .landing-scope .plan-features li.highlight { font-weight: 700; color: var(--text-main); }
 
 
@@ -356,13 +354,17 @@
 /* ─── MATCHING FOOTER ─── */
 .landing-scope footer { background: #fff; padding: 80px 32px 32px; border-top: 1px solid var(--border); }
 .landing-scope .footer-inner { max-width: 1280px; margin: 0 auto; }
-.landing-scope .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 48px; margin-bottom: 56px; }
 
-/* REDUCED FOOTER LOGO CSS */
-.landing-scope .footer-logo-link { display: inline-block; text-decoration: none; margin-bottom: 10px; }
-.landing-scope .footer-logo-img { height: 20px; width: auto; object-fit: contain; display: block; transform: scale(1.8); transform-origin: left center; }
+/* FIX: Ensure proper grid allocation and flex properties */
+.landing-scope .footer-top { display: grid; grid-template-columns: minmax(250px, 2fr) 1fr 1fr 1.5fr; gap: 48px; margin-bottom: 56px; }
+.landing-scope .footer-brand { display: flex; flex-direction: column; align-items: flex-start; }
 
-.landing-scope .footer-desc { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 280px; margin-bottom: 24px; }
+/* FIX: Adjusted Logo Container to block, added correct spacing and removed scale() */
+.landing-scope .footer-logo-link { display: block; width: 100%; text-decoration: none; margin-bottom: 20px; }
+.landing-scope .footer-logo-img { height: 35px; width: auto; object-fit: contain; display: block; }
+
+/* FIX: Text description flows properly now that scale overlap is gone */
+.landing-scope .footer-desc { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 320px; margin-bottom: 24px; display: block; width: 100%; }
 
 /* SOCIAL ICONS WITH ORIGINAL HOVER COLORS */
 .landing-scope .footer-socials { display: flex; gap: 14px; }
@@ -399,7 +401,6 @@
   .landing-scope .hamburger { display: flex; }
   .landing-scope .desktop-only { display: none; }
 }
-
 @media (max-width: 640px) {
   .landing-scope .features-grid { grid-template-columns: 1fr; }
   .landing-scope .metric-row { grid-template-columns: 1fr 1fr; }
