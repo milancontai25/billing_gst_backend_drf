@@ -268,10 +268,14 @@
     overflow-x: auto !important; 
     padding-bottom: 4px !important; 
     gap: 12px !important;
-    margin-bottom: 40px !important; /* Removes gap below thumbnails */
+
+    /* 👇 THE FIX IS HERE 👇 */
+    margin-bottom: 12px !important; /* Changed from 40px to 12px to pull the title up */
+    
     -ms-overflow-style: none;  
     scrollbar-width: none;  
   }
+  
   .thumbnail-list::-webkit-scrollbar {
     display: none !important; 
   }
