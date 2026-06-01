@@ -149,6 +149,14 @@ const Products = () => {
         let successCount = 0;
         let errors = [];
 
+        // 👇 1. ADD THIS NUMBER CLEANER HELPER 👇
+        const parseNum = (val, fallback = 0) => {
+            if (!val) return fallback;
+            const parsed = parseFloat(val.toString().replace(/"/g, "").trim());
+            return isNaN(parsed) ? fallback : parsed;
+        };
+        // 👆 --------------------------------- 👆
+
         for (let i = 0; i < rows.length; i++) {
             const cols = rows[i].split(","); 
             
@@ -162,27 +170,37 @@ const Products = () => {
             const payload = new FormData();
             payload.append('item_type', type);
             payload.append('item_name', name);
-            payload.append('category', cols[2] || 'General');
-            payload.append('mrp_baseprice', cols[5] || 0);
-            payload.append('gross_amount', cols[6] || 0);
+            payload.append('category', cols[2]?.replace(/"/g, "").trim() || 'General');
             
-            payload.append('tax_percent', cols[8] || 0);
+            // 👇 2. WRAP NUMERIC FIELDS IN parseNum() 👇
+            payload.append('mrp_baseprice', parseNum(cols[5], 0));
+            payload.append('gross_amount', parseNum(cols[6], 0));
+            payload.append('tax_percent', parseNum(cols[8], 0));
 
-            payload.append('area', cols[15] || 'Store'); 
+            payload.append('area', cols[15]?.replace(/"/g, "").trim() || 'Store'); 
             payload.append('description', cols[16]?.replace(/"/g, "") || '');
             payload.append('customer_view', 'Special'); 
+
+            payload.append('item_video_link', '');
+            payload.append('isShow', 'true');
+            payload.append('best_selling', 'false');
+            payload.append('trending', 'false');
 
             if (isService) {
                 payload.append('availability_status_service', cols[14] || 'Available');
                 payload.append('quantity_product', 0);
                 payload.append('brand_product', 'NA');
             } else {
-                payload.append('brand_product', cols[3] || 'Generic');
-                payload.append('hsn_sac_code_product', cols[4] || '');
-                payload.append('cost_price_product', cols[10] || 0);
-                payload.append('quantity_product', cols[11] || 0);
-                payload.append('unit_product', cols[12] || 'Pcs');
-                payload.append('min_stock_product', cols[13] || 5);
+                payload.append('brand_product', cols[3]?.replace(/"/g, "").trim() || 'Generic');
+                payload.append('hsn_sac_code_product', cols[4]?.replace(/"/g, "").trim() || '');
+                
+                // 👇 3. WRAP THE REST OF THE NUMERIC FIELDS 👇
+                payload.append('cost_price_product', parseNum(cols[10], 0));
+                payload.append('quantity_product', parseNum(cols[11], 0));
+                payload.append('unit_product', cols[12]?.replace(/"/g, "").trim() || 'Pcs');
+                payload.append('min_stock_product', parseNum(cols[13], 5));
+                payload.append('min_order_quantity_product', 1);
+                payload.append('max_order_quantity_product', 1);
             }
 
             try {
@@ -191,7 +209,7 @@ const Products = () => {
                 });
                 successCount++;
             } catch (err) {
-                console.error(`Failed to import row ${i+1}`, err);
+                console.error(`Failed to import row ${i+1}:`, err.response?.data || err.message);
                 errors.push(`Row ${i+1}: ${name}`);
             }
         }
