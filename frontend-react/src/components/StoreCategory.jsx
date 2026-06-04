@@ -47,13 +47,9 @@ const StoreCategory = () => {
   // --- HELPERS ---
   const formatUrl = (path) => {
     if (!path) return null;
-    
-    // If the path is already a full S3 URL (starts with http/https), return it directly
     if (path.startsWith('http://') || path.startsWith('https://')) {
         return path;
     }
-    
-    // Fallback just in case older data returns a relative path like "/media/..."
     return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`; 
   };
 
@@ -77,16 +73,13 @@ const StoreCategory = () => {
             trending: data.trending || []
         });
 
-        // --- SMART MENU DETECTION FOR CATEGORY PAGE ---
-        // Scan the returned summary items to see if any are services
         const allSummaryItems = [...(data.best_selling || []), ...(data.trending || [])];
         const foundServices = allSummaryItems.some(p => p.item_type && p.item_type.toLowerCase() === 'service');
         const foundGoods = allSummaryItems.some(p => !p.item_type || p.item_type.toLowerCase() === 'goods' || p.item_type.toLowerCase() === 'products');
         
         setHasServices(foundServices);
-        setHasProducts(allSummaryItems.length === 0 ? true : foundGoods); // Default to true if empty
+        setHasProducts(allSummaryItems.length === 0 ? true : foundGoods);
         
-        // FOOLPROOF BUSINESS EXTRACTION
         const biz = data.business || data.best_selling?.[0]?.business || data.trending?.[0]?.business;
         
         if (biz) {
@@ -123,14 +116,11 @@ const StoreCategory = () => {
     fetchStoreData();
   }, [slug]);
 
-
   useEffect(() => {
      if (searchTerm && searchTerm.trim() !== '') {
-         // Pass the search term in the URL!
          navigate(`/${slug}/items?search=${encodeURIComponent(searchTerm)}`); 
      }
   }, [searchTerm, navigate, slug]);
-
   
   useEffect(() => {
     if (banners.length > 1) {
@@ -164,15 +154,12 @@ const StoreCategory = () => {
     } catch (err) { console.error(err); alert("Failed to add item to cart."); }
   };
 
-  // --- ELEGANT PRODUCT CARD RENDERER ---
   const renderProductCard = (product, badgeLabel = null) => {
     const isOutOfStock = product.quantity_product <= 0;
     const mrp = parseFloat(product.mrp_baseprice || 0);
     const sellingPrice = parseFloat(product.gross_amount || 0);
     const hasDiscount = mrp > sellingPrice;
     const currency = product.currency_symbol || '₹'; 
-    
-    // Calculate percentage off
     const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
 
     return (
@@ -211,7 +198,6 @@ const StoreCategory = () => {
                         </>
                     )}
                 </div>
-                
             </div>
         </Link>
       </div>
@@ -236,76 +222,77 @@ const StoreCategory = () => {
         onCartClick={() => setIsCartOpen(true)}
         isDropdownOpen={isDropdownOpen}
         setIsDropdownOpen={setIsDropdownOpen}
-        /* PASSING NEW PROPS HERE */
         hasProducts={hasProducts}
         hasServices={hasServices}
       />
 
-
-      <div className="main-section-bg">
-          <div 
-             className="hero-wrapper" 
-             style={{ 
-                 width: '100%', 
-                 height: 'auto',        /* ✅ FORCES height to adjust to the image */
-                 maxHeight: 'none',     /* ✅ OVERRIDES any CSS file limits */
-                 overflow: 'visible',   /* ✅ PREVENTS the CSS file from cropping edges */
-                 position: 'relative' 
-             }}
-          >
-              {banners.length > 0 ? (
-                <div className="hero-slider" style={{ position: 'relative', width: '100%', height: 'auto' }}>
-                    
-                    {/* ✅ THE TRICK: This invisible image forces the container to stretch 
-                        to the EXACT perfect height of the current banner on every screen size. */}
+      {/* --- HERO SECTION (NO CSS CLASSES = BULLETPROOF) --- */}
+      <div style={{ width: '100%', margin: 0, padding: 0, lineHeight: 0 }}>
+          {banners.length > 0 ? (
+            <div style={{ position: 'relative', width: '100%', margin: 0, padding: 0 }}>
+                
+                {/* THE SPACER: Dictates the exact height based on screen width. 0% Crop. */}
+                <img 
+                    src={banners[currentBannerIndex]} 
+                    alt="spacer" 
+                    style={{ 
+                        width: '100%', 
+                        height: 'auto', 
+                        display: 'block', 
+                        visibility: 'hidden',
+                        margin: 0,
+                        padding: 0
+                    }} 
+                />
+                
+                {/* THE VISIBLE BANNERS: Float perfectly inside the spacer's shape */}
+                {banners.map((banner, index) => (
                     <img 
-                        src={banners[currentBannerIndex]} 
-                        alt="spacer" 
-                        style={{ 
-                            width: '100%', 
-                            height: 'auto', 
-                            display: 'block', 
-                            visibility: 'hidden' // Takes up space so the box grows, but stays invisible
-                        }} 
+                       key={index} 
+                       src={banner}
+                       alt={`Banner ${index}`}
+                       style={{ 
+                           position: 'absolute',
+                           top: 0,
+                           left: 0,
+                           width: '100%',
+                           height: '100%',
+                           display: 'block',
+                           margin: 0,
+                           padding: 0,
+                           opacity: index === currentBannerIndex ? 1 : 0,
+                           transition: 'opacity 0.5s ease-in-out',
+                           pointerEvents: index === currentBannerIndex ? 'auto' : 'none'
+                       }}
                     />
-                    
-                    {/* The visible fading banners */}
-                    {banners.map((banner, index) => (
-                        <img 
-                           key={index} 
-                           src={banner}
-                           alt={`Banner ${index}`}
-                           style={{ 
-                               position: 'absolute',
-                               top: 0,
-                               left: 0,
-                               width: '100%',
-                               height: '100%',
-                               objectFit: 'contain', /* ✅ GUARANTEES 0% cropping */
-                               opacity: index === currentBannerIndex ? 1 : 0,
-                               transition: 'opacity 0.5s ease-in-out',
-                               pointerEvents: index === currentBannerIndex ? 'auto' : 'none'
-                           }}
-                        />
-                    ))}
-                    
-                    {banners.length > 1 && (
-                        <div className="slider-dots" style={{ position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
-                            {banners.map((_, idx) => (
-                                <span key={idx} className={`dot ${idx === currentBannerIndex ? 'active' : ''}`} onClick={() => setCurrentBannerIndex(idx)}></span>
-                            ))}
-                        </div>
-                    )}
-                </div>
-              ) : (
-                 <div className="store-hero-fallback" style={{ padding: '80px 20px', textAlign: 'center', background: '#111827', color: 'white' }}>
-                     <div className="hero-content">
-                         <h1>Welcome to <br/><span>{businessName}</span></h1>
-                         <p>Quality products, honest savings. Delivered to your door.</p>
-                     </div>
-                 </div>
-              )}
-          </div>
+                ))}
+                
+                {/* DOTS */}
+                {banners.length > 1 && (
+                    <div style={{ position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, display: 'flex', gap: '8px', lineHeight: 'normal' }}>
+                        {banners.map((_, idx) => (
+                            <span 
+                                key={idx} 
+                                onClick={() => setCurrentBannerIndex(idx)}
+                                style={{
+                                    width: '10px',
+                                    height: '10px',
+                                    borderRadius: '50%',
+                                    backgroundColor: idx === currentBannerIndex ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.3s ease'
+                                }}
+                            ></span>
+                        ))}
+                    </div>
+                )}
+            </div>
+          ) : (
+             <div style={{ padding: '80px 20px', textAlign: 'center', background: '#111827', color: 'white', lineHeight: 'normal' }}>
+                 <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '2rem', margin: '0 0 10px 0' }}>Welcome to <br/><span>{businessName}</span></h1>
+                 <p style={{ margin: 0, color: '#D1D5DB' }}>Quality products, honest savings. Delivered to your door.</p>
+             </div>
+          )}
       </div>
 
       {/* --- 1. CATEGORY SECTION (CREAM BACKGROUND) --- */}

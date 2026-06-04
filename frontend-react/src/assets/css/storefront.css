@@ -303,7 +303,7 @@ body { margin: 0; padding: 0; }
 .main-section-bg {
   background-color: #F9FAFB; 
   width: 100%;
-  /* padding-bottom: 120px;  */
+  padding-bottom: 120px; /* INCREASED from 80px for a massive footer buffer */
 }
 
 .explore-section {
@@ -784,28 +784,36 @@ body { margin: 0; padding: 0; }
    CATEGORY CAROUSEL & ARROWS
    ========================================================================== */
 
+/* ==========================================================================
+   CATEGORY CAROUSEL STYLES
+   ========================================================================== */
+/* ==========================================================================
+   CATEGORY CAROUSEL STYLES
+   ========================================================================== */
 .category-carousel-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
+  width: 100%; /* ✅ FORCES the carousel to stretch across the whole section */
+  justify-content: space-between; /* ✅ PUSHES the arrows to the far left and right edges */
+  gap: 16px;
+  position: relative;
+  margin-top: 20px;
 }
 
 .category-scroll-container {
   display: flex;
+  gap: 20px; 
   overflow-x: auto;
   scroll-behavior: smooth;
-  gap: 16px;
-  padding: 10px 0;
-  flex: 1; /* Take up the remaining space between the arrows */
-  
-  /* CRITICAL: Hides the native scrollbar */
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  padding: 10px 4px 30px 4px; 
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  flex: 1; /* ✅ FORCES this container to fill all the empty space between the arrows */
+  justify-content: flex-start; /* ✅ ALIGNS the actual cards to the left side */
 }
 
 .category-scroll-container::-webkit-scrollbar {
-  display: none; /* Hide scrollbar for Chrome, Safari and Opera */
+  display: none;
 }
 
 /* Elegant Arrow Styling */
@@ -1356,7 +1364,7 @@ body { margin: 0; padding: 0; }
 @media (max-width: 768px) {
   
   .product-detail-page {
-    padding-top: 0px !important; /* Pushes content down below your new royal header */
+    padding-top: 90px !important; /* Pushes content down below your new royal header */
   }
 
   .detail-container {
@@ -1832,3 +1840,183 @@ body { margin: 0; padding: 0; }
 }
 .auth-link:hover { opacity: 0.7; }
 .flex-center { display: flex; align-items: center; justify-content: center; }
+
+/* ==========================================================================
+   FORCE LEFT ALIGNMENT FOR EXPLORE SECTION
+   ========================================================================== */
+
+/* 1. Forces the "EXPLORE OUR RANGE" title to the left */
+.explore-section {
+  text-align: left !important;
+}
+
+.explore-title {
+  text-align: left !important;
+  margin-bottom: 24px;
+}
+
+/* 2. Forces the Category Carousel to stretch full width and align cards left */
+.category-carousel-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100% !important; /* Stretches across the screen */
+  position: relative;
+}
+
+.category-scroll-container {
+  display: flex;
+  justify-content: flex-start !important; /* 👈 THE MAGIC RULE: Forces cards to the left */
+  align-items: flex-start;
+  gap: 20px;
+  overflow-x: auto;
+  flex: 1; /* Fills the space between arrows */
+  padding: 10px 4px 30px 4px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.category-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* 3. Forces the Product Cards (Cart items) to start from the left */
+.min-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+  gap: 30px;
+  justify-content: flex-start !important; /* 👈 THE MAGIC RULE: Forces grid to the left */
+  text-align: left !important;
+}
+
+/* =======================================================
+   1. ULTIMATE DYNAMIC BANNER (100% Width, Auto Height, No Crop)
+   ======================================================= */
+.dynamic-banner-wrapper {
+    width: 100% !important;
+    background-color: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.dynamic-banner-grid {
+    display: grid !important;
+    width: 100% !important;
+    position: relative !important;
+}
+
+.dynamic-banner-image {
+    grid-area: 1 / 1 !important; /* Stacks images perfectly on top of each other */
+    width: 100% !important;
+    height: auto !important; /* Maintains true aspect ratio without cropping */
+    display: block !important;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.dynamic-banner-image.active {
+    opacity: 1 !important;
+    z-index: 1 !important;
+}
+
+.dynamic-banner-dots {
+    position: absolute !important;
+    bottom: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    display: flex !important;
+    gap: 8px !important;
+    z-index: 10 !important;
+}
+
+.dynamic-dot {
+    width: 10px !important;
+    height: 10px !important;
+    border-radius: 50% !important;
+    background-color: rgba(255, 255, 255, 0.5) !important;
+    cursor: pointer !important;
+}
+
+.dynamic-dot.active {
+    background-color: white !important;
+}
+
+/* =======================================================
+   2. FORCE LEFT ALIGNMENT FOR CAROUSEL & CARDS
+   ======================================================= */
+.category-carousel-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important; /* Pushes arrows to the far left and right edges */
+    width: 100% !important;
+}
+
+.category-scroll-container {
+    display: flex !important;
+    justify-content: flex-start !important; /* Forces all category cards to start at the left */
+    flex: 1 !important; /* Takes up all available space between arrows */
+    margin: 0 16px !important;
+}
+
+.elegant-product-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important; 
+    gap: 30px !important;
+    justify-content: flex-start !important; /* Forces product cards to start at the left */
+}
+
+/* ==========================================================================
+   1. PARENT WRAPPER FIX (Kills the Centering Cascade)
+   ========================================================================== */
+.explore-section {
+    display: block !important; /* 👈 Breaks the flex-centering bug */
+    width: 100%;
+    max-width: 1280px; /* Keeps it neatly contained on ultra-wide screens */
+    margin: 40px auto !important; 
+    padding: 0 24px;
+    text-align: left !important; /* 👈 Forces titles and content to the left */
+}
+
+.explore-title {
+    text-align: left !important;
+    margin-bottom: 24px;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   2. CATEGORY CAROUSEL (Left Aligned)
+   ========================================================================== */
+.category-carousel-wrapper {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between !important; /* Puts arrows on far left/right */
+    width: 100% !important;
+    margin-bottom: 40px; /* Space between categories and products */
+}
+
+.category-scroll-container {
+    display: flex !important;
+    justify-content: flex-start !important; /* 👈 Forces category cards to start at the left edge */
+    align-items: flex-start;
+    flex: 1; /* Fills the space between arrows */
+    gap: 20px;
+    overflow-x: auto;
+    padding: 10px 4px 30px 4px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.category-scroll-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* ==========================================================================
+   3. PRODUCT GRID (Left Aligned)
+   ========================================================================== */
+.min-product-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important; /* Adjusts columns dynamically */
+    gap: 30px !important;
+    justify-content: flex-start !important; /* 👈 Forces product cards to start at the left edge */
+    width: 100%;
+}

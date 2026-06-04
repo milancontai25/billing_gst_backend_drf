@@ -51,13 +51,9 @@ const StoreFront = () => {
 
   const formatUrl = (path) => {
     if (!path) return null;
-    
-    // If the path is already a full S3 URL (starts with http/https), return it directly
     if (path.startsWith('http://') || path.startsWith('https://')) {
         return path;
     }
-    
-    // Fallback just in case older data returns a relative path like "/media/..."
     return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`; 
   };
 
@@ -185,10 +181,10 @@ const StoreFront = () => {
     }
   };
 
-  // NEW: Scroll Function for Arrow Buttons
+  // Scroll Function for Arrow Buttons
   const scrollCategories = (direction) => {
     if (categoryScrollRef.current) {
-      const scrollAmount = 350; // Distance to scroll per click
+      const scrollAmount = 350; 
       categoryScrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
@@ -313,130 +309,131 @@ const StoreFront = () => {
         hasServices={hasServices}
       />
 
-      {/* HERO SECTION */}
-      <div className="main-section-bg">
-          <div 
-             className="hero-wrapper" 
-             style={{ 
-                 width: '100%', 
-                 height: 'auto',        /* ✅ FORCES height to adjust to the image */
-                 maxHeight: 'none',     /* ✅ OVERRIDES any CSS file limits */
-                 overflow: 'visible',   /* ✅ PREVENTS the CSS file from cropping edges */
-                 position: 'relative' 
-             }}
-          >
-              {banners.length > 0 ? (
-                <div className="hero-slider" style={{ position: 'relative', width: '100%', height: 'auto' }}>
-                    
-                    {/* ✅ THE TRICK: This invisible image forces the container to stretch 
-                        to the EXACT perfect height of the current banner on every screen size. */}
+      {/* --- HERO SECTION (NO CSS CLASSES = BULLETPROOF) --- */}
+      <div style={{ width: '100%', margin: 0, padding: 0, lineHeight: 0 }}>
+          {banners.length > 0 ? (
+            <div style={{ position: 'relative', width: '100%', margin: 0, padding: 0 }}>
+                
+                {/* THE SPACER: Dictates the exact height based on screen width. 0% Crop. */}
+                <img 
+                    src={banners[currentBannerIndex]} 
+                    alt="spacer" 
+                    style={{ 
+                        width: '100%', 
+                        height: 'auto', 
+                        display: 'block', 
+                        visibility: 'hidden',
+                        margin: 0,
+                        padding: 0
+                    }} 
+                />
+                
+                {/* THE VISIBLE BANNERS: Float perfectly inside the spacer's shape */}
+                {banners.map((banner, index) => (
                     <img 
-                        src={banners[currentBannerIndex]} 
-                        alt="spacer" 
-                        style={{ 
-                            width: '100%', 
-                            height: 'auto', 
-                            display: 'block', 
-                            visibility: 'hidden' // Takes up space so the box grows, but stays invisible
-                        }} 
+                       key={index} 
+                       src={banner}
+                       alt={`Banner ${index}`}
+                       style={{ 
+                           position: 'absolute',
+                           top: 0,
+                           left: 0,
+                           width: '100%',
+                           height: '100%',
+                           display: 'block',
+                           margin: 0,
+                           padding: 0,
+                           opacity: index === currentBannerIndex ? 1 : 0,
+                           transition: 'opacity 0.5s ease-in-out',
+                           pointerEvents: index === currentBannerIndex ? 'auto' : 'none'
+                       }}
                     />
-                    
-                    {/* The visible fading banners */}
-                    {banners.map((banner, index) => (
-                        <img 
-                           key={index} 
-                           src={banner}
-                           alt={`Banner ${index}`}
-                           style={{ 
-                               position: 'absolute',
-                               top: 0,
-                               left: 0,
-                               width: '100%',
-                               height: '100%',
-                               objectFit: 'contain', /* ✅ GUARANTEES 0% cropping */
-                               opacity: index === currentBannerIndex ? 1 : 0,
-                               transition: 'opacity 0.5s ease-in-out',
-                               pointerEvents: index === currentBannerIndex ? 'auto' : 'none'
-                           }}
-                        />
-                    ))}
-                    
-                    {banners.length > 1 && (
-                        <div className="slider-dots" style={{ position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
-                            {banners.map((_, idx) => (
-                                <span key={idx} className={`dot ${idx === currentBannerIndex ? 'active' : ''}`} onClick={() => setCurrentBannerIndex(idx)}></span>
-                            ))}
-                        </div>
-                    )}
-                </div>
-              ) : (
-                 <div className="store-hero-fallback" style={{ padding: '80px 20px', textAlign: 'center', background: '#111827', color: 'white' }}>
-                     <div className="hero-content">
-                         <h1>Welcome to <br/><span>{businessName}</span></h1>
-                         <p>Quality products, honest savings. Delivered to your door.</p>
-                     </div>
-                 </div>
-              )}
-          </div>
-      
-
-          <section className="explore-section">
-            {categories.length > 0 && (
-                <>
-                    <h2 className="explore-title">
-                       {currentType === 'services' ? 'EXPLORE OUR SERVICES' : 'EXPLORE OUR RANGE'}
-                    </h2>
-                    
-                    {/* NEW: Category Carousel Wrapper with Buttons */}
-                    <div className="category-carousel-wrapper">
-                        <button className="carousel-arrow left-arrow" onClick={() => scrollCategories('left')}>
-                            <ChevronLeft size={24} />
-                        </button>
-
-                        <div className="category-scroll-container" ref={categoryScrollRef}>
-                            {categories.map((cat) => (
-                                <div 
-                                  key={cat.name} 
-                                  className={`cat-card ${selectedCategory === cat.name ? 'active' : ''}`} 
-                                  onClick={() => handleCategorySelect(cat.name)}
-                                >
-                                    <div className="cat-img-box">
-                                        {cat.image ? (
-                                            <img src={cat.image} alt={cat.name} className="cat-img" />
-                                        ) : (
-                                            <ImageIcon size={32} color="#94A3B8" /> 
-                                        )}
-                                    </div>
-                                    <div className="cat-label">{cat.name}</div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <button className="carousel-arrow right-arrow" onClick={() => scrollCategories('right')}>
-                            <ChevronRight size={24} />
-                        </button>
+                ))}
+                
+                {/* DOTS */}
+                {banners.length > 1 && (
+                    <div style={{ position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, display: 'flex', gap: '8px', lineHeight: 'normal' }}>
+                        {banners.map((_, idx) => (
+                            <span 
+                                key={idx} 
+                                onClick={() => setCurrentBannerIndex(idx)}
+                                style={{
+                                    width: '10px',
+                                    height: '10px',
+                                    borderRadius: '50%',
+                                    backgroundColor: idx === currentBannerIndex ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.3s ease'
+                                }}
+                            ></span>
+                        ))}
                     </div>
-                </>
-            )}
-
-            {filteredProducts.length === 0 ? (
-              <div className="no-products" style={{ marginTop: '40px' }}>
-                <h3>No items found</h3>
-                <p>Try selecting a different category or check back later.</p>
-              </div>
-            ) : (
-              <div className="min-product-grid" style={{ marginTop: '40px' }}>
-                {filteredProducts.map(product => renderProductCard(product))}
-              </div>
-            )}
-
-            {selectedCategory !== 'All' && (
-                <div className="view-all-container">
-                    <button className="btn-view-all" onClick={() => handleCategorySelect('All')}>VIEW ALL</button>
-                </div>
-            )}
-          </section>
+                )}
+            </div>
+          ) : (
+             <div style={{ padding: '80px 20px', textAlign: 'center', background: '#111827', color: 'white', lineHeight: 'normal' }}>
+                 <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '2rem', margin: '0 0 10px 0' }}>Welcome to <br/><span>{businessName}</span></h1>
+                 <p style={{ margin: 0, color: '#D1D5DB' }}>Quality products, honest savings. Delivered to your door.</p>
+             </div>
+          )}
       </div>
+
+      <section className="explore-section">
+        {categories.length > 0 && (
+            <>
+                <h2 className="explore-title">
+                   {currentType === 'services' ? 'EXPLORE OUR SERVICES' : 'EXPLORE OUR RANGE'}
+                </h2>
+                
+                {/* NEW: Category Carousel Wrapper with Buttons */}
+                <div className="category-carousel-wrapper">
+                    <button className="carousel-arrow left-arrow" onClick={() => scrollCategories('left')}>
+                        <ChevronLeft size={24} />
+                    </button>
+
+                    <div className="category-scroll-container" ref={categoryScrollRef}>
+                        {categories.map((cat) => (
+                            <div 
+                              key={cat.name} 
+                              className={`cat-card ${selectedCategory === cat.name ? 'active' : ''}`} 
+                              onClick={() => handleCategorySelect(cat.name)}
+                            >
+                                <div className="cat-img-box">
+                                    {cat.image ? (
+                                        <img src={cat.image} alt={cat.name} className="cat-img" />
+                                    ) : (
+                                        <ImageIcon size={32} color="#94A3B8" /> 
+                                    )}
+                                </div>
+                                <div className="cat-label">{cat.name}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <button className="carousel-arrow right-arrow" onClick={() => scrollCategories('right')}>
+                        <ChevronRight size={24} />
+                    </button>
+                </div>
+            </>
+        )}
+
+        {filteredProducts.length === 0 ? (
+          <div className="no-products" style={{ marginTop: '40px' }}>
+            <h3>No items found</h3>
+            <p>Try selecting a different category or check back later.</p>
+          </div>
+        ) : (
+          <div className="min-product-grid" style={{ marginTop: '40px' }}>
+            {filteredProducts.map(product => renderProductCard(product))}
+          </div>
+        )}
+
+        {selectedCategory !== 'All' && (
+            <div className="view-all-container">
+                <button className="btn-view-all" onClick={() => handleCategorySelect('All')}>VIEW ALL</button>
+            </div>
+        )}
+      </section>
 
       <StoreFooter 
         slug={slug}
