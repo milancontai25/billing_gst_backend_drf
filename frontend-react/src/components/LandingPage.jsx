@@ -7,6 +7,7 @@ const LandingPage = () => {
   const [country, setCountry] = useState('IN');
   const [showCountryDrop, setShowCountryDrop] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
   
   const dropdownRef = useRef(null);
 
@@ -27,18 +28,19 @@ const LandingPage = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Pricing updated to Monthly primary, Yearly secondary
   const pricingData = {
     IN: {
-      advYear: '₹9,600 / Year',
-      advMonth: '(₹800/month)',
-      proYear: '₹16,000 / Year',
-      proMonth: '(₹1,333/month)',
+      advMonth: '₹800 / month',
+      advYear: '(Billed ₹9,600 yearly)',
+      proMonth: '₹1,333 / month',
+      proYear: '(Billed ₹16,000 yearly)',
     },
     US: {
-      advYear: '$240 / Year',
-      advMonth: '($20/month)',
-      proYear: '$360 / Year',
-      proMonth: '($30/month)',
+      advMonth: '$20 / month',
+      advYear: '(Billed $240 yearly)',
+      proMonth: '$30 / month',
+      proYear: '(Billed $360 yearly)',
     },
   };
 
@@ -60,8 +62,69 @@ const LandingPage = () => {
     {
       q: "Can I use my own custom domain?",
       a: "Yes. Our Advance and Pro packages support full native domain mapping. Present your store and landing page under your own branded domain seamlessly."
+    },
+    {
+      q: "Is there a built-in online storefront on all plans?",
+      a: "Yes. Every tier includes a public digital store linked directly to your inventory database, ensuring real-time pricing accuracy and zero stock discrepancies."
+    },
+    {
+      q: "Does the platform support Indian GST calculations?",
+      a: "Yes. For Indian businesses, the billing engine fully computes GST with proper breakdowns (CGST, SGST, IGST) to streamline your monthly accounting and compliance workflows."
+    },
+    {
+      q: "Can teams access the platform simultaneously?",
+      a: "Yes. The platform is fully cloud-hosted and supports secure multi-device access tokens, allowing teams across locations to collaborate on registers and inventory in real time."
     }
   ];
+
+  // Testimonial Data
+  const testimonials = [
+    {
+      name: "Rakesh Dey",
+      role: "Retail Store Owner",
+      text: "Statgrow has transformed the way we manage inventory and sales. The AI-driven insights help us understand customer trends, and the automated stock alerts ensure we never miss a sales opportunity.",
+      img: "https://i.pravatar.cc/150?img=11"
+    },
+    {
+      name: "Riya Patel",
+      role: "Jwellery Business Owner",
+      text: "The real-time analytics dashboard provides a clear picture of our business performance. Statgrow has helped us make smarter decisions and improve operational efficiency.",
+      img: "https://i.pravatar.cc/150?img=5"
+    },
+    {
+      name: "Amit Verma",
+      role: "Wholesale Distributor",
+      text: "Managing multiple warehouses was challenging before Statgrow. Now, inventory tracking, purchase orders, and billing are all streamlined in one platform. We are extremely satisfied with the results.",
+      img: "https://i.pravatar.cc/150?img=8"
+    },
+    {
+      name: "Sneha Desai",
+      role: "E-commerce Entrepreneur",
+      text: "The integrated digital storefront and cloud inventory synchronization have eliminated inventory mismatches completely. Statgrow has made our online and offline operations work seamlessly together.",
+      img: "https://i.pravatar.cc/150?img=44"
+    },
+    {
+      name: "Vikram Singh",
+      role: "Supermarket Owner",
+      text: "The smart billing engine, GST automation, and customer ledger features have saved us countless hours every month. Statgrow is an essential part of our business today.",
+      img: "https://i.pravatar.cc/150?img=33"
+    }
+  ];
+
+  // Auto-rotate testimonials
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [testimonials.length]);
+
+  const getFloatClass = (index) => {
+    if (index === activeTestimonial) return "testi-avatar-center";
+    // Maps the remaining 4 avatars to fixed position classes (pos-1 to pos-4)
+    const pos = index > activeTestimonial ? index : index + 1;
+    return `testi-avatar-float pos-${pos}`;
+  };
 
   return (
     <div className="landing-scope">
@@ -79,9 +142,10 @@ const LandingPage = () => {
           
           <nav className={isMenuOpen ? 'open' : ''}>
             <a href="#features" onClick={() => setIsMenuOpen(false)}>Features</a>
+            <a href="#portfolio" onClick={() => setIsMenuOpen(false)}>Portfolio</a>
             <a href="#pricing" onClick={() => setIsMenuOpen(false)}>Pricing</a>
+            <a href="#about" onClick={() => setIsMenuOpen(false)}>About</a>
             <a href="#contact" onClick={() => setIsMenuOpen(false)}>Contact</a>
-            <a href="#faq" onClick={() => setIsMenuOpen(false)}>FAQ</a>
           </nav>
 
           <div className="header-actions">
@@ -196,6 +260,159 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* AI-DRIVEN ANALYTICS MODULE */}
+      <section className="ai-section">
+        <div className="ai-inner">
+          <div className="ai-content">
+            <div className="section-label" style={{background: 'rgba(59,130,246,0.1)', borderColor: 'rgba(59,130,246,0.2)', color: 'var(--accent-blue)'}}>Next-Gen Architecture</div>
+            <h2 className="section-title">AI-Driven Analytics Module</h2>
+            <p className="section-sub" style={{fontSize: '15px'}}>Sift through hundreds of invoice variables automatically. StatGrow Enterprise contextually maps velocity indexes, ensuring you scale ahead of inventory market lags.</p>
+            <div className="ai-list">
+              <div className="ai-item">
+                <div className="ai-bullet"><i className="fa-solid fa-arrow-trend-up"></i></div>
+                <div>
+                  <h4>Real-Time Insights</h4>
+                  <p>Isolate regional scaling trends and surface critical signals instantly from live transaction streams.</p>
+                </div>
+              </div>
+              <div className="ai-item">
+                <div className="ai-bullet"><i className="fa-solid fa-fingerprint"></i></div>
+                <div>
+                  <h4>Consumer Behavior Analysis</h4>
+                  <p>Map individual category purchase patterns to optimize product placement and promotions.</p>
+                </div>
+              </div>
+              <div className="ai-item">
+                <div className="ai-bullet"><i className="fa-solid fa-hourglass-start"></i></div>
+                <div>
+                  <h4>Fast-Moving Spot Checks</h4>
+                  <p>Automatically identify high-velocity SKUs before stockouts impact your revenue flow.</p>
+                </div>
+              </div>
+              <div className="ai-item">
+                <div className="ai-bullet"><i className="fa-solid fa-chart-pie"></i></div>
+                <div>
+                  <h4>Predictive Cash Modeling</h4>
+                  <p>Reduce warehouse friction metrics by up to 20% with forward-looking inventory projection models.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="ai-visual">
+            <div className="av-glow"></div>
+            <div className="av-header">
+              <span className="av-title">Predictive Analytics Engine</span>
+              <span className="av-online"><i className="fa-solid fa-circle" style={{fontSize:'7px'}}></i> Live</span>
+            </div>
+            <div className="av-bar-group">
+              <div className="av-bar-row">
+                <div className="av-bar-top"><span>Electronics</span><span style={{color: 'var(--accent-green)'}}>↑ 34%</span></div>
+                <div className="av-bar-track"><div className="av-bar-fill" style={{width:'82%', background:'linear-gradient(90deg, var(--accent-blue), var(--accent-cyan))'}}></div></div>
+              </div>
+              <div className="av-bar-row">
+                <div className="av-bar-top"><span>Apparel</span><span style={{color: 'var(--accent-green)'}}>↑ 21%</span></div>
+                <div className="av-bar-track"><div className="av-bar-fill" style={{width:'60%', background:'linear-gradient(90deg, var(--accent-blue), var(--accent-purple))'}}></div></div>
+              </div>
+              <div className="av-bar-row">
+                <div className="av-bar-top"><span>Groceries</span><span style={{color: 'var(--accent-green)'}}>↑ 18%</span></div>
+                <div className="av-bar-track"><div className="av-bar-fill" style={{width:'50%', background:'linear-gradient(90deg, var(--accent-blue), #818cf8)'}}></div></div>
+              </div>
+              <div className="av-bar-row">
+                <div className="av-bar-top"><span>Home Goods</span><span style={{color: 'var(--accent-green)'}}>↑ 9%</span></div>
+                <div className="av-bar-track"><div className="av-bar-fill" style={{width:'35%', background:'linear-gradient(90deg, var(--accent-blue), #6366f1)'}}></div></div>
+              </div>
+              <div className="av-bar-row">
+                <div className="av-bar-top"><span>Pharma</span><span style={{color:'#f59e0b'}}>— 3%</span></div>
+                <div className="av-bar-track"><div className="av-bar-fill" style={{width:'20%', background:'#f59e0b'}}></div></div>
+              </div>
+            </div>
+            <div className="av-quote">"Turn your everyday transactional data into active optimization paths — StatGrow Enterprise."</div>
+          </div>
+        </div>
+      </section>
+
+      {/* PORTFOLIO & OUTREACH */}
+      <section id="portfolio" className="portfolio-section">
+        <div className="portfolio-container">
+          <div className="features-header">
+            <div className="section-label" style={{background:'rgba(139, 92, 246, 0.1)', borderColor:'rgba(139, 92, 246, 0.2)', color:'var(--accent-purple)'}}>Global Footprint</div>
+            <h2 className="section-title">Client Outreach & Portfolio</h2>
+            <p className="section-sub">Empowering a diverse range of industries across multiple regions.</p>
+          </div>
+
+          <div className="outreach-grid">
+            {/* Outreach Locations */}
+            <div className="outreach-card">
+              <h3><i className="fa-solid fa-earth-americas" style={{color: 'var(--accent-blue)'}}></i> Active Regions</h3>
+              <p className="outreach-desc">Our platform is actively scaling businesses across major economic hubs.</p>
+              
+              <div className="region-list">
+                <div className="region-item">
+                  <span className="region-flag">🇮🇳</span>
+                  <div>
+                    <h4>India Hubs</h4>
+                    <p>Gujarat, Maharashtra, West Bengal, Assam, Tripura</p>
+                  </div>
+                  <span className="region-pulse"></span>
+                </div>
+                <div className="region-item">
+                  <span className="region-flag">🇺🇸</span>
+                  <div>
+                    <h4>North America</h4>
+                    <p>California, USA</p>
+                  </div>
+                  <span className="region-pulse"></span>
+                </div>
+              </div>
+            </div>
+
+            {/* Diverse Client Portfolio / Categories */}
+            <div className="categories-wrapper">
+              <h3 className="cat-title">Supported Business Categories</h3>
+              <div className="category-grid">
+                <div className="cat-card">
+                  <i className="fa-solid fa-industry"></i>
+                  <span>Manufacturer</span>
+                </div>
+                <div className="cat-card">
+                  <i className="fa-solid fa-ship"></i>
+                  <span>Import & Export</span>
+                </div>
+                <div className="cat-card">
+                  <i className="fa-solid fa-handshake"></i>
+                  <span>B2B Wholesaler</span>
+                </div>
+                <div className="cat-card">
+                  <i className="fa-solid fa-cart-shopping"></i>
+                  <span>Supermarket</span>
+                </div>
+                <div className="cat-card">
+                  <i className="fa-solid fa-briefcase-medical"></i>
+                  <span>Pharmacy</span>
+                </div>
+                <div className="cat-card">
+                  <i className="fa-solid fa-laptop"></i>
+                  <span>Electronics</span>
+                </div>
+                <div className="cat-card">
+                  <i className="fa-solid fa-shirt"></i>
+                  <span>Clothing</span>
+                </div>
+                <div className="cat-card">
+                  <i className="fa-solid fa-hammer"></i>
+                  <span>Hardware</span>
+                </div>
+                <div className="cat-card">
+                  <i className="fa-solid fa-utensils"></i>
+                  <span>Restaurant</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* FEATURES */}
       <section id="features">
         <div className="features-header">
@@ -250,8 +467,9 @@ const LandingPage = () => {
           {/* Basic */}
           <div className="plan-card">
             <div className="plan-name">Basic Plan</div>
-            <div className="plan-tier">{country === 'IN' ? '₹0' : '$0'}</div>
-            <p className="plan-trial" style={{margin: '0 0 8px 0', textAlign: 'left', color: 'var(--accent-blue)'}}>15 Days Free Trial</p>
+            <div className="plan-tier">{country === 'IN' ? '₹0 / month' : '$0 / month'}</div>
+            <div className="plan-tier-sub" style={{color: 'transparent'}}>(Free Forever)</div>
+            <p className="plan-trial" style={{margin: '8px 0 16px 0', textAlign: 'left', color: 'var(--accent-blue)'}}>15 Days Free Trial</p>
             <div className="plan-desc">Perfect for shops looking to fully digitize physical ledger and retail operations risk-free.</div>
             <ul className="plan-features">
               <li><i className="fa-solid fa-circle-check check-icon"></i><strong>EnterPriZe Core App:</strong> Access unified central management dashboard.</li>
@@ -271,8 +489,9 @@ const LandingPage = () => {
           <div className="plan-card featured">
             <div className="plan-badge">Best Value</div>
             <div className="plan-name">Advance Plan</div>
-            <div className="plan-tier">{currentPricing.advYear}</div>
-            <p className="plan-trial" style={{margin: '0 0 8px 0', textAlign: 'left', color: 'var(--accent-blue)'}}>{currentPricing.advMonth}</p>
+            <div className="plan-tier">{currentPricing.advMonth}</div>
+            <div className="plan-tier-sub">{currentPricing.advYear}</div>
+            <p className="plan-trial" style={{margin: '8px 0 16px 0', textAlign: 'left', color: 'var(--accent-blue)'}}>15 Days Free Trial Included</p>
             <div className="plan-desc">For growing companies ready to secure their operational footprint for an entire year.</div>
             <ul className="plan-features">
               <li><i className="fa-solid fa-circle-check check-icon"></i><strong>EnterPriZe Core App:</strong> Access unified central management dashboard.</li>
@@ -291,8 +510,9 @@ const LandingPage = () => {
           {/* Pro */}
           <div className="plan-card">
             <div className="plan-name">Pro Plan</div>
-            <div className="plan-tier">{currentPricing.proYear}</div>
-            <p className="plan-trial" style={{margin: '0 0 8px 0', textAlign: 'left', color: 'var(--accent-blue)'}}>{currentPricing.proMonth}</p>
+            <div className="plan-tier">{currentPricing.proMonth}</div>
+            <div className="plan-tier-sub">{currentPricing.proYear}</div>
+            <p className="plan-trial" style={{margin: '8px 0 16px 0', textAlign: 'left', color: 'var(--accent-blue)'}}>15 Days Free Trial Included</p>
             <div className="plan-desc">The ultimate white-label cloud configuration featuring complete custom domain authority.</div>
             <ul className="plan-features">
               <li style={{color:'var(--text-muted)', fontSize:'11px', fontWeight:700, letterSpacing:'0.04em', textTransform:'uppercase'}}>Includes All Advance Features, Plus:</li>
@@ -390,11 +610,75 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* ABOUT US */}
+      <section id="about" className="about-section">
+        <div className="about-inner">
+          <div className="about-text">
+            <div className="section-label" style={{background: 'rgba(139, 92, 246, 0.1)', borderColor: 'rgba(139, 92, 246, 0.2)', color: 'var(--accent-purple)'}}>Our Foundation</div>
+            <h2 className="section-title">About StatGrow Enterprise</h2>
+            <p>StatGrow Enterprise was founded in 2025 with a clear observation: while large conglomerates had access to powerful multi-million dollar cloud ERP systems, small business owners were still managing manual ledgers and paper records.</p>
+            <p>We built StatGrow to serve as a global operational bridge — sophisticated enough to handle deep multi-tenant analytics and forecasting, yet straightforward enough for daily operators to use without specialized cloud training.</p>
+            <p><strong>Today, StatGrow Enterprise proudly serves businesses across India, USA, Norway, and Uganda — helping companies transition into fully digitized operations with complete transparency.</strong></p>
+          </div>
+          <div className="stat-grid">
+            <div className="stat-box">
+              <div className="stat-number">10+</div>
+              <div className="stat-label">Business Formats</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-number">4</div>
+              <div className="stat-label">Active Countries</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-number">20+</div>
+              <div className="stat-label">Metropolitan Nodes</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-number">100%</div>
+              <div className="stat-label">Made in India</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS SECTION (Added before FAQ) */}
+      <section className="testimonials-section">
+        <div className="testi-container">
+          <div className="testi-stage">
+            {testimonials.map((testi, i) => (
+              <div 
+                key={i} 
+                className={`testi-avatar-container ${getFloatClass(i)}`}
+                onClick={() => setActiveTestimonial(i)}
+              >
+                <img src={testi.img} alt={testi.name} />
+              </div>
+            ))}
+          </div>
+          
+          <div className="testi-content">
+            <p className="testi-quote">"{testimonials[activeTestimonial].text}"</p>
+            <h4 className="testi-name">{testimonials[activeTestimonial].name}</h4>
+            <span className="testi-role">{testimonials[activeTestimonial].role}</span>
+          </div>
+
+          <div className="testi-dots">
+            {testimonials.map((_, i) => (
+              <span 
+                key={i} 
+                className={`testi-dot ${i === activeTestimonial ? 'active' : ''}`} 
+                onClick={() => setActiveTestimonial(i)}
+              ></span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ENHANCED FAQ */}
       <section id="faq">
         <div className="faq-wrap">
           <div className="faq-header">
-            <div className="section-label" style={{justifyContent:'center', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--accent-purple)', borderColor: 'rgba(139, 92, 246, 0.2)'}}>Knowledge Base</div>
+            <div className="section-label" style={{justifyContent:'center', background: 'rgba(6, 182, 212, 0.1)', color: 'var(--accent-cyan)', borderColor: 'rgba(6, 182, 212, 0.2)'}}>Knowledge Base</div>
             <h2 className="section-title">Frequently Asked Questions</h2>
             <p className="section-sub">Everything you need to know about deploying EZe EnterPriZe.</p>
           </div>

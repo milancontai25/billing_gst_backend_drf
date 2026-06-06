@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import { Trash2, X, MapPin, Phone, Camera } from 'lucide-react';
+import { Trash2, X, MapPin, Phone, Camera, Mail, FileText } from 'lucide-react';
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import '../assets/css/CreateInvoice.css'; // Make sure path is correct!
+import '../assets/css/CreateInvoice.css'; 
 
-// --- CAMERA SCANNER COMPONENT ---
+
 const CameraScannerModal = ({ onScan, onClose }) => {
   useEffect(() => {
     const scanner = new Html5QrcodeScanner(
@@ -115,7 +115,8 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
     if (val.length > 1) {
       try {
         const res = await api.get(`/search/customers/?search=${val}`);
-        setCustResults(res.data);
+        const results = Array.isArray(res.data) ? res.data : (res.data.results || []);
+        setCustResults(results);
       } catch (err) { console.error(err); }
     } else {
       setCustResults([]);
@@ -347,17 +348,60 @@ const CreateInvoice = ({ onClose, onSuccess }) => {
                        <button className="btn btn-blue btn-new-customer" onClick={() => setShowAddCust(true)}>+ New</button>
                    </div>
                ) : (
-                   <div className="selected-customer-card">
-                       <div className="selected-customer-header">
-                           <div className="selected-customer-name">
-                               <div className="selected-customer-avatar">{selectedCustomer.name.charAt(0)}</div>
-                               <div style={{fontWeight:'bold', fontSize:'15px'}}>{selectedCustomer.name}</div>
+                   <div className="selected-customer-card" style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#f9fafb' }}>
+                       
+                       {/* Top Row: Avatar, Name, Type, and Close Button */}
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                               <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px', border: '1px solid #bfdbfe' }}>
+                                   {selectedCustomer.name.charAt(0).toUpperCase()}
+                               </div>
+                               <div>
+                                   <div style={{ fontWeight: '700', fontSize: '16px', color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                       {selectedCustomer.name}
+                                       {selectedCustomer.customer_type && (
+                                           <span style={{ fontSize: '11px', padding: '2px 8px', backgroundColor: '#dbeafe', color: '#1d4ed8', borderRadius: '12px', fontWeight: '600', letterSpacing: '0.3px' }}>
+                                               {selectedCustomer.customer_type}
+                                           </span>
+                                       )}
+                                   </div>
+                                   {selectedCustomer.category && <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>{selectedCustomer.category}</div>}
+                               </div>
                            </div>
-                           <button className="btn-icon-small text-danger" onClick={removeCustomer}><X size={18}/></button>
+                           <button 
+                               className="btn-icon-small text-danger" 
+                               onClick={removeCustomer} 
+                               title="Change Customer" 
+                               style={{ background: 'white', border: '1px solid #fee2e2', borderRadius: '6px', padding: '4px', cursor: 'pointer' }}
+                           >
+                               <X size={16} />
+                           </button>
                        </div>
-                       <div className="selected-customer-info">
-                           <div className="info-badge"><Phone size={14}/> {selectedCustomer.phone || 'N/A'}</div>
-                           <div className="info-badge"><MapPin size={14}/> {selectedCustomer.address || 'No Address'}</div>
+
+                       {/* Bottom Row: Contact Badges */}
+                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed #d1d5db' }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#374151', backgroundColor: 'white', padding: '6px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                               <Phone size={14} style={{ color: '#9ca3af' }} /> {selectedCustomer.phone || 'N/A'}
+                           </div>
+                           
+                           {selectedCustomer.email && (
+                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#374151', backgroundColor: 'white', padding: '6px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                   <Mail size={14} style={{ color: '#9ca3af' }} /> {selectedCustomer.email}
+                               </div>
+                           )}
+
+                           {selectedCustomer.gstin && (
+                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#374151', backgroundColor: 'white', padding: '6px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                   <FileText size={14} style={{ color: '#9ca3af' }} /> <span style={{fontWeight: '600'}}>GST:</span> {selectedCustomer.gstin}
+                               </div>
+                           )}
+                           
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#374151', backgroundColor: 'white', padding: '6px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', width: '100%', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                               <MapPin size={14} style={{ color: '#9ca3af', flexShrink: 0 }} /> 
+                               <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                   {selectedCustomer.address ? `${selectedCustomer.address}${selectedCustomer.district ? `, ${selectedCustomer.district}` : ''}` : 'No Address Provided'}
+                               </span>
+                           </div>
                        </div>
                    </div>
                )}

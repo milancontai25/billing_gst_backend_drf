@@ -26,6 +26,11 @@ class ItemSearchListView(generics.ListAPIView):
         if not search_term:
             return Item.objects.none()
 
+        # print(Item.objects.filter(
+        #     business=business,
+        #     item_name__icontains=search_term
+        # ))
+
         return Item.objects.filter(
             business=business,
             item_name__icontains=search_term
@@ -100,6 +105,7 @@ class CustomerSearchListView(generics.ListAPIView):
         if business is None:
             return Customer.objects.none()
 
+        # print(Customer.objects.filter(business=business))
         return Customer.objects.filter(business=business)
 
 
