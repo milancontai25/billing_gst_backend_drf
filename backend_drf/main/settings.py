@@ -259,4 +259,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://10.48.234.74:5173",
     "https://enterprize.statgrow.in",
     "http://3.27.129.212:5173",
+    "https://ramsamtrends.com",
 ]
