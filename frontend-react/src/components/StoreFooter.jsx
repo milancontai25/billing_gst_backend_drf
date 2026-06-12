@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Facebook, Instagram, Youtube, Twitter, Mail, Phone } from 'lucide-react';
+import { Store, Facebook, Instagram, Youtube, Twitter, Mail, Phone, MessageCircle } from 'lucide-react';
 import '../assets/css/storefooter.css';
 
 const StoreFooter = ({ slug, businessName, businessLogo, socialLinks, contactInfo }) => {
@@ -53,11 +53,29 @@ const StoreFooter = ({ slug, businessName, businessLogo, socialLinks, contactInf
           </ul>
         </div>
 
-        {/* Column 4: Contact */}
+        {/* Column 4: Contact (ALL CLICKABLE NOW) */}
         <div className="footer-col contact-col">
           <h4>Contact Us</h4>
-          <p><Mail size={16} /> {contactInfo?.email || 'contact@store.com'}</p>
-          <p><Phone size={16} /> {contactInfo?.phone || '+91-0000000000'}</p>
+          
+          {/* Email Link */}
+          <a href={`mailto:${contactInfo?.email || 'contact@store.com'}`} className="contact-link">
+            <Mail size={16} /> {contactInfo?.email || 'contact@store.com'}
+          </a>
+          
+          {/* Phone Link */}
+          <a href={`tel:${contactInfo?.phone || '+910000000000'}`} className="contact-link">
+            <Phone size={16} /> {contactInfo?.phone || '+91-0000000000'}
+          </a>
+          
+          {/* WhatsApp Link (Strips non-numbers to trigger wa.me properly) */}
+          <a 
+            href={socialLinks?.wp?.startsWith('http') ? socialLinks.wp : `https://wa.me/${(socialLinks?.wp || contactInfo?.phone || '0000000000').replace(/[^0-9]/g, '')}`} 
+            target="_blank" 
+            rel="noreferrer" 
+            className="contact-link"
+          >
+            <MessageCircle size={16} /> {socialLinks?.wp || 'WhatsApp Us'}
+          </a>
         </div>
       </div>
       
