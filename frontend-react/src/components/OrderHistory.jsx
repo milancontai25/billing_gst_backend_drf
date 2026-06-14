@@ -23,7 +23,11 @@ const OrderHistory = () => {
             `${API_BASE_URL}/api/v1/customer/orders/`, 
             { headers: { Authorization: `Bearer ${token}` } }
         );
-        setOrders(res.data);
+        
+        // 👇 THE FIX: Look for the 'results' array from Django pagination
+        const orderData = Array.isArray(res.data) ? res.data : (res.data.results || []);
+        setOrders(orderData);
+        
         setLoading(false);
       } catch (err) {
         console.error(err);

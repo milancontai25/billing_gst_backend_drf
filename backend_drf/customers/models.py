@@ -3,7 +3,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 from datetime import timedelta
 from business_entity.models import BusinessEntity
-
+from django.core.validators import RegexValidator
 
 class Customer(models.Model):
     business = models.ForeignKey(
@@ -16,16 +16,28 @@ class Customer(models.Model):
     date = models.DateField(auto_now_add=True)
 
     name = models.CharField(max_length=100)
-    email = models.EmailField()
+    email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=15)
 
     customer_type = models.CharField(max_length=20, default='Special')
-    gstin = models.CharField(max_length=20, blank=True, null=True)
+    
+
+    gstin = models.CharField(
+        max_length=15,
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$',
+                'Enter a valid GSTIN'
+            )
+        ]
+    )
 
     country = models.CharField(max_length=20, blank=True, null=True)
     state = models.CharField(max_length=20, blank=True, null=True)
     district = models.CharField(max_length=20, blank=True, null=True)
-    pin = models.IntegerField(blank=True, null=True)
+    pin = models.CharField(max_length=10, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     note = models.TextField(blank=True, null=True)
 
@@ -43,6 +55,9 @@ class Customer(models.Model):
         )
 
     def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.lower()
+
         if self.password and not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
@@ -61,11 +76,18 @@ class Customer(models.Model):
         self.save(update_fields=['otp', 'otp_expiry'])
 
     def verify_otp(self, otp):
-        return (
+        valid = (
             self.otp == otp and
             self.otp_expiry and
             timezone.now() <= self.otp_expiry
         )
+
+        if valid:
+            self.otp = None
+            self.otp_expiry = None
+            self.save(update_fields=['otp', 'otp_expiry'])
+
+        return valid
 
     @property
     def is_authenticated(self):

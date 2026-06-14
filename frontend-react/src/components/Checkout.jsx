@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate, useLocation } from 'react-router-dom'; // ✅ ADDED useLocation
-import { ArrowLeft, CreditCard, Loader2, CheckCircle, User, Phone, Mail, Upload, FileText, ShieldCheck } from 'lucide-react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom'; 
+import { ArrowLeft, CreditCard, Loader2, CheckCircle, User, Phone, Mail, Upload, FileText, ShieldCheck, MapPin, Edit3 } from 'lucide-react';
 import '../assets/css/storefront.css';
 
 const Checkout = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const location = useLocation(); // ✅ Catch the state passed from Buy Now
+  const location = useLocation(); 
 
-  // ✅ Extract Buy Now data from router state (if it exists)
   const isBuyNow = location.state?.isBuyNow || false;
   const buyNowItem = location.state?.buyNowItems?.[0] || null;
 
@@ -17,7 +16,15 @@ const Checkout = () => {
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   
-  // Form State
+  // --- ADDRESS STATE ---
+  const [addressData, setAddressData] = useState({
+    name: '', phone: '', email: '', address: '',
+    country: '', state: '', district: '', pin: '', gstin: ''
+  });
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
+
+  // --- FORM STATE ---
   const [paymentMethod, setPaymentMethod] = useState('CASH'); 
   const [onlineType, setOnlineType] = useState('UPI'); 
   const [specialNotes, setSpecialNotes] = useState('');
@@ -39,7 +46,6 @@ const Checkout = () => {
       try {
         setLoading(true);
         
-        // ✅ 1. DYNAMIC PREVIEW URL (Handles both Cart and Buy Now)
         let previewUrl = `${API_BASE_URL}/api/v1/customer/cart/checkout/preview/`;
         if (isBuyNow && buyNowItem) {
             previewUrl += `?is_buy_now=true&item_id=${buyNowItem.product_id}&quantity=${buyNowItem.quantity}`;
@@ -49,9 +55,31 @@ const Checkout = () => {
         const data = res.data;
         setPreview(data);
 
-        // Smart Defaults based on available_methods array
-        const availableMethods = data?.payment?.available_methods || [];
+        // --- EXTRACT & VALIDATE ADDRESS ---
+        const cust = data?.customer || {};
+        const initialAddress = {
+            name: cust.name || '',
+            phone: cust.phone || '',
+            email: cust.email || '',
+            address: cust.address || '',
+            country: cust.country || '',
+            state: cust.state || '',
+            district: cust.district || '',
+            pin: cust.pin || '',
+            gstin: cust.gstin || ''
+        };
+        setAddressData(initialAddress);
+
+        // If any required field is missing, force Edit Mode
+        const isComplete = initialAddress.name && initialAddress.phone && 
+                           initialAddress.address && initialAddress.country && 
+                           initialAddress.state && initialAddress.district && 
+                           initialAddress.pin && String(initialAddress.pin).length === 6;
         
+        setIsEditingAddress(!isComplete);
+
+        // --- PAYMENT DEFAULTS ---
+        const availableMethods = data?.payment?.available_methods || [];
         if (availableMethods.includes('CASH') || availableMethods.length === 0) {
             setPaymentMethod('CASH');
         } else if (availableMethods.includes('GATEWAY') || availableMethods.includes('UPI')) {
@@ -68,7 +96,41 @@ const Checkout = () => {
       }
     };
     fetchPreview();
-  }, [slug, navigate, isBuyNow, buyNowItem]); // ✅ Added dependencies
+  }, [slug, navigate, isBuyNow, buyNowItem]); 
+
+  // --- ADDRESS HANDLERS ---
+  const handleAddressChange = (e) => {
+      setAddressData({ ...addressData, [e.target.name]: e.target.value });
+  };
+
+  const handleSaveAddress = async () => {
+      // Basic Frontend Validation matching your Serializer
+      if (!addressData.name || !addressData.phone || !addressData.address || 
+          !addressData.country || !addressData.state || !addressData.district || !addressData.pin) {
+          return alert("Please fill in all required address fields.");
+      }
+      if (String(addressData.pin).length !== 6) {
+          return alert("PIN must be exactly 6 digits.");
+      }
+
+      setSavingAddress(true);
+      try {
+          // Adjust this URL if your Django route is strictly '/customer/profile/address/' without api/v1
+          await axios.patch(
+              `${API_BASE_URL}/api/v1/customer/profile/address/`, 
+              addressData, 
+              getHeaders()
+          );
+          alert("Address updated successfully!");
+          setIsEditingAddress(false);
+      } catch (err) {
+          console.error(err);
+          alert("Failed to update address. Please check your inputs.");
+      } finally {
+          setSavingAddress(false);
+      }
+  };
+
 
   // --- RAZORPAY INTEGRATION ---
   const loadRazorpayScript = () => {
@@ -91,7 +153,6 @@ const Checkout = () => {
 
     const token = localStorage.getItem('customer_token');
     try {
-      // ✅ 2. Pass Buy Now data to Gateway Order creation
       const payload = { special_notes: specialNotes };
       if (isBuyNow && buyNowItem) {
           payload.is_buy_now = true;
@@ -110,7 +171,7 @@ const Checkout = () => {
         key: preview.payment.gateway.public_key, 
         amount: amount,
         currency: currency,
-        name: preview.customer.name,
+        name: addressData.name,
         description: "Store Purchase",
         order_id: rzp_order_id, 
         handler: async function (response) {
@@ -132,9 +193,9 @@ const Checkout = () => {
           }
         },
         prefill: {
-          name: preview.customer.name,
-          email: preview.customer.email,
-          contact: preview.customer.phone,
+          name: addressData.name,
+          email: addressData.email,
+          contact: addressData.phone,
         },
         theme: { color: "#0EA5E9" } 
       };
@@ -153,12 +214,15 @@ const Checkout = () => {
     }
   };
 
-// --- MASTER SUBMIT HANDLER ---
+  // --- MASTER SUBMIT HANDLER ---
   const handlePlaceOrder = async () => {
     // 1. FRONTEND VALIDATION
+    if (isEditingAddress) {
+        return alert("Please save your address details before confirming the order.");
+    }
+
     if (paymentMethod === 'ONLINE' && onlineType === 'UPI' && !paymentProof) {
-      alert("Please upload your payment screenshot before confirming the order.");
-      return;
+      return alert("Please upload your payment screenshot before confirming the order.");
     }
 
     setPlacingOrder(true);
@@ -182,7 +246,6 @@ const Checkout = () => {
       formData.append('payment_method', finalMethodToSend); 
       formData.append('special_notes', specialNotes);
       
-      // ✅ 3. APPEND BUY NOW DATA TO FORMDATA
       if (isBuyNow && buyNowItem) {
           formData.append('is_buy_now', 'true');
           formData.append('item_id', buyNowItem.product_id);
@@ -218,7 +281,6 @@ const Checkout = () => {
       } else {
           alert(errorData?.error || "Failed to place order. Please check your inputs.");
       }
-      
       setPlacingOrder(false);
     }
   };
@@ -253,23 +315,88 @@ const Checkout = () => {
            
            {/* LEFT COLUMN: Customer & Payment */}
            <div className="checkout-main">
+              
+              {/* --- 🌟 DYNAMIC CUSTOMER DETAILS CARD --- */}
               <div className="section-card">
-                 <div className="card-header"><User size={18} /> Customer Details</div>
+                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                     <div><MapPin size={18} /> Shipping & Contact Details</div>
+                     {!isEditingAddress && (
+                         <button className="btn-edit-text" onClick={() => setIsEditingAddress(true)}>
+                             <Edit3 size={14} /> Edit
+                         </button>
+                     )}
+                 </div>
+                 
                  <div className="card-body">
-                    <p className="info-row"><User size={16} color="#6B7280" /> <strong>{preview?.customer?.name}</strong></p>
-                    <p className="info-row"><Phone size={16} color="#6B7280" /> {preview?.customer?.phone}</p>
-                    <p className="info-row"><Mail size={16} color="#6B7280" /> {preview?.customer?.email}</p>
-                    {preview?.customer?.address && (
-                        <p className="info-row"><CheckCircle size={16} color="#6B7280" /> {preview.customer.address}</p>
+                    {isEditingAddress ? (
+                        <div className="address-edit-form">
+                            <div className="form-grid-2">
+                                <div className="form-group">
+                                    <label>Full Name <span className="req">*</span></label>
+                                    <input type="text" name="name" value={addressData.name} onChange={handleAddressChange} className="checkout-input" />
+                                </div>
+                                <div className="form-group">
+                                    <label>Phone Number <span className="req">*</span></label>
+                                    <input type="text" name="phone" value={addressData.phone} onChange={handleAddressChange} className="checkout-input" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Email Address</label>
+                                <input type="email" name="email" value={addressData.email} onChange={handleAddressChange} className="checkout-input" />
+                            </div>
+                            <div className="form-group">
+                                <label>Full Address <span className="req">*</span></label>
+                                <textarea name="address" value={addressData.address} onChange={handleAddressChange} className="checkout-textarea" rows="2"></textarea>
+                            </div>
+                            <div className="form-grid-2">
+                                <div className="form-group">
+                                    <label>District / City <span className="req">*</span></label>
+                                    <input type="text" name="district" value={addressData.district} onChange={handleAddressChange} className="checkout-input" />
+                                </div>
+                                <div className="form-group">
+                                    <label>State <span className="req">*</span></label>
+                                    <input type="text" name="state" value={addressData.state} onChange={handleAddressChange} className="checkout-input" />
+                                </div>
+                            </div>
+                            <div className="form-grid-3">
+                                <div className="form-group">
+                                    <label>Country <span className="req">*</span></label>
+                                    <input type="text" name="country" value={addressData.country} onChange={handleAddressChange} className="checkout-input" />
+                                </div>
+                                <div className="form-group">
+                                    <label>PIN Code <span className="req">*</span></label>
+                                    <input type="text" name="pin" value={addressData.pin} onChange={handleAddressChange} maxLength="6" className="checkout-input" />
+                                </div>
+                                <div className="form-group">
+                                    <label>GSTIN (Optional)</label>
+                                    <input type="text" name="gstin" value={addressData.gstin} onChange={handleAddressChange} className="checkout-input" />
+                                </div>
+                            </div>
+                            <button className="btn-save-address" onClick={handleSaveAddress} disabled={savingAddress}>
+                                {savingAddress ? <Loader2 size={16} className="animate-spin" /> : 'Save Details'}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="address-view-mode">
+                            <p className="info-row"><User size={16} color="#6B7280" /> <strong>{addressData.name}</strong></p>
+                            <p className="info-row"><Phone size={16} color="#6B7280" /> {addressData.phone}</p>
+                            {addressData.email && <p className="info-row"><Mail size={16} color="#6B7280" /> {addressData.email}</p>}
+                            <div className="address-block">
+                                <p>{addressData.address}</p>
+                                <p>{addressData.district}, {addressData.state}</p>
+                                <p>{addressData.country} - <strong>{addressData.pin}</strong></p>
+                                {addressData.gstin && <p className="gst-text">GSTIN: {addressData.gstin}</p>}
+                            </div>
+                        </div>
                     )}
                  </div>
               </div>
 
+              {/* PAYMENT SECTION */}
               <div className="section-card">
                  <div className="card-header"><CreditCard size={18} /> Payment Method</div>
                  <div className="card-body">
                     
-                    {/* Pay at Store Option */}
                     {allowCash && (
                         <label className={`payment-option ${paymentMethod === 'CASH' ? 'active' : ''}`}>
                            <input type="radio" name="payment" checked={paymentMethod === 'CASH'} onChange={() => setPaymentMethod('CASH')} />
@@ -277,7 +404,6 @@ const Checkout = () => {
                         </label>
                     )}
 
-                    {/* Online Payment Master Toggle */}
                     {hasOnlineOptions && (
                         <label className={`payment-option ${paymentMethod === 'ONLINE' ? 'active' : ''}`}>
                            <input type="radio" name="payment" checked={paymentMethod === 'ONLINE'} onChange={() => {
@@ -289,7 +415,6 @@ const Checkout = () => {
                         </label>
                     )}
 
-                    {/* Online Sub-Options & Upload Box */}
                     {paymentMethod === 'ONLINE' && hasOnlineOptions && (
                         <div className="online-sub-options" style={{ padding: '16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0', marginTop: '10px' }}>
                            
@@ -411,9 +536,19 @@ const Checkout = () => {
                     <span>₹{preview?.summary?.net_payable || preview?.net_payable || preview?.summary?.total_value || preview?.total_value || 0}</span>
                  </div>
                  
-                 <button className="place-order-btn" onClick={handlePlaceOrder} disabled={placingOrder}>
+                 <button 
+                     className="place-order-btn" 
+                     onClick={handlePlaceOrder} 
+                     disabled={placingOrder || isEditingAddress} /* DISABLED IF EDITING ADDRESS */
+                     style={{ opacity: (placingOrder || isEditingAddress) ? 0.6 : 1, cursor: (placingOrder || isEditingAddress) ? 'not-allowed' : 'pointer' }}
+                 >
                     {placingOrder ? <Loader2 className="animate-spin" /> : "Confirm Order"}
                  </button>
+                 {isEditingAddress && (
+                     <p style={{ color: '#EF4444', fontSize: '13px', textAlign: 'center', marginTop: '12px' }}>
+                         Please save your address details before ordering.
+                     </p>
+                 )}
               </div>
            </div>
         </div>

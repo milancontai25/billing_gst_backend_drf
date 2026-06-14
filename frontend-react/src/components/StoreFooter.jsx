@@ -38,7 +38,7 @@ const StoreFooter = ({ slug, businessName, businessLogo, socialLinks, contactInf
           <h4>Quick Links</h4>
           <ul>
             <li><Link to={`/${slug}`}>Home</Link></li>
-            <li><a href="#">Shop Now</a></li>
+            <li><Link to={`/${slug}/items`}>Shop Now</Link></li>
             <li><Link to={`/${slug}/orders`}>Track Your Order</Link></li>
           </ul>
         </div>

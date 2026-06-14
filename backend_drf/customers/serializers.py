@@ -76,6 +76,9 @@ class CustomerAddressUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = [
+            'name',
+            'phone',
+            'email',
             'address',
             'country',
             'state',
@@ -83,12 +86,25 @@ class CustomerAddressUpdateSerializer(serializers.ModelSerializer):
             'pin',
             'gstin'
         ]
+        extra_kwargs = {
+            'email': {
+                'required': False,
+                'allow_blank': True,
+                'allow_null': True
+            },
+            'gstin': {
+                'required': False,
+                'allow_blank': True,
+                'allow_null': True
+            }
+        }
 
     def validate_pin(self, value):
         if value and len(str(value)) != 6:
             raise serializers.ValidationError("PIN must be 6 digits")
         return value
-
+    
+    
 
 class CustomerLoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False)

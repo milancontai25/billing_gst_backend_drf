@@ -359,6 +359,11 @@ class CheckoutPreviewView(APIView):
                 "phone": customer.phone,
                 "email": customer.email,
                 "address": customer.address,
+                "country": customer.country,
+                "state": customer.state,
+                "district": customer.district,
+                "pin": customer.pin,
+                "gstin": customer.gstin,
             },
             "items": items,
 

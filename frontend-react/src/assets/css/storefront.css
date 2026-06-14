@@ -2020,3 +2020,114 @@ body { margin: 0; padding: 0; }
     justify-content: flex-start !important; /* 👈 Forces product cards to start at the left edge */
     width: 100%;
 }
+
+
+
+/* ==========================================================================
+   ADDRESS EDIT FORM
+   ========================================================================== */
+.btn-edit-text {
+    background: transparent;
+    border: none;
+    color: #0EA5E9;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s ease;
+}
+
+.btn-edit-text:hover {
+    color: #0284C7;
+}
+
+.address-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background-color: #F8FAFC;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.form-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+}
+
+.checkout-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #FFFFFF;
+    transition: border-color 0.2s ease;
+}
+
+.checkout-input:focus, .checkout-textarea:focus {
+    outline: none;
+    border-color: #0EA5E9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.btn-save-address {
+    background-color: #111827;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.btn-save-address:hover:not(:disabled) {
+    background-color: #000000;
+}
+
+/* View Mode Details */
+.address-view-mode {
+    padding: 8px 4px;
+}
+
+.address-block {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #E2E8F0;
+    color: #475569;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.address-block p {
+    margin: 4px 0;
+}
+
+.gst-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+    margin-top: 8px !important;
+}
+
+@media (max-width: 640px) {
+    .form-grid-2, .form-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
