@@ -49,6 +49,7 @@ const Products = () => {
     max_order_quantity_product: 1,
     availability_status_service: 'Available',
     category: '', category_image: null, 
+    subcategory: '', subcategory_image: null, 
     description: '', mrp_baseprice: 0, gross_amount: 0, 
     tax_percent: 0, 
     area: '', customer_view: 'Special', 
@@ -271,6 +272,7 @@ const Products = () => {
       image_2: null,
       image_3: null,
       category_image: null, 
+      subcategory_image: null,
 
       mrp_baseprice: item.mrp_baseprice || 0,
       gross_amount: item.gross_amount || 0,
@@ -293,7 +295,7 @@ const Products = () => {
     const isService = formData.item_type === 'Service';
 
     const fields = [
-        'item_type', 'item_name', 'category', 'description', 
+        'item_type', 'item_name', 'category', 'subcategory', 'description', 
         'mrp_baseprice', 'gross_amount', 'tax_percent',
         'area', 'customer_view', 'item_video_link'
     ];
@@ -317,7 +319,7 @@ const Products = () => {
         submitData.append(key, value);
     });
 
-    ['item_image', 'image_1', 'image_2', 'image_3', 'category_image'].forEach(imgKey => {
+    ['item_image', 'image_1', 'image_2', 'image_3', 'category_image', 'subcategory_image'].forEach(imgKey => {
         if (formData[imgKey] instanceof File) {
             submitData.append(imgKey, formData[imgKey]);
         }
@@ -577,21 +579,30 @@ const Products = () => {
                   </select>
               </div>
 
+              <div className="form-group">
+                <label>Item Name*</label>
+                <input type="text" name="item_name" value={formData.item_name} onChange={handleInputChange} className="form-input" style={{ width: '100%' }} required />
+              </div>
+
               <div className="form-row">
-                <div className="form-group half-width">
-                  <label>Item Name*</label>
-                  <input type="text" name="item_name" value={formData.item_name} onChange={handleInputChange} required />
-                </div>
                 <div className="form-group half-width">
                   <label>Category*</label>
                   <input type="text" name="category" value={formData.category} onChange={handleInputChange} required />
                 </div>
+                <div className="form-group half-width">
+                  <label>Subcategory (Optional)</label>
+                  <input type="text" name="subcategory" value={formData.subcategory} onChange={handleInputChange} />
+                </div>
               </div>
 
               <div className="form-row" style={{ borderBottom: '1px dashed #e5e7eb', paddingBottom: '15px', marginBottom: '15px' }}>
-                 <div className="form-group">
-                     <label style={{ fontSize:'13px', color: '#6b7280' }}>Upload Category Image (Optional)</label>
+                 <div className="form-group half-width">
+                     <label style={{ fontSize:'13px', color: '#6b7280' }}>Category Image (Optional)</label>
                      <input type="file" onChange={(e) => handleFileChange(e, 'category_image')} accept="image/*" className="file-input-small"/>
+                 </div>
+                 <div className="form-group half-width">
+                     <label style={{ fontSize:'13px', color: '#6b7280' }}>Subcategory Image (Optional)</label>
+                     <input type="file" onChange={(e) => handleFileChange(e, 'subcategory_image')} accept="image/*" className="file-input-small"/>
                  </div>
               </div>
 

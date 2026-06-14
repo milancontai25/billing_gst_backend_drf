@@ -19,13 +19,14 @@ class ProductSerializer(serializers.ModelSerializer):
     image_2 = serializers.ImageField(write_only=True, required=False)
     image_3 = serializers.ImageField(write_only=True, required=False)
     category_image = serializers.ImageField(write_only=True, required=False)
+    subcategory_image = serializers.ImageField(write_only=True, required=False)
 
     class Meta:
         model = Item
         fields = [
             # Core
             'id', 'business', 'slug',
-            'item_type', 'item_name', 'category', 'description',
+            'item_type', 'item_name', 'category', 'subcategory', 'description',
             'currency_symbol',
             'currency_code',
 
@@ -52,6 +53,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'item_image_3',
             'item_video_link',
             'category_image_url',
+            'subcategory_image_url',
 
             # Write-only upload fields
             'item_image',
@@ -59,6 +61,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'image_2',
             'image_3',
             'category_image',
+            'subcategory_image',
 
             # Other
             'area', 'customer_view', 'isShow', 'best_selling', 'trending', 'created_date',
@@ -71,6 +74,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'item_image_2',
             'item_image_3',
             'category_image_url',
+            'subcategory_image_url',
         ]
 
     def get_currency_symbol(self, obj):
@@ -96,6 +100,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "item_image_2": validated_data.pop("image_2", None),
             "item_image_3": validated_data.pop("image_3", None),
             "category_image_url": validated_data.pop("category_image", None),
+            "subcategory_image_url": validated_data.pop("subcategory_image", None),
         }
 
         item = Item.objects.create(**validated_data)
@@ -114,6 +119,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "item_image_2": validated_data.pop("image_2", None),
             "item_image_3": validated_data.pop("image_3", None),
             "category_image_url": validated_data.pop("category_image", None),
+            "subcategory_image_url": validated_data.pop("subcategory_image", None),
         }
 
         # Update other fields
@@ -159,5 +165,8 @@ class ProductSerializer(serializers.ModelSerializer):
         return self._validate_image(image)
     
     def validate_category_image(self, image):
+        return self._validate_image(image)
+    
+    def validate_subcategory_image(self, image):
         return self._validate_image(image)
 
