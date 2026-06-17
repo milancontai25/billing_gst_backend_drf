@@ -239,21 +239,38 @@ const StoreFront = () => {
   });
 
   const renderProductCard = (product) => {
-    const isOutOfStock = product.quantity_product <= 0;
     const mrp = parseFloat(product.mrp_baseprice || 0);
     const sellingPrice = parseFloat(product.gross_amount || 0);
     const hasDiscount = mrp > sellingPrice;
     const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
     const currency = product.currency_symbol || '₹';
 
+    // --- DYNAMIC AVAILABILITY LOGIC ---
+    const isService = product.item_type && String(product.item_type).toLowerCase().includes('service');
+    let isUnavailable = false;
+    let unavailableText = 'SOLD OUT';
+
+    if (isService) {
+        const status = product.availability_status_service || '';
+        if (status.toLowerCase() === 'busy' || status.toLowerCase() === 'offline') {
+            isUnavailable = true;
+            unavailableText = 'NOT AVAILABLE';
+        }
+    } else {
+        if (product.quantity_product <= 0) {
+            isUnavailable = true;
+            unavailableText = 'SOLD OUT';
+        }
+    }
+
     return (
       <div key={product.id} className="min-product-card">
         <Link to={`/${slug}/item/${product.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
             <div className="min-image-box">
-                {isOutOfStock && <div className="min-out-badge">SOLD OUT</div>}
+                {isUnavailable && <div className="min-out-badge">{unavailableText}</div>}
 
                 {product.item_image_url ? (
-                    <img src={product.item_image_url} alt={product.item_name} className={`min-product-img ${isOutOfStock ? 'grayscale' : ''}`} />
+                    <img src={product.item_image_url} alt={product.item_name} className={`min-product-img ${isUnavailable ? 'grayscale' : ''}`} />
                 ) : ( 
                     <div className="min-placeholder-img">{product.item_name.charAt(0)}</div> 
                 )}
@@ -261,10 +278,10 @@ const StoreFront = () => {
                 <div className="min-add-overlay">
                     <button 
                         className="min-add-btn" 
-                        disabled={isOutOfStock} 
+                        disabled={isUnavailable} 
                         onClick={(e) => handleAddToCart(product.id, e)}
                     >
-                        {isOutOfStock ? 'Sold Out' : 'Add to Cart'}
+                        {isUnavailable ? unavailableText : 'Add to Cart'}
                     </button>
                 </div>
             </div>
@@ -450,3 +467,4 @@ const StoreFront = () => {
 };
 
 export default StoreFront;
+

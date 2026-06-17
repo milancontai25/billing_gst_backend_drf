@@ -92,34 +92,44 @@ const Products = () => {
   const handleExport = () => {
     if (filteredItems.length === 0) return alert("No items to export.");
 
+    // Added all fields to headers
     const headers = [
-        "Item Type", "Name", "Category", "Brand", "HSN Code", 
-        "Price", "Gross", "Includes Tax", "Tax %", "Tax Type", "Cost Price", 
-        "Quantity", "Unit", "Min Stock", "Service Status", 
-        "Area", "Description"
+        "Item Type", "Item Name", "Category", "Subcategory", "Brand", "HSN Code", 
+        "Base Price", "Gross Amount", "Tax %", "Cost Price", "Quantity", "Unit", 
+        "Min Stock", "Min Order Qty", "Max Order Qty", "Service Status", "Area", 
+        "Customer View", "Is Show", "Best Selling", "Trending", "Video Link", "Description"
     ];
 
     const rows = filteredItems.map(item => {
         const isService = item.item_type === 'Service';
+        
+        // Helper to format text safely with quotes so commas inside don't break the CSV
+        const safeText = (text) => `"${(text || '').toString().replace(/"/g, '""')}"`;
+
         return [
             item.item_type,
-            `"${item.item_name}"`,
-            item.category,
-            isService ? 'NA' : (item.brand_product || '-'),
-            isService ? 'NA' : (item.hsn_sac_code_product || '-'),
-            item.mrp_baseprice,
-            item.gross_amount,
-            item.currency_symbol,
-            item.price_includes_tax ? 'Yes' : 'No', 
-            item.tax_percent || item.gst_percent || 0,
-            item.tax_type || 'GST',
-            isService ? 0 : item.cost_price_product,
-            isService ? 0 : item.quantity_product,
-            isService ? 'NA' : item.unit_product,
-            isService ? 0 : item.min_stock_product,
-            isService ? item.availability_status_service : 'NA',
-            item.area,
-            `"${item.description || ''}"`
+            safeText(item.item_name),
+            safeText(item.category),
+            safeText(item.subcategory),
+            isService ? 'NA' : safeText(item.brand_product),
+            isService ? 'NA' : safeText(item.hsn_sac_code_product),
+            item.mrp_baseprice || 0,
+            item.gross_amount || 0,
+            item.tax_percent || 0,
+            isService ? 0 : (item.cost_price_product || 0),
+            isService ? 0 : (item.quantity_product || 0),
+            isService ? 'NA' : safeText(item.unit_product || 'Pcs'),
+            isService ? 0 : (item.min_stock_product || 0),
+            isService ? 1 : (item.min_order_quantity_product || 1),
+            isService ? 1 : (item.max_order_quantity_product || 1),
+            isService ? safeText(item.availability_status_service) : 'NA',
+            safeText(item.area),
+            safeText(item.customer_view || 'General'),
+            item.isShow ? 'TRUE' : 'FALSE',
+            item.best_selling ? 'TRUE' : 'FALSE',
+            item.trending ? 'TRUE' : 'FALSE',
+            safeText(item.item_video_link),
+            safeText(item.description) // Safely wrapped description
         ].join(",");
     });
 
@@ -145,63 +155,64 @@ const Products = () => {
 
     reader.onload = async (evt) => {
         const text = evt.target.result;
-        const rows = text.split("\n").slice(1).filter(r => r.trim() !== '');
+        // Split by lines, ignoring empty ones
+        const rows = text.split("\n").filter(r => r.trim() !== '');
         
         let successCount = 0;
         let errors = [];
 
-        // 👇 1. ADD THIS NUMBER CLEANER HELPER 👇
         const parseNum = (val, fallback = 0) => {
             if (!val) return fallback;
-            const parsed = parseFloat(val.toString().replace(/"/g, "").trim());
+            const parsed = parseFloat(val.toString().trim());
             return isNaN(parsed) ? fallback : parsed;
         };
-        // 👆 --------------------------------- 👆
 
-        for (let i = 0; i < rows.length; i++) {
-            const cols = rows[i].split(","); 
+        // Start from i = 1 to skip the header row
+        for (let i = 1; i < rows.length; i++) {
+            // Smart CSV Splitter: Splits by comma, but IGNORES commas inside quotes!
+            const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(col => col.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
             
-            const name = cols[1]?.replace(/"/g, "").trim();
-            const type = cols[0]?.trim();
+            const type = cols[0];
+            const name = cols[1];
 
             if (!name || !type) continue; 
 
             const isService = type === 'Service';
-
             const payload = new FormData();
+
+            // Match exact index order from handleExport
             payload.append('item_type', type);
             payload.append('item_name', name);
-            payload.append('category', cols[2]?.replace(/"/g, "").trim() || 'General');
+            payload.append('category', cols[2] || 'General');
+            payload.append('subcategory', cols[3] || '');
             
-            // 👇 2. WRAP NUMERIC FIELDS IN parseNum() 👇
-            payload.append('mrp_baseprice', parseNum(cols[5], 0));
-            payload.append('gross_amount', parseNum(cols[6], 0));
+            payload.append('mrp_baseprice', parseNum(cols[6], 0));
+            payload.append('gross_amount', parseNum(cols[7], 0));
             payload.append('tax_percent', parseNum(cols[8], 0));
-
-            payload.append('area', cols[15]?.replace(/"/g, "").trim() || 'Store'); 
-            payload.append('description', cols[16]?.replace(/"/g, "") || '');
-            payload.append('customer_view', 'Special'); 
-
-            payload.append('item_video_link', '');
-            payload.append('isShow', 'true');
-            payload.append('best_selling', 'false');
-            payload.append('trending', 'false');
+            
+            payload.append('area', cols[16] || 'Store'); 
+            payload.append('customer_view', cols[17] || 'General');
+            
+            payload.append('isShow', cols[18] === 'TRUE' ? 'true' : 'false');
+            payload.append('best_selling', cols[19] === 'TRUE' ? 'true' : 'false');
+            payload.append('trending', cols[20] === 'TRUE' ? 'true' : 'false');
+            
+            payload.append('item_video_link', cols[21] || '');
+            payload.append('description', cols[22] || '');
 
             if (isService) {
-                payload.append('availability_status_service', cols[14] || 'Available');
+                payload.append('availability_status_service', cols[15] || 'Available');
                 payload.append('quantity_product', 0);
                 payload.append('brand_product', 'NA');
             } else {
-                payload.append('brand_product', cols[3]?.replace(/"/g, "").trim() || 'Generic');
-                payload.append('hsn_sac_code_product', cols[4]?.replace(/"/g, "").trim() || '');
-                
-                // 👇 3. WRAP THE REST OF THE NUMERIC FIELDS 👇
-                payload.append('cost_price_product', parseNum(cols[10], 0));
-                payload.append('quantity_product', parseNum(cols[11], 0));
-                payload.append('unit_product', cols[12]?.replace(/"/g, "").trim() || 'Pcs');
-                payload.append('min_stock_product', parseNum(cols[13], 5));
-                payload.append('min_order_quantity_product', 1);
-                payload.append('max_order_quantity_product', 1);
+                payload.append('brand_product', cols[4] || 'Generic');
+                payload.append('hsn_sac_code_product', cols[5] || '');
+                payload.append('cost_price_product', parseNum(cols[9], 0));
+                payload.append('quantity_product', parseNum(cols[10], 0));
+                payload.append('unit_product', cols[11] || 'Pcs');
+                payload.append('min_stock_product', parseNum(cols[12], 5));
+                payload.append('min_order_quantity_product', parseNum(cols[13], 1));
+                payload.append('max_order_quantity_product', parseNum(cols[14], 1));
             }
 
             try {
@@ -210,8 +221,8 @@ const Products = () => {
                 });
                 successCount++;
             } catch (err) {
-                console.error(`Failed to import row ${i+1}:`, err.response?.data || err.message);
-                errors.push(`Row ${i+1}: ${name}`);
+                console.error(`Failed to import row ${i}:`, err.response?.data || err.message);
+                errors.push(`Row ${i}: ${name}`);
             }
         }
 
@@ -590,7 +601,7 @@ const Products = () => {
                   <input type="text" name="category" value={formData.category} onChange={handleInputChange} required />
                 </div>
                 <div className="form-group half-width">
-                  <label>Subcategory (Optional)</label>
+                  <label>Subcategory</label>
                   <input type="text" name="subcategory" value={formData.subcategory} onChange={handleInputChange} />
                 </div>
               </div>

@@ -155,22 +155,39 @@ const StoreCategory = () => {
   };
 
   const renderProductCard = (product, badgeLabel = null) => {
-    const isOutOfStock = product.quantity_product <= 0;
     const mrp = parseFloat(product.mrp_baseprice || 0);
     const sellingPrice = parseFloat(product.gross_amount || 0);
     const hasDiscount = mrp > sellingPrice;
     const currency = product.currency_symbol || '₹'; 
     const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
 
+    // --- DYNAMIC AVAILABILITY LOGIC ---
+    const isService = product.item_type && String(product.item_type).toLowerCase().includes('service');
+    let isUnavailable = false;
+    let unavailableText = 'SOLD OUT';
+
+    if (isService) {
+        const status = product.availability_status_service || '';
+        if (status.toLowerCase() === 'busy' || status.toLowerCase() === 'offline') {
+            isUnavailable = true;
+            unavailableText = 'NOT AVAILABLE';
+        }
+    } else {
+        if (product.quantity_product <= 0) {
+            isUnavailable = true;
+            unavailableText = 'SOLD OUT';
+        }
+    }
+
     return (
       <div key={product.id} className="elegant-product-card">
         <Link to={`/${slug}/item/${product.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
             <div className="elegant-image-box">
-                {badgeLabel && !isOutOfStock && <div className="elegant-badge">{badgeLabel}</div>}
-                {isOutOfStock && <div className="elegant-badge out-of-stock">SOLD OUT</div>}
+                {badgeLabel && !isUnavailable && <div className="elegant-badge">{badgeLabel}</div>}
+                {isUnavailable && <div className="elegant-badge out-of-stock">{unavailableText}</div>}
 
                 {product.item_image_url ? (
-                    <img src={product.item_image_url} alt={product.item_name} className={`elegant-product-img ${isOutOfStock ? 'grayscale' : ''}`} />
+                    <img src={product.item_image_url} alt={product.item_name} className={`elegant-product-img ${isUnavailable ? 'grayscale' : ''}`} />
                 ) : ( 
                     <div className="elegant-placeholder-img">{product.item_name.charAt(0)}</div> 
                 )}
@@ -178,10 +195,10 @@ const StoreCategory = () => {
                 <div className="elegant-add-overlay">
                     <button 
                         className="elegant-add-btn" 
-                        disabled={isOutOfStock} 
+                        disabled={isUnavailable} 
                         onClick={(e) => handleAddToCart(product.id, e)}
                     >
-                        {isOutOfStock ? 'Sold Out' : 'Add to Cart'}
+                        {isUnavailable ? unavailableText : 'Add to Cart'}
                     </button>
                 </div>
             </div>
