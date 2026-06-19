@@ -145,18 +145,43 @@ class BusinessSetupView(APIView):
 
     def get(self, request):
         user = request.user
-        businesses = BusinessEntity.objects.filter(user=user)
+        user_businesses = BusinessEntity.objects.filter(user=user)
 
+        # 1. Look at the user's currently selected business
+        active_biz = user.active_business
+
+        # 🚨 THE CRITICAL LOCK 🚨
+        # If the business exists but admin HAS NOT approved it, force it to None!
+        # This is what triggers the Verification Modal in React.
+        if active_biz and not active_biz.is_active:
+            active_biz = None
+
+        # 2. Auto-Fallback
+        # If active_biz is None, but they have an approved business (e.g., admin just approved it)
+        # automatically select it for them so they don't get stuck.
+        if not active_biz:
+            first_approved = user_businesses.filter(is_active=True).first()
+            if first_approved:
+                user.active_business = first_approved
+                user.save(update_fields=['active_business'])
+                active_biz = first_approved
+
+        # 3. Serialize the data
         user_data = UserSerializer(user).data
-        business_data = BusinessEntitySerializer(businesses, many=True).data
+        business_data = BusinessEntitySerializer(user_businesses, many=True).data
+        active_business_data = BusinessEntitySerializer(active_biz).data if active_biz else None
 
+        # 4. Return exactly what React expects
         return Response(
             {
+                "requires_setup": not user_businesses.exists(),
                 "user": user_data,
-                "businesses": business_data
+                "businesses": business_data,
+                "active_business": active_business_data  # Will be null if pending!
             },
             status=status.HTTP_200_OK
         )
+    
 
     def post(self, request):
         user = request.user
@@ -311,6 +336,10 @@ class SwitchBusinessView(APIView):
         except BusinessEntity.DoesNotExist:
             return Response({"error": "Invalid business"}, status=404)
 
+        # 🚨 PREVENT SWITCHING TO PENDING BUSINESSES 🚨
+        if not business.is_active:
+            return Response({"error": "This business is pending admin approval."}, status=403)
+
         request.user.active_business = business
         request.user.save()
 
@@ -318,4 +347,4 @@ class SwitchBusinessView(APIView):
             "message": "Business switched successfully",
             "active_business": BusinessEntitySerializer(business).data
         }, status=200)
-
+    

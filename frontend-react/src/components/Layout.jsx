@@ -17,6 +17,8 @@ const Layout = () => {
   const [showSwitcher, setShowSwitcher] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); 
 
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+
   // --- PAYMENT CONFIG STATE ---
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [hasPaymentConfig, setHasPaymentConfig] = useState(false);
@@ -59,13 +61,25 @@ const Layout = () => {
   };
   const [paymentForm, setPaymentForm] = useState(initialPaymentState);
 
-  // --- FETCH DATA ---
-  const fetchDashboard = async () => {
+  const fetchDashboard = async (autoCloseModal = false) => {
     try {
       setLoading(true);
       const res = await api.get('/dashboard/');
       setData(res.data);
-      if (res.data.requires_setup) setShowSetupModal(true);
+      
+      const activeBiz = res.data.active_business;
+      const hasBusinesses = res.data.businesses?.length > 0;
+
+      if (res.data.requires_setup) {
+          setShowSetupModal(true);
+      } else if (hasBusinesses && (!activeBiz || activeBiz.is_active === false)) {
+          // FOOLPROOF LOCK: If no business is active, OR the selected one is pending
+          setShowVerificationModal(true);
+      } else if (activeBiz && activeBiz.is_active === true && autoCloseModal) {
+          // ONLY close the modal if they clicked "Check Status" or on initial page load
+          setShowVerificationModal(false);
+      }
+      
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -73,7 +87,8 @@ const Layout = () => {
     }
   };
 
-  useEffect(() => { fetchDashboard(); }, []);
+  // Update your useEffect to pass 'true' on the initial page load
+  useEffect(() => { fetchDashboard(true); }, []);
 
   // --- SMART TAX LOGIC ---
   useEffect(() => {
@@ -102,9 +117,13 @@ const Layout = () => {
     try {
       await api.post('/business/switch/', { business_id: businessId });
       setShowSwitcher(false);
-      fetchDashboard(); 
+      fetchDashboard(true); 
       navigate('/dashboard'); 
-    } catch (err) { alert("Failed to switch business"); }
+    } catch (err) { 
+      // Show the actual Django error message (e.g. "This business is pending admin approval.")
+      const errorMsg = err.response?.data?.error || "Failed to switch business";
+      alert(errorMsg); 
+    }
   };
 
   // --- BUSINESS SETUP HANDLERS ---
@@ -172,15 +191,23 @@ const Layout = () => {
 
     try {
       if (isEditMode && data?.active_business?.id) {
+          // EDITING EXISTING (APPROVED) BUSINESS
           await api.patch(`/business/${data.active_business.id}/update/`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+          setShowSetupModal(false);
+          fetchDashboard();
+          openPaymentConfig(); // Show payment settings after edit
       } else {
+          // CREATING A BRAND NEW BUSINESS
           await api.post('/business/setup/', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+          setShowSetupModal(false);
+          
+          // Re-fetch in background, but DO NOT auto-close the modal
+          await fetchDashboard(false); 
+          
+          // Forcefully trigger the verification screen
+          setShowVerificationModal(true);
       }
-      setShowSetupModal(false);
-      fetchDashboard();
-      openPaymentConfig();
-      
-    } catch (err) {
+    } catch (err)  {
       if (err.response && err.response.data) {
           alert(`Validation Error: ${JSON.stringify(err.response.data)}`);
       } else {
@@ -308,7 +335,18 @@ const Layout = () => {
                 <UserProfile user={data?.user} handleLogout={handleLogout} activeTab={currentPath} />
             </div>
         </div>
-        <Outlet context={{ data, fetchDashboard }} />
+        
+        {/* 🚨 THE DASHBOARD LOCK 🚨 */}
+        {/* Only load the actual dashboard pages if the active business is approved */}
+        {data?.active_business?.is_active === true ? (
+            <Outlet context={{ data, fetchDashboard }} />
+        ) : (
+            <div style={{ padding: '60px 20px', textAlign: 'center', color: '#6b7280' }}>
+                <Shield size={48} style={{ margin: '0 auto 15px auto', color: '#d1d5db' }} />
+                <h3>Welcome to StatGrow</h3>
+                <p>Your business dashboard will appear here once verified by an admin.</p>
+            </div>
+        )}
       </main>
 
       {/* --- BUSINESS SETUP MODAL --- */}
@@ -620,6 +658,67 @@ const Layout = () => {
         </div>
       )}
 
+      {/* --- ACCOUNT VERIFICATION MODAL --- */}
+      {showVerificationModal && (
+        <div className="modal-overlay" style={{ zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.85)' }}>
+          <div className="modal-box text-center" style={{ maxWidth: '420px', padding: '30px' }}>
+            
+            {/* ONLY show the Cross/Close button if they have AT LEAST ONE approved business (2nd Account) */}
+            {data?.businesses?.some(b => b.is_active === true) && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-10px' }}>
+                    <button className="close-btn" onClick={async () => {
+                        // Switch back to their 1st approved business safely
+                        const firstApproved = data.businesses.find(b => b.is_active === true);
+                        if (firstApproved && data?.active_business?.id !== firstApproved.id) {
+                            await api.post('/business/switch/', { business_id: firstApproved.id });
+                            fetchDashboard(true);
+                        } else {
+                            setShowVerificationModal(false);
+                        }
+                    }}>
+                        <X size={20} />
+                    </button>
+                </div>
+            )}
+
+            <Shield size={54} style={{ color: '#3b82f6', margin: '0 auto 15px auto' }} />
+            <h2 style={{ fontSize: '22px', marginBottom: '10px', color: '#1f2937' }}>Verification Pending</h2>
+            
+            <p style={{ fontSize: '15px', color: '#4b5563', lineHeight: '1.6', marginBottom: '25px' }}>
+                Please wait 5 minutes for account verification. Your business profile is currently under review by our admin team.
+            </p>
+
+            {/* CONDITIONAL BUTTONS */}
+            {!data?.businesses?.some(b => b.is_active === true) ? (
+                /* 1ST TIME USER: No OK/Cross button. They are stuck until approved. */
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="btn btn-outline" onClick={handleLogout} style={{ flex: 1 }}>
+                        Logout
+                    </button>
+                    <button className="btn btn-blue" onClick={() => fetchDashboard(true)} style={{ flex: 1 }}>
+                        Check Status
+                    </button>
+                </div>
+            ) : (
+                /* 2ND TIME USER: Let them return to their previous dashboard */
+                <button className="btn btn-gray" onClick={async () => {
+                    // Switch back to their 1st approved business safely
+                    const firstApproved = data.businesses.find(b => b.is_active === true);
+                    if (firstApproved && data?.active_business?.id !== firstApproved.id) {
+                        await api.post('/business/switch/', { business_id: firstApproved.id });
+                        fetchDashboard(true);
+                    } else {
+                        setShowVerificationModal(false);
+                    }
+                }} style={{ width: '100%' }}>
+                    Return to Previous Dashboard
+                </button>
+            )}
+            
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 };

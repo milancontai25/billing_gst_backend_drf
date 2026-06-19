@@ -56,7 +56,7 @@ class BusinessEntity(models.Model):
 
     slug = models.SlugField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
 
 
     currency = models.CharField(
