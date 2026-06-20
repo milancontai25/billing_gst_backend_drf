@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='item',
             name='subcategory',
-            field=models.CharField(default='sub', max_length=100),
+            field=models.CharField(default='', max_length=100),
             preserve_default=False,
         ),
         migrations.AddField(
