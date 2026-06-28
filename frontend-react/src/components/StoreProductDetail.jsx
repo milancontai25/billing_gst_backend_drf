@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Star, Share2, Heart, Minus, Plus, Loader2, PlayCircle } from 'lucide-react';
@@ -22,7 +22,9 @@ const StoreProductDetail = () => {
   const [hasProducts, setHasProducts] = useState(true); 
   const [hasServices, setHasServices] = useState(false);
 
-  // --- MEDIA STATE ---
+  // --- VARIANT & MEDIA STATE ---
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedAttributes, setSelectedAttributes] = useState({});
   const [mediaList, setMediaList] = useState([]);
   const [activeMedia, setActiveMedia] = useState(null); 
 
@@ -44,13 +46,7 @@ const StoreProductDetail = () => {
 
   const formatUrl = (path) => {
     if (!path) return null;
-    
-    // If the path is already a full S3 URL (starts with http/https), return it directly
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-        return path;
-    }
-    
-    // Fallback just in case older data returns a relative path like "/media/..."
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
     return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`; 
   };
 
@@ -85,8 +81,6 @@ const StoreProductDetail = () => {
     const fetchProductAndBiz = async () => {
       try {
         setLoading(true);
-        
-        // Fetch specific product AND store summary concurrently
         const PRODUCT_API_URL = `${API_BASE_URL}/api/v1/business/${slug}/items/${itemSlug}/`;
         const SUMMARY_API_URL = `${API_BASE_URL}/api/v1/business/${slug}/items/summary/`;
 
@@ -95,7 +89,6 @@ const StoreProductDetail = () => {
             axios.get(SUMMARY_API_URL)
         ]);
 
-        // Process Summary Data to determine Header Menu status
         if (summaryRes.status === 'fulfilled') {
             const sumData = summaryRes.value.data;
             const allSummaryItems = [...(sumData.best_selling || []), ...(sumData.trending || [])];
@@ -110,23 +103,22 @@ const StoreProductDetail = () => {
             setHasServices(false);
         }
 
-        // Process Product Data
         if (productRes.status === 'fulfilled') {
             const data = productRes.value.data;
             setProduct(data);
 
-            // PREPARE MEDIA LIST
-            const media = [];
-            if (data.item_image_url) media.push({ type: 'image', url: data.item_image_url });
-            if (data.item_image_1) media.push({ type: 'image', url: data.item_image_1 });
-            if (data.item_image_2) media.push({ type: 'image', url: data.item_image_2 });
-            if (data.item_image_3) media.push({ type: 'image', url: data.item_image_3 });
-            if (data.item_video_link) media.push({ type: 'video', url: data.item_video_link });
+            // --- INITIALIZE VARIANT DATA ---
+            if (data.has_variants && data.variants && data.variants.length > 0) {
+                const firstVariant = data.variants[0];
+                setSelectedVariant(firstVariant);
+                
+                const initialAttrs = {};
+                firstVariant.attributes.forEach(attr => {
+                    initialAttrs[attr.attribute_name] = attr.attribute_value;
+                });
+                setSelectedAttributes(initialAttrs);
+            }
 
-            setMediaList(media);
-            setActiveMedia(media[0]); 
-
-            // Business Info
             if (data.business) {
                 const biz = data.business;
                 setBusinessName(biz.business_name);
@@ -155,6 +147,86 @@ const StoreProductDetail = () => {
     fetchProductAndBiz();
   }, [slug, itemSlug]);
 
+  // --- UPDATE MEDIA BASED ON SELECTION ---
+  useEffect(() => {
+    if (!product) return;
+    
+    const media = [];
+    if (selectedVariant && selectedVariant.images && selectedVariant.images.length > 0) {
+        selectedVariant.images.forEach(img => {
+            media.push({ type: 'image', url: img.image_url });
+        });
+        if (product.item_video_link) media.push({ type: 'video', url: product.item_video_link });
+    } else {
+        if (product.item_image_url) media.push({ type: 'image', url: product.item_image_url });
+        if (product.item_image_1) media.push({ type: 'image', url: product.item_image_1 });
+        if (product.item_image_2) media.push({ type: 'image', url: product.item_image_2 });
+        if (product.item_image_3) media.push({ type: 'image', url: product.item_image_3 });
+        if (product.item_video_link) media.push({ type: 'video', url: product.item_video_link });
+    }
+    
+    setMediaList(media);
+    if (media.length > 0) setActiveMedia(media[0]);
+  }, [product, selectedVariant]);
+
+  // --- EXTRACT AVAILABLE ATTRIBUTES (e.g. Color, Size) ---
+  const availableAttributes = useMemo(() => {
+    if (!product || !product.has_variants) return {};
+    const attrs = {};
+    product.variants.forEach(v => {
+        v.attributes.forEach(a => {
+            if (!attrs[a.attribute_name]) attrs[a.attribute_name] = new Set();
+            attrs[a.attribute_name].add(a.attribute_value);
+        });
+    });
+    
+    const result = {};
+    Object.keys(attrs).forEach(key => {
+        result[key] = Array.from(attrs[key]);
+    });
+    return result;
+  }, [product]);
+
+  // Handle User Selecting a new Color/Size
+  const handleAttributeSelect = (attrName, value) => {
+    const newAttrs = { ...selectedAttributes, [attrName]: value };
+
+    // Try to find the exact variant match
+    let matchingV = product.variants.find(v =>
+        v.attributes.every(a => newAttrs[a.attribute_name] === a.attribute_value)
+    );
+
+    // If that combination doesn't exist (e.g. Red XL is sold out/removed), find the nearest valid variant for the clicked attribute
+    if (!matchingV) {
+         matchingV = product.variants.find(v =>
+             v.attributes.some(a => a.attribute_name === attrName && a.attribute_value === value)
+         );
+         if (matchingV) {
+             const updatedAttrs = {};
+             matchingV.attributes.forEach(a => { updatedAttrs[a.attribute_name] = a.attribute_value; });
+             setSelectedAttributes(updatedAttrs);
+             setSelectedVariant(matchingV);
+             return;
+         }
+    }
+
+    setSelectedAttributes(newAttrs);
+    if (matchingV) setSelectedVariant(matchingV);
+  };
+
+  // Extract a specific color's image for the swatch buttons
+  const getSwatchImage = (attrName, attrValue) => {
+    const matchingVariant = product.variants.find(v =>
+        v.attributes.some(a => a.attribute_name === attrName && a.attribute_value === attrValue)
+    );
+    if (matchingVariant && matchingVariant.images && matchingVariant.images.length > 0) {
+        const primary = matchingVariant.images.find(i => i.is_primary);
+        return primary ? primary.image_url : matchingVariant.images[0].image_url;
+    }
+    return null; 
+  };
+
+
   const checkLoginStatus = () => {
     const token = localStorage.getItem('customer_token');
     const name = localStorage.getItem('customer_name');
@@ -173,7 +245,14 @@ const StoreProductDetail = () => {
     if (!isLoggedIn) { alert("Please Login first!"); setShowAuthCustomer(true); return; }
     try {
       setAdding(true);
-      await customerApi.post(`customer/cart/add/`, { item: product.id, quantity: quantity });
+      const payload = { item: product.id, quantity: quantity };
+      
+      // If it's a variant, send the variant UID to the backend
+      if (selectedVariant) {
+          payload.variant_uid = selectedVariant.uid; 
+      }
+
+      await customerApi.post(`customer/cart/add/`, payload);
       setIsCartOpen(true); 
     } catch (err) {
       console.error(err);
@@ -183,7 +262,7 @@ const StoreProductDetail = () => {
     }
   };
 
-  // --- BUY NOW ACTION (Saves to cart as backup, then bypasses to checkout) ---
+  // --- BUY NOW ACTION ---
   const handleBuyNow = async () => {
     if (!isLoggedIn) { 
         alert("Please Login first to buy!"); 
@@ -193,18 +272,20 @@ const StoreProductDetail = () => {
     
     try {
         setAdding(true);
+        const payload = { item: product.id, quantity: quantity };
+        if (selectedVariant) payload.variant_uid = selectedVariant.uid;
         
-        // 1. Save to database cart as a backup (in case they click back)
-        await customerApi.post(`customer/cart/add/`, { item: product.id, quantity: quantity });
+        await customerApi.post(`customer/cart/add/`, payload);
         
-        // 2. Instantly navigate to checkout for just this item
         navigate(`/${slug}/checkout`, { 
             state: { 
                 isBuyNow: true, 
                 buyNowItems: [{
                     product_id: product.id,
+                    variant_uid: selectedVariant?.uid || null,
                     item_name: product.item_name,
-                    gross_amount: product.gross_amount,
+                    variant_name: selectedVariant?.variant_name || null,
+                    gross_amount: selectedVariant ? selectedVariant.selling_price : product.gross_amount,
                     quantity: quantity,
                     image: activeMedia?.url || product.item_image_url
                 }]
@@ -218,7 +299,6 @@ const StoreProductDetail = () => {
     }
   };
 
-  // --- SHARE ACTION ---
   const handleShare = async () => {
     const currentUrl = window.location.href;
     const shareTitle = `${product.item_name} - ${businessName}`;
@@ -246,20 +326,23 @@ const StoreProductDetail = () => {
   if (loading) return <div className="loading-container"><Loader2 className="animate-spin" /></div>;
   if (!product) return <div className="loading-container">Product not found</div>;
 
-  const mrp = parseFloat(product.mrp_baseprice || 0);
-  const sellingPrice = parseFloat(product.gross_amount || 0);
-  const hasDiscount = mrp > sellingPrice;
-  const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+  // --- DYNAMIC PRICING AND STOCK ---
+  const currentPrice = selectedVariant ? parseFloat(selectedVariant.selling_price || 0) : parseFloat(product.gross_amount || 0);
+  const currentMrp = selectedVariant ? parseFloat(selectedVariant.mrp || currentPrice) : parseFloat(product.mrp_baseprice || 0);
+  const hasDiscount = currentMrp > currentPrice;
+  const discountPercent = hasDiscount ? Math.round(((currentMrp - currentPrice) / currentMrp) * 100) : 0;
   const currency = product.currency_symbol || '₹';
+  
+  const stock = selectedVariant ? selectedVariant.stock : product.quantity_product;
+  const isOutOfStock = stock <= 0;
 
-  // NEW: Determine if it's a Product or Service Description
   const descriptionTitle = (() => {
     if (!hasProducts && hasServices) return "Service Description";
     if (hasProducts && hasServices && product?.item_type) {
         const typeStr = String(product.item_type).toLowerCase();
         if (typeStr.includes('service')) return "Service Description";
     }
-    return "Product Description"; // Default fallback
+    return "Product Description"; 
   })();
 
   return (
@@ -371,42 +454,90 @@ const StoreProductDetail = () => {
             </div>
 
             <div className="detail-price-section">
-                <span className="d-selling-price">{currency}{sellingPrice.toFixed(2)}</span>
+                <span className="d-selling-price">{currency}{currentPrice.toFixed(2)}</span>
                 {hasDiscount && (
                     <>
-                        <span className="d-mrp-price">{currency}{mrp.toFixed(2)}</span>
+                        <span className="d-mrp-price">{currency}{currentMrp.toFixed(2)}</span>
                         <span className="d-discount-off">{discountPercent}% off</span>
                     </>
                 )}
                 <span className="tax-info">MRP (Incl. of all taxes)</span>
             </div>
 
+            {/* --- VARIANTS SELECTOR --- */}
+            {product.has_variants && Object.entries(availableAttributes).map(([attrName, values]) => {
+                
+                // 👇 THIS IS THE FIX: Checks for BOTH "Color" and "Colour"
+                const isColor = ['color', 'colour'].includes(attrName.toLowerCase());
+                
+                return (
+                    <div key={attrName} className="variant-section">
+                        <div className="variant-header">
+                            <span className="variant-title">
+                                {isColor ? `Selected ${toTitleCase(attrName)}:` : `Select ${attrName}`} 
+                                {isColor && <strong style={{marginLeft: '6px', fontWeight: '500'}}>{selectedAttributes[attrName]}</strong>}
+                            </span>
+                            {/* {!isColor && <span className="size-chart-link">Size Chart</span>} */}
+                        </div>
+                        
+                        <div className={`variant-options ${isColor ? 'swatch-group' : 'pill-group'}`}>
+                            {values.map(val => {
+                                const isSelected = selectedAttributes[attrName] === val;
+                                if (isColor) {
+                                    const swatchImg = getSwatchImage(attrName, val);
+                                    return (
+                                        <button
+                                            key={val}
+                                            className={`swatch-btn ${isSelected ? 'active' : ''}`}
+                                            onClick={() => handleAttributeSelect(attrName, val)}
+                                            title={val}
+                                        >
+                                            {swatchImg ? <img src={swatchImg} alt={val} /> : <div className="swatch-fallback">{val.charAt(0)}</div>}
+                                        </button>
+                                    );
+                                } else {
+                                    return (
+                                        <button
+                                            key={val}
+                                            className={`pill-btn ${isSelected ? 'active' : ''}`}
+                                            onClick={() => handleAttributeSelect(attrName, val)}
+                                        >
+                                            {val}
+                                        </button>
+                                    );
+                                }
+                            })}
+                        </div>
+                    </div>
+                );
+            })}
+
+            {isOutOfStock && <div className="out-of-stock-alert">Currently Out of Stock</div>}
+
             <div className="action-row">
                 <div className="qty-selector-big">
-                    <button onClick={() => setQuantity(q => Math.max(1, q - 1))}><Minus size={18}/></button>
+                    <button onClick={() => setQuantity(q => Math.max(1, q - 1))} disabled={isOutOfStock}><Minus size={18}/></button>
                     <span>{quantity}</span>
-                    <button onClick={() => setQuantity(q => q + 1)}><Plus size={18}/></button>
+                    <button onClick={() => setQuantity(q => q + 1)} disabled={isOutOfStock}><Plus size={18}/></button>
                 </div>
-                <button className="btn-add-cart-big" onClick={handleAddToCart} disabled={adding}>
-                    {adding ? 'ADDING...' : 'ADD TO CART'}
+                <button className="btn-add-cart-big" onClick={handleAddToCart} disabled={adding || isOutOfStock}>
+                    {adding ? 'ADDING...' : (isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART')}
                 </button>
-                <button className="btn-buy-now-big" onClick={handleBuyNow} disabled={adding}>
+                <button className="btn-buy-now-big" onClick={handleBuyNow} disabled={adding || isOutOfStock}>
                     BUY NOW
                 </button>
             </div>
 
-            {/* --- HELP SECTION (Right Column) --- */}
+            {/* --- HELP SECTION --- */}
             <div className="help-box-right">
                 <h5>Have a question? We can help.</h5>
                 <p className="help-timing">24*7</p>
-                
                 {contactInfo.phone && (
                     <p className="help-contact">
                         <strong>Call or WhatsApp us:</strong><br/>
                         {contactInfo.phone}
                     </p>
                 )}
-                
                 {contactInfo.email && (
                     <p className="help-email">
                         Email us at <strong>{contactInfo.email}</strong> or chat/DM us on our Instagram.
@@ -417,21 +548,15 @@ const StoreProductDetail = () => {
         </div>
       </div>
 
-      {/* --- FULL-WIDTH DESCRIPTION (Bottom) --- */}
+      {/* --- DESCRIPTION --- */}
       <div className="full-width-description-container">
           <div className="desc-tabs-header">
               <h3 className="active-tab">Description</h3>
           </div>
-          
           <div className="desc-body">
               <h4 className="desc-subtitle">{descriptionTitle}</h4>
-              
               {product.description ? (
-                  // 👇 THE FIX IS HERE 👇
-                  <div 
-                      className="desc-text" 
-                      dangerouslySetInnerHTML={{ __html: product.description }} 
-                  />
+                  <div className="desc-text" dangerouslySetInnerHTML={{ __html: product.description }} />
               ) : (
                   <p className="desc-text">No description available.</p>
               )}

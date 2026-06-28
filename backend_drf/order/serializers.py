@@ -1,3 +1,4 @@
+from products.serializers import VariantAttributeSerializer, VariantImageSerializer
 from business_entity.serializers import BusinessEntitySerializer
 from rest_framework import serializers
 from .models import Cart, CartItem, Order, OrderItem, Payment
@@ -5,26 +6,63 @@ from .models import Cart, CartItem, Order, OrderItem, Payment
 class OrderItemSerializer(serializers.ModelSerializer):
     subtotal = serializers.SerializerMethodField()
 
+    variant_name = serializers.CharField(
+        source="variant.display_name",
+        read_only=True
+    )
+
+    sku = serializers.CharField(
+        source="variant.sku",
+        read_only=True
+    )
+
+    barcode = serializers.CharField(
+        source="variant.barcode",
+        read_only=True
+    )
+
+    attributes = VariantAttributeSerializer(
+        source="variant.attributes",
+        many=True,
+        read_only=True
+    )
+
+    images = VariantImageSerializer(
+        source="variant.images",
+        many=True,
+        read_only=True
+    )
+
     class Meta:
         model = OrderItem
         fields = [
-            'item_name',
-            'quantity',
-            'rate',
-            'discount_percent',
-            'discount_amount',
-            'tax_percent',
-            'tax_type',
-            'price_includes_tax',
-            'base_amount',
-            'taxable_amount',
-            'tax_amount',
-            'total_value',
-            'subtotal',
+            "item_name",
+            "quantity",
+            "rate",
+
+            "variant",
+            "variant_name",
+            "sku",
+            "barcode",
+            "attributes",
+            "images",
+
+            "discount_percent",
+            "discount_amount",
+            "tax_percent",
+            "tax_type",
+            "price_includes_tax",
+            "base_amount",
+            "taxable_amount",
+            "tax_amount",
+            "total_value",
+            "subtotal",
         ]
 
     def get_subtotal(self, obj):
         return obj.quantity * obj.rate
+    
+
 
 
 class PaymentSerializer(serializers.ModelSerializer):
@@ -115,21 +153,57 @@ class OrderStatusUpdateSerializer(serializers.Serializer):
 class CartItemSerializer(serializers.ModelSerializer):
     item_name = serializers.CharField(source='item.item_name', read_only=True)
 
-    mrp_baseprice = serializers.DecimalField(
-        source='item.mrp_baseprice',
-        max_digits=10,
-        decimal_places=2,
-        read_only=True
-    )
+    mrp_baseprice = serializers.SerializerMethodField()
 
-    gross_amount = serializers.DecimalField(
-        source='item.gross_amount',
-        max_digits=10,
-        decimal_places=2,
-        read_only=True
-    )
+    def get_mrp_baseprice(self, obj):
+        if obj.variant:
+            return obj.variant.mrp_base
+        return obj.item.mrp_baseprice
+
+    gross_amount = serializers.SerializerMethodField()
+
+    def get_gross_amount(self, obj):
+        if obj.variant:
+            return obj.variant.selling_price
+        return obj.item.gross_amount
 
     subtotal = serializers.SerializerMethodField()
+
+    
+    variant_name = serializers.CharField(
+        source="variant.display_name",
+        read_only=True
+    )
+
+    sku = serializers.CharField(
+        source="variant.sku",
+        read_only=True
+    )
+
+    images = VariantImageSerializer(
+        source="variant.images",
+        many=True,
+        read_only=True
+    )
+
+    attributes = VariantAttributeSerializer(
+        source="variant.attributes",
+        many=True,
+        read_only=True
+    )
+
+    item_image = serializers.SerializerMethodField()
+
+    def get_item_image(self, obj):
+        if obj.variant:
+            image = obj.variant.images.filter(is_primary=True).first()
+
+            if not image:
+                image = obj.variant.images.first()
+
+            return image.image_url if image else None
+
+        return obj.item.item_image_url
 
     class Meta:
         model = CartItem
@@ -137,10 +211,16 @@ class CartItemSerializer(serializers.ModelSerializer):
             'id',
             'item',
             'item_name',
+            "item_image",
             'mrp_baseprice',
             'gross_amount',
             'quantity',
-            'subtotal'
+            'subtotal',
+            "variant",
+            "variant_name",
+            "sku",
+            "attributes",
+            "images",
         ]
 
     def get_subtotal(self, obj):
@@ -158,13 +238,20 @@ class CartSerializer(serializers.ModelSerializer):
         fields = ['id', 'items', 'total_amount']
 
     def get_items(self, obj):
-        qs = obj.items.select_related('item').all()
+        qs = (
+            obj.items
+            .select_related("item", "variant")
+            .prefetch_related(
+                "variant__attributes",
+                "variant__images"
+            )
+        )
         return CartItemSerializer(qs, many=True).data
 
 
     def get_total_amount(self, obj):
         return sum(
-            (i.subtotal() for i in obj.items.all()),
+            (item.subtotal() for item in obj.items.select_related("item", "variant")),
             Decimal("0.00")
         )
 

@@ -2,7 +2,7 @@ from django.urls import path, include
 from payments.views import BusinessPaymentConfigView
 from order.views import AddToCartView, CancelOrderView, CheckoutPreviewView, CheckoutView, CustomerOrderHistoryView, OrderDetailView, OrderItemListView, OrderListView, UpdateCartItemView, UpdateOrderStatusView, UpdatePaymentStatusView, ViewCartView, CreateRazorpayOrderView, VerifyRazorpayPaymentView, CreatePaypalOrderView, CapturePaypalOrderView
 from invoice.views import CustomerDetailByNameView, CustomerSearchListView, InvoiceDetailView, InvoiceItemListView, InvoiceListCreateView, ItemDetailByBarcodeView, ItemDetailByNameView, ItemSearchListView
-from products.views import DownloadBarcodeView, ItemDetailView, ItemListCreateView
+from products.views import BulkImportView, DownloadBarcodeView, ItemDetailView, ItemListCreateView, ItemVariantDetailView, ItemVariantListCreateView, VariantAttributeDetailView, VariantAttributeListCreateView, VariantImageDetailView, VariantImageListCreateView
 from customers.views import CustomerAddressUpdateView, CustomerDetailView, CustomerForgotPasswordView, CustomerListCreateView, CustomerLoginOtpRequestView, CustomerLoginOtpVerifyView, CustomerLoginView, CustomerResetPasswordView, CustomerSignupView, CustomerTokenRefreshView
 from business_entity.views import BusinessSetupView, BusinessUpdateView, SwitchBusinessView
 from users import views as UserViews
@@ -38,14 +38,27 @@ urlpatterns = [
     
     path('products/', ItemListCreateView.as_view(), name='item-list-create'),
     path('products/<int:pk>/', ItemDetailView.as_view(), name='item-detail'),
-    path('search/products/', ItemSearchListView.as_view(), name='item-search'),
-    path('products/detail/', ItemDetailByNameView.as_view(), name='item-detail-by-name'),
+    path('products/bulk-import/', BulkImportView.as_view(), name='product-bulk-import'),
+    
+    path("items/<slug:item_slug>/variants/", ItemVariantListCreateView.as_view()),
+    path("variants/<uuid:uid>/", ItemVariantDetailView.as_view()),
+    
+    path("variants/<uuid:variant_uid>/attributes/", VariantAttributeListCreateView.as_view()),
+    path("variant-attributes/<int:pk>/", VariantAttributeDetailView.as_view()),
+    
+    path("variants/<uuid:variant_uid>/images/", VariantImageListCreateView.as_view()),
+    path("variant-images/<int:pk>/", VariantImageDetailView.as_view()),
+
+    
     path(
         "items/by-barcode/",
         ItemDetailByBarcodeView.as_view(),
     ),
 
     path('items/<int:pk>/barcode/', DownloadBarcodeView.as_view()),
+
+    path('search/products/', ItemSearchListView.as_view(), name='item-search'),
+    path('products/detail/', ItemDetailByNameView.as_view(), name='item-detail-by-name'),
 
     path('customers/', CustomerListCreateView.as_view(), name='customer-list-create'),
     path('customers/<int:pk>/', CustomerDetailView.as_view(), name='customer-detail'),

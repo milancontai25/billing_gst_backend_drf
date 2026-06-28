@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 from django.db.models import Q
 from .models import Cart, CartItem, Order, OrderItem, Payment
-from products.models import Item
+from products.models import Item, ItemVariant
 from customers.models import Customer
 from .serializers import CartSerializer, OrderItemSerializer, OrderSerializer, OrderStatusUpdateSerializer
 from datetime import date
@@ -159,7 +159,28 @@ class AddToCartView(generics.GenericAPIView):
             return Response({"error": "No business assigned"}, status=400)
 
         business = customer.business
-        item_id = request.data.get('item')
+        item_id = request.data.get("item")
+        variant_id = request.data.get("variant")
+
+        item = Item.objects.get(
+            id=item_id,
+            business=business
+        )
+
+        variant = None
+
+        if item.has_variants:
+
+            if not variant_id:
+                return Response(
+                    {"error":"Variant required"},
+                    status=400
+                )
+
+            variant = ItemVariant.objects.get(
+                uid=variant_id,
+                item=item
+            )
 
         if not item_id:
             return Response({"error": "Item is required"}, status=400)
@@ -185,7 +206,10 @@ class AddToCartView(generics.GenericAPIView):
         cart_item, _ = CartItem.objects.get_or_create(
             cart=cart,
             item=item,
-            defaults={'quantity': 0}
+            variant=variant,
+            defaults={
+                "quantity":0
+            }
         )
 
         new_quantity = cart_item.quantity + quantity
@@ -248,7 +272,24 @@ class CheckoutPreviewView(APIView):
             try:
                 quantity = int(request.query_params.get("quantity", 1))
                 item = Item.objects.get(id=item_id, business=business)
-                items_to_process.append({"item": item, "quantity": quantity})
+                variant = None
+
+                if item.has_variants:
+                    variant_id = request.query_params.get("variant_id")
+
+                    if not variant_id:
+                        return Response({"error": "Variant required"}, status=400)
+
+                    variant = ItemVariant.objects.get(
+                        uid=variant_id,
+                        item=item
+                    )
+
+                items_to_process.append({
+                    "item": item,
+                    "variant": variant,
+                    "quantity": quantity
+                })
             except (Item.DoesNotExist, ValueError, TypeError):
                 return Response({"error": "Invalid item or quantity for Buy Now"}, status=400)
         else:
@@ -261,7 +302,16 @@ class CheckoutPreviewView(APIView):
                     return Response({"error": "Cart is empty"}, status=400)
                     
                 for ci in cart_items:
-                    items_to_process.append({"item": ci.item, "quantity": ci.quantity})
+                    items_to_process.append({
+                        "item": ci.item,
+                        "variant": ci.variant,
+                        "quantity": ci.quantity
+                    })
+
+                    for data in items_to_process:
+                        item = data["item"]
+                        variant = data["variant"]
+                        qty = data["quantity"]
                     
             except Cart.DoesNotExist:
                 return Response({"error": "Cart is empty"}, status=400)
@@ -279,17 +329,35 @@ class CheckoutPreviewView(APIView):
         # ---------------- LOOP ----------------
         for data in items_to_process:
             item = data["item"]
+            variant = data["variant"]
             qty = data["quantity"]
 
-            # ✅ STOCK CHECK
-            if item.item_type == "Goods" and item.quantity_product < qty:
+            if item.item_type == "Goods":
+
+                if variant:
+                    if variant.stock < qty:
+                        return Response(
+                            {"error": f"Not enough stock for {item.item_name}"},
+                            status=400
+                        )
+
+                else:
+                    if item.quantity_product < qty:
+                        return Response(
+                            {"error": f"Not enough stock for {item.item_name}"},
+                            status=400
+                        )
                 return Response(
                     {"error": f"Not enough stock for {item.item_name}"},
                     status=400
                 )
 
             values = calculate_item_values(
-                price=item.gross_amount,
+                price = (
+                    variant.selling_price
+                    if variant
+                    else item.gross_amount
+                ),
                 qty=qty,
                 discount_percent=getattr(item, "discount_percent", 0),
                 tax_percent=item.tax_percent,
@@ -412,7 +480,24 @@ class CheckoutView(APIView):
                 # Fetch just this single item
                 # Assuming you have an Item model imported
                 item = Item.objects.get(id=item_id, business=business) 
-                items_to_process.append({"item": item, "quantity": quantity})
+                variant = None
+
+                if item.has_variants:
+                    variant_id = request.data.get("variant_id")
+
+                    if not variant_id:
+                        return Response({"error": "Variant required"}, status=400)
+
+                    variant = ItemVariant.objects.get(
+                        uid=variant_id,
+                        item=item
+                    )
+
+                items_to_process.append({
+                    "item": item,
+                    "variant": variant,
+                    "quantity": quantity
+                })
             except (Item.DoesNotExist, ValueError, TypeError):
                 return Response({"error": "Invalid item or quantity for Buy Now"}, status=400)
         else:
@@ -428,7 +513,16 @@ class CheckoutView(APIView):
                 
                 # Add all cart items to our processing list
                 for ci in cart_items:
-                    items_to_process.append({"item": ci.item, "quantity": ci.quantity})
+                    items_to_process.append({
+                        "item": ci.item,
+                        "variant": ci.variant,
+                        "quantity": ci.quantity
+                    })
+
+                    for data in items_to_process:
+                        item = data["item"]
+                        variant = data["variant"]
+                        qty = data["quantity"]
             except Cart.DoesNotExist:
                 return Response({"error": "Cart empty"}, status=400)
 
@@ -448,23 +542,42 @@ class CheckoutView(APIView):
         # Now we loop through `items_to_process` regardless of where they came from
         for data in items_to_process:
             item = data["item"]
+            variant = data["variant"]
             qty = data["quantity"]
 
-            if item.item_type == "Goods" and item.quantity_product < qty:
+            if item.item_type == "Goods":
+
+                if variant:
+                    if variant.stock < qty:
+                        return Response(
+                            {"error": f"Not enough stock for {item.item_name}"},
+                            status=400
+                        )
+
+                else:
+                    if item.quantity_product < qty:
+                        return Response(
+                            {"error": f"Not enough stock for {item.item_name}"},
+                            status=400
+                        )
                 return Response(
                     {"error": f"Not enough stock for {item.item_name}"},
                     status=400
                 )
 
             values = calculate_item_values(
-                price=item.gross_amount,
+                # price = (
+                #     variant.selling_price
+                #     if variant
+                #     else item.gross_amount
+                # )
                 qty=qty,
                 discount_percent=getattr(item, "discount_percent", 0),
                 tax_percent=item.tax_percent,
                 includes_tax=business.price_includes_tax
             )
 
-            order_items_data.append((item, qty, values))
+            order_items_data.append((item, variant, qty, values))
 
             totals["base"] += values["base_amount"]
             totals["discount"] += values["discount_amount"]
@@ -501,17 +614,29 @@ class CheckoutView(APIView):
         )
 
         # ---------------- CREATE ORDER ITEMS ----------------
-        for item, qty, values in order_items_data:
+        for item, variant, qty, values in order_items_data:
             if item.item_type == "Goods":
-                item.quantity_product -= qty
-                item.save(update_fields=["quantity_product"])
+
+                if variant:
+                    variant.stock -= qty
+                    variant.save(update_fields=["stock"])
+
+                else:
+                    item.quantity_product -= qty
+                    item.save(update_fields=["quantity_product"])
+                
 
             OrderItem.objects.create(
                 order=order,
                 item=item,
+                variant=variant,
+
+                variant_name=variant.display_name if variant else "",
+                sku=variant.sku if variant else "",
+                barcode=variant.barcode if variant else "",
                 item_name=item.item_name,
                 quantity=qty,
-                rate=item.gross_amount,
+                rate=variant.selling_price if variant else item.gross_amount,
                 discount_percent=getattr(item, "discount_percent", 0),
                 discount_amount=values["discount_amount"],
                 tax_percent=item.tax_percent,
@@ -557,7 +682,10 @@ class CheckoutView(APIView):
             
             if is_buy_now:
                 # If they used Buy Now, ONLY delete the specific item they just bought
-                user_cart.items.filter(item_id=item_id).delete()
+                user_cart.items.filter(
+                    item_id=item_id,
+                    variant=variant
+                ).delete()
             else:
                 # If they used normal checkout, clear the whole cart
                 user_cart.items.all().delete()
@@ -599,7 +727,11 @@ class CreateRazorpayOrderView(APIView):
 
         for ci in cart_items:
             values = calculate_item_values(
-                price=ci.item.gross_amount,
+                price=(
+                    ci.variant.selling_price
+                    if ci.variant
+                    else ci.item.gross_amount
+                ),
                 qty=ci.quantity,
                 discount_percent=getattr(ci.item, "discount_percent", 0),
                 tax_percent=ci.item.tax_percent,
@@ -686,7 +818,11 @@ class CreatePaypalOrderView(APIView):
 
         for ci in cart_items:
             values = calculate_item_values(
-                price=ci.item.gross_amount,
+                price=(
+                    ci.variant.selling_price
+                    if ci.variant
+                    else ci.item.gross_amount
+                ),
                 qty=ci.quantity,
                 discount_percent=getattr(ci.item, "discount_percent", 0),
                 tax_percent=ci.item.tax_percent,
@@ -807,10 +943,16 @@ class CancelOrderView(APIView):
             )
 
         # 🔁 Restore stock
-        for item in order.order_items.all():
-            product = item.item
-            product.quantity_product += item.quantity
-            product.save()
+        for order_item in order.order_items.all():
+
+            if order_item.variant:
+                order_item.variant.stock += order_item.quantity
+                order_item.variant.save(update_fields=["stock"])
+
+            else:
+                product = order_item.item
+                product.quantity_product += order_item.quantity
+                product.save(update_fields=["quantity_product"])
 
         order.status = "Cancelled"
         order.save()
@@ -837,17 +979,29 @@ class UpdateCartItemView(APIView):
     def post(self, request):
         customer = request.user
         item_id = request.data.get('item')
+        variant_id = request.data.get("variant")
         action = request.data.get('action')  # increase | decrease
 
         try:
             cart = Cart.objects.get(customer=customer, business=customer.business)
-            cart_item = CartItem.objects.get(cart=cart, item_id=item_id)
+            cart_item = CartItem.objects.get(
+                cart=cart,
+                item_id=item_id,
+                variant_id=variant_id if variant_id else None
+            )
         except (Cart.DoesNotExist, CartItem.DoesNotExist):
             return Response({"error": "Cart item not found"}, status=404)
 
         if action == "increase":
-            if cart_item.item.quantity_product <= cart_item.quantity:
-                return Response({"error": "Not enough stock"}, status=400)
+            if cart_item.variant:
+
+                if cart_item.variant.stock <= cart_item.quantity:
+                    return Response({"error": "Not enough stock"}, status=400)
+
+            else:
+
+                if cart_item.item.quantity_product <= cart_item.quantity:
+                    return Response({"error": "Not enough stock"}, status=400)
             cart_item.quantity += 1
 
         elif action == "decrease":

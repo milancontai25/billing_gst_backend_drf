@@ -1,7 +1,7 @@
 from django.db import models
 from business_entity.models import BusinessEntity
 from customers.models import Customer  # assuming you have a Customer model
-from products.models import Item  # your existing Item model
+from products.models import Item, ItemVariant  # your existing Item model
 
 class Order(models.Model):
     business = models.ForeignKey(
@@ -66,6 +66,33 @@ class OrderItem(models.Model):
         related_name="ordered_items"
     )
 
+    variant = models.ForeignKey(
+        ItemVariant,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+
+    variant_name = models.CharField(
+        max_length=255,
+        blank=True
+    )
+
+    sku = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    barcode = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    variant_attributes = models.JSONField(
+        default=list,
+        blank=True
+    )
+
     item_name = models.CharField(max_length=150)
     quantity = models.PositiveIntegerField(default=1)
     rate = models.DecimalField(max_digits=10, decimal_places=2)
@@ -86,13 +113,22 @@ class OrderItem(models.Model):
         return self.rate * self.quantity
 
     def __str__(self):
+        if self.variant_name:
+            return f"{self.item_name} - {self.variant_name} ({self.quantity})"
         return f"{self.item_name} ({self.quantity})"
 
 class Payment(models.Model):
+    # PAYMENT_METHOD_CHOICES = [
+    #     ("CASH", "Cash"),
+    #     ("UPI", "UPI"),
+    #     ("GATEWAY", "Gateway"),
+    # ]
+
     PAYMENT_METHOD_CHOICES = [
         ("CASH", "Cash"),
         ("UPI", "UPI"),
-        ("GATEWAY", "Gateway"),
+        ("RAZORPAY", "Razorpay"),
+        ("PAYPAL", "PayPal"),
     ]
 
     PAYMENT_STATUS_CHOICES = [
@@ -130,7 +166,12 @@ class Cart(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('customer', 'business')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['customer', 'business'],
+                name='unique_customer_business_cart'
+            )
+        ]
 
     def __str__(self):
         return f"Cart {self.id} - {self.customer.email}"
@@ -139,15 +180,30 @@ class Cart(models.Model):
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    variant = models.ForeignKey(
+        ItemVariant,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
     quantity = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)  
 
     class Meta:
         ordering = ['created_at']
+
         indexes = [
-            models.Index(fields=['cart', 'item']),
+            models.Index(fields=['cart', 'item', 'variant']),
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['cart', 'item', 'variant'],
+                name='unique_cart_item_variant'
+            )
         ]
 
     def subtotal(self):
-        return self.item.gross_amount * self.quantity
+        price = self.variant.selling_price if self.variant else self.item.gross_amount
+        return price * self.quantity
 

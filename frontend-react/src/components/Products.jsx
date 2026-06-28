@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import { Plus, Filter, Edit, Trash2, X, Save, Film, Download, Upload, Barcode } from 'lucide-react';
-
-// 👇 ADD THESE TWO LINES 👇
+import { Plus, Filter, Edit, Trash2, X, Save, Film, Download, Upload, Barcode, Layers } from 'lucide-react';
+import VariantManagerModal from './VariantManagerModal'; 
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
-
-// Helper to fix image paths
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   if (imagePath.startsWith('http')) return imagePath; 
@@ -17,11 +14,10 @@ const getImageUrl = (imagePath) => {
 };
 
 const Products = () => {
-  // Read the active business data from the Layout wrapper
   const { data: dashboardData } = useOutletContext();
   const activeBusiness = dashboardData?.active_business;
+  const navigate = useNavigate(); 
   
-  // Conditionally show/hide tax features based on Business Settings
   const isTaxEnabled = activeBusiness?.tax_type && activeBusiness.tax_type !== 'NONE';
 
   const [items, setItems] = useState([]);
@@ -37,25 +33,35 @@ const Products = () => {
   const [showFilter, setShowFilter] = useState(false);
   const [typeFilter, setTypeFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [managingVariantsFor, setManagingVariantsFor] = useState(null);
 
+  // 🚨 ADDED: URL fields to the initial state
   const initialFormState = {
     item_type: 'Goods',
     item_name: '',
-    item_image: null, 
-    image_1: null, image_2: null, image_3: null, item_video_link: '',
+    
+    item_image: null, item_image_url: '', 
+    image_1: null, item_image_1: '', 
+    image_2: null, item_image_2: '', 
+    image_3: null, item_image_3: '', 
+    category_image: null, category_image_url: '', 
+    subcategory_image: null, subcategory_image_url: '', 
+    
+    item_video_link: '',
     brand_product: '', hsn_sac_code_product: '', unit_product: 'Pcs',
     quantity_product: 0, cost_price_product: 0, min_stock_product: 0,
     min_order_quantity_product: 1,
     max_order_quantity_product: 1,
     availability_status_service: 'Available',
-    category: '', category_image: null, 
-    subcategory: '', subcategory_image: null, 
+    category: '', 
+    subcategory: '', 
     description: '', mrp_baseprice: 0, gross_amount: 0, 
     tax_percent: 0, 
     area: '', customer_view: 'Special', 
     isShow: false,
     best_selling: false,
     trending: false,
+    has_variants: false, 
   };
   
   const [formData, setFormData] = useState(initialFormState);
@@ -64,13 +70,9 @@ const Products = () => {
     try {
       setLoading(true);
       const res = await api.get('/products/');
-      
-      // Extract the array
       const dataArray = Array.isArray(res.data) ? res.data : (res.data.results || []);
-      
       setItems(dataArray);
-      setFilteredItems(dataArray); // 🚨 FIX: Pass dataArray here, NOT res.data!
-      
+      setFilteredItems(dataArray); 
       setLoading(false);
     } catch (err) {
       console.error("Error fetching inventory", err);
@@ -89,52 +91,124 @@ const Products = () => {
 
   const categories = ['All', ...new Set(items.map(item => item.category).filter(Boolean))];
 
+  
+  // --- 1. FULL FLATTENED EXPORT LOGIC ---
   const handleExport = () => {
     if (filteredItems.length === 0) return alert("No items to export.");
 
-    // Added all fields to headers
+    // The exact columns requested, plus 'Item Slug' for safe parent-child linking
     const headers = [
-        "Item Type", "Item Name", "Category", "Subcategory", "Brand", "HSN Code", 
-        "Base Price", "Gross Amount", "Tax %", "Cost Price", "Quantity", "Unit", 
-        "Min Stock", "Min Order Qty", "Max Order Qty", "Service Status", "Area", 
-        "Customer View", "Is Show", "Best Selling", "Trending", "Video Link", "Description"
+        "Item Slug", "Item Name", "Item Type", "Has Variants", "Description", 
+        "Category", "Subcategory", "Brand", "HSN", "Unit", "Area", "Customer View", 
+        "Availability Status", "Tax %", "Best Selling", "Trending", "Show", 
+        "Main Image", "Image 1", "Image 2", "Image 3", "Video URL", 
+        "Category Image", "Subcategory Image", 
+        "Stock", "Minimum Stock", "MRP", "Selling Price", "Cost Price", "Minimum Order", "Maximum Order", 
+        
+        "Variant SKU", "Variant Name", "Variant Stock", "Variant Minimum Stock", 
+        "Variant MRP", "Variant Selling Price", "Variant Cost Price", 
+        "Variant Minimum Order", "Variant Maximum Order", "Variant Active", 
+        
+        ...Array.from({length: 10}, (_, i) => `Variant Image ${i+1}`),
+        ...Array.from({length: 10}, (_, i) => [`Attr ${i+1} Name`, `Attr ${i+1} Value`]).flat()
     ];
 
-    const rows = filteredItems.map(item => {
+    const rows = [];
+    const safeText = (text) => `"${(text || '').toString().replace(/"/g, '""')}"`;
+
+    filteredItems.forEach(item => {
         const isService = item.item_type === 'Service';
         
-        // Helper to format text safely with quotes so commas inside don't break the CSV
-        const safeText = (text) => `"${(text || '').toString().replace(/"/g, '""')}"`;
+        // Map the Base Item Data
+        const baseData = {
+            "Item Slug": safeText(item.slug),
+            "Item Name": safeText(item.item_name),
+            "Item Type": item.item_type,
+            "Has Variants": item.has_variants ? 'TRUE' : 'FALSE',
+            "Description": safeText(item.description),
+            "Category": safeText(item.category),
+            "Subcategory": safeText(item.subcategory),
+            "Brand": isService ? 'NA' : safeText(item.brand_product),
+            "HSN": isService ? 'NA' : safeText(item.hsn_sac_code_product),
+            "Unit": isService ? 'NA' : safeText(item.unit_product || 'Pcs'),
+            "Area": safeText(item.area),
+            "Customer View": safeText(item.customer_view || 'General'),
+            "Availability Status": isService ? safeText(item.availability_status_service) : 'NA',
+            "Tax %": item.tax_percent || 0,
+            "Best Selling": item.best_selling ? 'TRUE' : 'FALSE',
+            "Trending": item.trending ? 'TRUE' : 'FALSE',
+            "Show": item.isShow ? 'TRUE' : 'FALSE',
+            
+            "Main Image": safeText(item.item_image_url),
+            "Image 1": safeText(item.item_image_1),
+            "Image 2": safeText(item.item_image_2),
+            "Image 3": safeText(item.item_image_3),
+            "Video URL": safeText(item.item_video_link),
+            "Category Image": safeText(item.category_image_url),
+            "Subcategory Image": safeText(item.subcategory_image_url),
+            
+            "Stock": isService ? 0 : (item.quantity_product || 0),
+            "Minimum Stock": isService ? 0 : (item.min_stock_product || 0),
+            "MRP": item.mrp_baseprice || 0,
+            "Selling Price": item.gross_amount || 0,
+            "Cost Price": isService ? 0 : (item.cost_price_product || 0),
+            "Minimum Order": isService ? 1 : (item.min_order_quantity_product || 1),
+            "Maximum Order": isService ? 1 : (item.max_order_quantity_product || 1)
+        };
 
-        return [
-            item.item_type,
-            safeText(item.item_name),
-            safeText(item.category),
-            safeText(item.subcategory),
-            isService ? 'NA' : safeText(item.brand_product),
-            isService ? 'NA' : safeText(item.hsn_sac_code_product),
-            item.mrp_baseprice || 0,
-            item.gross_amount || 0,
-            item.tax_percent || 0,
-            isService ? 0 : (item.cost_price_product || 0),
-            isService ? 0 : (item.quantity_product || 0),
-            isService ? 'NA' : safeText(item.unit_product || 'Pcs'),
-            isService ? 0 : (item.min_stock_product || 0),
-            isService ? 1 : (item.min_order_quantity_product || 1),
-            isService ? 1 : (item.max_order_quantity_product || 1),
-            isService ? safeText(item.availability_status_service) : 'NA',
-            safeText(item.area),
-            safeText(item.customer_view || 'General'),
-            item.isShow ? 'TRUE' : 'FALSE',
-            item.best_selling ? 'TRUE' : 'FALSE',
-            item.trending ? 'TRUE' : 'FALSE',
-            safeText(item.item_video_link),
-            safeText(item.description) // Safely wrapped description
-        ].join(",");
+        // SCENARIO A: No Variants (Export 1 Row)
+        if (!item.has_variants || !item.variants || item.variants.length === 0) {
+            const row = headers.map(h => baseData[h] !== undefined ? baseData[h] : "");
+            rows.push(row.join(","));
+        } 
+        // SCENARIO B: Has Variants (Export Multiple Rows)
+        else {
+            item.variants.forEach((variant, index) => {
+                const row = headers.map(h => {
+                    // 1. Variant Data
+                    if (h === "Variant SKU") return safeText(variant.sku);
+                    if (h === "Variant Name") return safeText(variant.variant_name);
+                    if (h === "Variant Stock") return variant.stock || 0;
+                    if (h === "Variant Minimum Stock") return variant.min_stock || 0;
+                    if (h === "Variant MRP") return variant.mrp_base || 0;
+                    if (h === "Variant Selling Price") return variant.selling_price || 0;
+                    if (h === "Variant Cost Price") return variant.cost_price || 0;
+                    if (h === "Variant Minimum Order") return variant.min_order_quantity || 1;
+                    if (h === "Variant Maximum Order") return variant.max_order_quantity || 1;
+                    if (h === "Variant Active") return variant.is_active !== false ? 'TRUE' : 'FALSE';
+
+                    // 2. Variant Images (1 through 10)
+                    if (h.startsWith("Variant Image ")) {
+                        const imgIndex = parseInt(h.replace("Variant Image ", "")) - 1;
+                        return variant.images && variant.images[imgIndex] ? safeText(variant.images[imgIndex].image_url) : "";
+                    }
+
+                    // 3. Variant Attributes (1 through 10)
+                    if (h.startsWith("Attr ")) {
+                        const isName = h.endsWith("Name");
+                        const attrIndex = parseInt(h.split(" ")[1]) - 1;
+                        const attr = variant.attributes && variant.attributes[attrIndex];
+                        if (!attr) return "";
+                        return safeText(isName ? attr.attribute_name : attr.attribute_value);
+                    }
+
+                    // 4. Base Data Linking
+                    if (baseData[h] !== undefined) {
+                        // Print full base data on the 1st variant row. 
+                        // On row 2+, only print the Slug so they stay linked.
+                        if (index === 0) return baseData[h];
+                        if (h === "Item Slug") return baseData["Item Slug"]; 
+                        return "";
+                    }
+                    return "";
+                });
+                rows.push(row.join(","));
+            });
+        }
     });
 
     const csvContent = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8-sig;" }); // Added BOM for safe Excel opening
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -142,106 +216,47 @@ const Products = () => {
     link.click();
   };
 
-  const handleImportClick = () => {
-    fileInputRef.current.click();
-  };
+  const handleImportClick = () => fileInputRef.current.click();
 
   const handleImportFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setImporting(true);
-    const reader = new FileReader();
+    const formData = new FormData();
+    formData.append('file', file); 
 
-    reader.onload = async (evt) => {
-        const text = evt.target.result;
-        // Split by lines, ignoring empty ones
-        const rows = text.split("\n").filter(r => r.trim() !== '');
+    try {
+        // 🚨 THE FIX: Force multipart/form-data to override your global JSON default
+        const res = await api.post('/products/bulk-import/', formData, {
+            headers: { 
+                'Content-Type': 'multipart/form-data' 
+            }
+        });
         
-        let successCount = 0;
-        let errors = [];
-
-        const parseNum = (val, fallback = 0) => {
-            if (!val) return fallback;
-            const parsed = parseFloat(val.toString().trim());
-            return isNaN(parsed) ? fallback : parsed;
-        };
-
-        // Start from i = 1 to skip the header row
-        for (let i = 1; i < rows.length; i++) {
-            // Smart CSV Splitter: Splits by comma, but IGNORES commas inside quotes!
-            const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(col => col.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
-            
-            const type = cols[0];
-            const name = cols[1];
-
-            if (!name || !type) continue; 
-
-            const isService = type === 'Service';
-            const payload = new FormData();
-
-            // Match exact index order from handleExport
-            payload.append('item_type', type);
-            payload.append('item_name', name);
-            payload.append('category', cols[2] || 'General');
-            payload.append('subcategory', cols[3] || '');
-            
-            payload.append('mrp_baseprice', parseNum(cols[6], 0));
-            payload.append('gross_amount', parseNum(cols[7], 0));
-            payload.append('tax_percent', parseNum(cols[8], 0));
-            
-            payload.append('area', cols[16] || 'Store'); 
-            payload.append('customer_view', cols[17] || 'General');
-            
-            payload.append('isShow', cols[18] === 'TRUE' ? 'true' : 'false');
-            payload.append('best_selling', cols[19] === 'TRUE' ? 'true' : 'false');
-            payload.append('trending', cols[20] === 'TRUE' ? 'true' : 'false');
-            
-            payload.append('item_video_link', cols[21] || '');
-            payload.append('description', cols[22] || '');
-
-            if (isService) {
-                payload.append('availability_status_service', cols[15] || 'Available');
-                payload.append('quantity_product', 0);
-                payload.append('brand_product', 'NA');
-            } else {
-                payload.append('brand_product', cols[4] || 'Generic');
-                payload.append('hsn_sac_code_product', cols[5] || '');
-                payload.append('cost_price_product', parseNum(cols[9], 0));
-                payload.append('quantity_product', parseNum(cols[10], 0));
-                payload.append('unit_product', cols[11] || 'Pcs');
-                payload.append('min_stock_product', parseNum(cols[12], 5));
-                payload.append('min_order_quantity_product', parseNum(cols[13], 1));
-                payload.append('max_order_quantity_product', parseNum(cols[14], 1));
-            }
-
-            try {
-                await api.post('/products/', payload, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                successCount++;
-            } catch (err) {
-                console.error(`Failed to import row ${i}:`, err.response?.data || err.message);
-                errors.push(`Row ${i}: ${name}`);
-            }
-        }
-
-        setImporting(false);
-        alert(`Import Finished.\nSuccess: ${successCount}\nFailed: ${errors.length}`);
+        alert(
+            `Import Finished!\n` +
+            `Items Created: ${res.data.items_created || 0}\n` +
+            `Items Updated: ${res.data.items_updated || 0}\n` +
+            `Variants Created: ${res.data.variants_created || 0}\n` +
+            `Variants Updated: ${res.data.variants_updated || 0}`
+        );
         fetchInventory();
-        e.target.value = null; 
-    };
-
-    reader.readAsText(file);
+        
+    } catch (err) {
+        console.error(err);
+        alert(`Import Failed: ${JSON.stringify(err.response?.data || err.message)}`);
+    } finally {
+        setImporting(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = null; 
+        }
+    }
   };
 
-  // --- Handle Barcode Download ---
   const handleDownloadBarcode = async (itemId, itemName) => {
     try {
-      const response = await api.get(`/items/${itemId}/barcode/`, {
-        responseType: 'blob'
-      });
-      
+      const response = await api.get(`/items/${itemId}/barcode/`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -279,21 +294,28 @@ const Products = () => {
     setFormData({
       ...initialFormState,
       ...item,
-      image_1: null,
-      image_2: null,
-      image_3: null,
-      category_image: null, 
-      subcategory_image: null,
-
+      // Clear physical file instances so they aren't incorrectly sent
+      item_image: null, image_1: null, image_2: null, image_3: null,
+      category_image: null, subcategory_image: null,
+      
+      // 🚨 Ensure URLs map correctly when opening an existing item
+      item_image_url: item.item_image_url || '',
+      item_image_1: item.item_image_1 || '',
+      item_image_2: item.item_image_2 || '',
+      item_image_3: item.item_image_3 || '',
+      category_image_url: item.category_image_url || '',
+      subcategory_image_url: item.subcategory_image_url || '',
+      
       mrp_baseprice: item.mrp_baseprice || 0,
       gross_amount: item.gross_amount || 0,
       tax_percent: item.tax_percent || 0,
-
       min_order_quantity_product: item.min_order_quantity_product || 1,
       max_order_quantity_product: item.max_order_quantity_product || 1,
+      
       isShow: item.isShow || false,
       best_selling: item.best_selling || false, 
-      trending: item.trending || false 
+      trending: item.trending || false,
+      has_variants: item.has_variants || false 
     });
     setEditId(item.id);
     setIsEditing(true);
@@ -311,10 +333,15 @@ const Products = () => {
         'area', 'customer_view', 'item_video_link'
     ];
 
-    // Boolean checks
     submitData.append('isShow', formData.isShow ? 'true' : 'false');
     submitData.append('best_selling', formData.best_selling ? 'true' : 'false');
     submitData.append('trending', formData.trending ? 'true' : 'false');
+    
+    if (isService) {
+        submitData.append('has_variants', 'false');
+    } else {
+        submitData.append('has_variants', formData.has_variants ? 'true' : 'false');
+    }
 
     if (isService) {
         fields.push('availability_status_service');
@@ -330,15 +357,23 @@ const Products = () => {
         submitData.append(key, value);
     });
 
+    // 🚨 Send physical files if the user uploaded them
     ['item_image', 'image_1', 'image_2', 'image_3', 'category_image', 'subcategory_image'].forEach(imgKey => {
         if (formData[imgKey] instanceof File) {
             submitData.append(imgKey, formData[imgKey]);
         }
     });
 
+    // 🚨 Send URL strings if the user pasted them
+    const urlFields = ['item_image_url', 'item_image_1', 'item_image_2', 'item_image_3', 'category_image_url', 'subcategory_image_url'];
+    urlFields.forEach(urlKey => {
+        if (formData[urlKey] && typeof formData[urlKey] === 'string') {
+            submitData.append(urlKey, formData[urlKey]);
+        }
+    });
+
     try {
       const config = { headers: { 'Content-Type': 'multipart/form-data' } };
-      
       if (isEditing) {
         await api.patch(`/products/${editId}/`, submitData, config); 
         alert("Inventory Updated!");
@@ -367,15 +402,8 @@ const Products = () => {
     }
   };
 
-  const isService = formData.item_type === 'Service';
+  const clearFilters = () => { setTypeFilter('All'); setCategoryFilter('All'); setShowFilter(false); };
 
-  const clearFilters = () => {
-    setTypeFilter('All');
-    setCategoryFilter('All');
-    setShowFilter(false);
-  };
-
-  // --- QUILL RICH TEXT EDITOR CONFIG ---
   const quillModules = {
     toolbar: [
       [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
@@ -388,34 +416,20 @@ const Products = () => {
     ],
   };
 
-  const handleDescriptionChange = (content) => {
-    setFormData({ ...formData, description: content });
-  };
+  const handleDescriptionChange = (content) => setFormData({ ...formData, description: content });
 
+  const isService = formData.item_type === 'Service';
+  
   return (
     <div className="page-content smart-mobile-stack">
-      <input 
-        type="file" 
-        accept=".csv" 
-        ref={fileInputRef} 
-        style={{display:'none'}} 
-        onChange={handleImportFile} 
-      />
+      <input type="file" accept=".csv" ref={fileInputRef} style={{display:'none'}} onChange={handleImportFile} />
 
       <div className="action-bar">
         <h2 className="section-title">Inventory Management</h2>
-        
         <div className="action-buttons">
-          <button className="btn btn-gray" onClick={handleExport}>
-             <Download size={16} /> Export
-          </button>
-          <button className="btn btn-gray" onClick={handleImportClick} disabled={importing}>
-             <Upload size={16} /> {importing ? "Importing..." : "Import"}
-          </button>
-
-          <button className="btn btn-blue" onClick={openAddModal}>
-            <Plus size={16} /> Add Inventory
-          </button>
+          <button className="btn btn-gray" onClick={handleExport}><Download size={16} /> Export</button>
+          <button className="btn btn-gray" onClick={handleImportClick} disabled={importing}><Upload size={16} /> {importing ? "Importing..." : "Import"}</button>
+          <button className="btn btn-blue" onClick={openAddModal}><Plus size={16} /> Add Inventory</button>
           
           <div style={{ position: 'relative' }}>
             <button 
@@ -461,10 +475,9 @@ const Products = () => {
                 <th>Category</th>
                 <th>Stock / Status</th>
                 <th>Gross</th>
-                {/* Dynamically Hide the Includes Tax Column if NO TAX */}
                 {isTaxEnabled && <th>Includes Tax</th>}
                 <th>Online</th>
-                <th>Barcode</th> {/* <-- NEW COLUMN */}
+                <th>Barcode</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -488,16 +501,16 @@ const Products = () => {
                           </span>
                       </td>
                       <td>{row.category}</td>
+                      
                       <td>
                           {row.item_type === 'Goods' 
-                            ? `${row.quantity_product} ${row.unit_product}` 
+                            ? (row.has_variants ? <span className="badge bg-indigo-50 text-indigo-700" title="Check Variant Tab for Stock"><Layers size={12} className="inline mr-1"/> Multiple Variants</span> : `${row.quantity_product} ${row.unit_product}`) 
                             : <span className="text-green-600 font-medium">{row.availability_status_service}</span>
                           }
                       </td>
                       
-                      <td>{row.currency_symbol}{row.gross_amount}</td>
+                      <td>{row.has_variants ? '-' : `${row.currency_symbol}${row.gross_amount}`}</td>
                       
-                      {/* Hide value if Tax is disabled globally */}
                       {isTaxEnabled && <td>{row.price_includes_tax ? "Yes" : "No"}</td>}
                       
                       <td>
@@ -508,9 +521,8 @@ const Products = () => {
                           )}
                       </td>
 
-                      {/* ✅ ONLY SHOW BARCODE DOWNLOAD FOR "GOODS" */}
                       <td>
-                        {row.item_type?.toLowerCase() === 'goods' ? (
+                        {row.item_type?.toLowerCase() === 'goods' && !row.has_variants ? (
                           <button 
                             className="action-btn" 
                             onClick={() => handleDownloadBarcode(row.id, row.item_name)}
@@ -525,6 +537,16 @@ const Products = () => {
                       </td>
 
                       <td className="action-cells">
+                        {row.has_variants && (
+                        <button 
+                            className="action-btn" 
+                            onClick={() => setManagingVariantsFor(row)} 
+                            title="Manage Variants" 
+                            style={{ color: '#6d28d9' }}
+                        >
+                          <Layers size={16} />
+                        </button>
+                      )}
                         <button className="action-btn edit" onClick={() => openEditModal(row)} title="Edit"><Edit size={16} /></button>
                         <button className="action-btn delete" onClick={() => handleDelete(row.id)} title="Delete"><Trash2 size={16} /></button>
                       </td>
@@ -546,39 +568,15 @@ const Products = () => {
             
             <form onSubmit={handleSubmit} className="setup-form scrollable-form">
               
-              {/* Checkboxes Row */}
               <div style={{ padding: '10px 0', borderBottom: '1px solid #f3f4f6', marginBottom: '15px', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                 <label className="flex items-center gap-2 cursor-pointer" style={{fontSize: '14px', fontWeight: '500', color:'#374151'}}>
-                    <input 
-                        type="checkbox" 
-                        name="isShow" 
-                        checked={formData.isShow} 
-                        onChange={handleInputChange} 
-                        style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
-                    />
-                    Show in Online Store
+                    <input type="checkbox" name="isShow" checked={formData.isShow} onChange={handleInputChange} style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }} /> Show in Online Store
                 </label>
-
                 <label className="flex items-center gap-2 cursor-pointer" style={{fontSize: '14px', fontWeight: '500', color:'#374151'}}>
-                    <input 
-                        type="checkbox" 
-                        name="best_selling" 
-                        checked={formData.best_selling} 
-                        onChange={handleInputChange} 
-                        style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
-                    />
-                    Best Selling
+                    <input type="checkbox" name="best_selling" checked={formData.best_selling} onChange={handleInputChange} style={{ width: '18px', height: '18px', accentColor: '#10b981' }} /> Best Selling
                 </label>
-
                 <label className="flex items-center gap-2 cursor-pointer" style={{fontSize: '14px', fontWeight: '500', color:'#374151'}}>
-                    <input 
-                        type="checkbox" 
-                        name="trending" 
-                        checked={formData.trending} 
-                        onChange={handleInputChange} 
-                        style={{ width: '18px', height: '18px', accentColor: '#f59e0b' }}
-                    />
-                    Trending
+                    <input type="checkbox" name="trending" checked={formData.trending} onChange={handleInputChange} style={{ width: '18px', height: '18px', accentColor: '#f59e0b' }} /> Trending
                 </label>
               </div>
 
@@ -606,16 +604,35 @@ const Products = () => {
                 </div>
               </div>
 
+              {/* 🚨 UPDATED UI: Category / Subcategory Image Links */}
               <div className="form-row" style={{ borderBottom: '1px dashed #e5e7eb', paddingBottom: '15px', marginBottom: '15px' }}>
                  <div className="form-group half-width">
                      <label style={{ fontSize:'13px', color: '#6b7280' }}>Category Image (Optional)</label>
-                     <input type="file" onChange={(e) => handleFileChange(e, 'category_image')} accept="image/*" className="file-input-small"/>
+                     <input type="file" onChange={(e) => handleFileChange(e, 'category_image')} accept="image/*" className="file-input-small mb-2" style={{width:'100%'}}/>
+                     <input type="url" name="category_image_url" value={formData.category_image_url} onChange={handleInputChange} placeholder="Or paste Image URL" className="form-input" style={{fontSize:'12px', padding:'6px'}}/>
                  </div>
                  <div className="form-group half-width">
                      <label style={{ fontSize:'13px', color: '#6b7280' }}>Subcategory Image (Optional)</label>
-                     <input type="file" onChange={(e) => handleFileChange(e, 'subcategory_image')} accept="image/*" className="file-input-small"/>
+                     <input type="file" onChange={(e) => handleFileChange(e, 'subcategory_image')} accept="image/*" className="file-input-small mb-2" style={{width:'100%'}}/>
+                     <input type="url" name="subcategory_image_url" value={formData.subcategory_image_url} onChange={handleInputChange} placeholder="Or paste Image URL" className="form-input" style={{fontSize:'12px', padding:'6px'}}/>
                  </div>
               </div>
+
+              {!isService && (
+                 <div className="form-group" style={{ marginBottom: '15px' }}>
+                   <label className="flex items-center gap-2 cursor-pointer" style={{fontSize: '14px', fontWeight: '600', color:'#4f46e5', backgroundColor: '#f5f3ff', padding: '10px 15px', borderRadius: '8px', border: '1px solid #ddd6fe'}}>
+                       <input 
+                           type="checkbox" 
+                           name="has_variants" 
+                           checked={formData.has_variants} 
+                           onChange={handleInputChange} 
+                           disabled={isEditing}
+                           style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                       />
+                       This product has multiple variants (e.g., Sizes, Colors, RAM)
+                   </label>
+                 </div>
+              )}
 
               <div className="form-row">
                  {!isService && (
@@ -642,100 +659,124 @@ const Products = () => {
                  )}
               </div>
 
-              <div className="form-section-title">Pricing & Tax</div>
-              
-              <div className="form-row">
-                <div className="form-group half-width">
-                  <label>{isService ? 'Base Price (Fees)*' : 'MRP (Base Price)*'}</label>
-                  <input type="number" name="mrp_baseprice" value={formData.mrp_baseprice} onChange={handleInputChange} required />
-                </div>
-                
-                {/* Dynamically hide Tax Input if Business has NO TAX */}
-                {isTaxEnabled ? (
-                    <div className="form-group half-width">
-                      <label>Tax %*</label>
-                      <input type="number" name="tax_percent" value={formData.tax_percent} onChange={handleInputChange} required />
+              {(!formData.has_variants || isService) ? (
+                 <>
+                    <div className="form-section-title">Pricing & Tax</div>
+                    <div className="form-row">
+                      <div className="form-group half-width">
+                        <label>{isService ? 'Base Price (Fees)*' : 'MRP (Base Price)*'}</label>
+                        <input type="number" name="mrp_baseprice" value={formData.mrp_baseprice} onChange={handleInputChange} required />
+                      </div>
+                      
+                      {isTaxEnabled ? (
+                          <div className="form-group half-width">
+                            <label>Tax %*</label>
+                            <input type="number" name="tax_percent" value={formData.tax_percent} onChange={handleInputChange} required />
+                          </div>
+                      ) : (
+                          <div className="half-width"></div>
+                      )}
                     </div>
-                ) : (
-                    <div className="half-width"></div>
-                )}
-              </div>
 
-              <div className="form-row">
-                 <div className="form-group half-width">
-                    <label>Gross Amount*</label>
-                    <input type="number" name="gross_amount" value={formData.gross_amount} onChange={handleInputChange} required />
-                 </div>
-                 <div className="half-width"></div>
-              </div>
-
-              {!isService && (
-                  <div className="form-row">
-                    <div className="form-group half-width">
-                        <label>Cost Price*</label>
-                        <input type="number" name="cost_price_product" value={formData.cost_price_product} onChange={handleInputChange} required />
+                    <div className="form-row">
+                       <div className="form-group half-width">
+                          <label>Gross Amount*</label>
+                          <input type="number" name="gross_amount" value={formData.gross_amount} onChange={handleInputChange} required />
+                       </div>
+                       <div className="half-width"></div>
                     </div>
-                    <div className="half-width"></div> 
+
+                    {!isService && (
+                        <div className="form-row">
+                          <div className="form-group half-width">
+                              <label>Cost Price*</label>
+                              <input type="number" name="cost_price_product" value={formData.cost_price_product} onChange={handleInputChange} required />
+                          </div>
+                          <div className="half-width"></div> 
+                        </div>
+                    )}
+
+                    {!isService && (
+                        <>
+                          <div className="form-section-title">Inventory Details</div>
+                          <div className="form-row">
+                              <div className="form-group half-width">
+                                  <label>Quantity*</label>
+                                  <input type="number" name="quantity_product" value={formData.quantity_product} onChange={handleInputChange} required />
+                              </div>
+                              <div className="form-group half-width">
+                                  <label>Unit*</label>
+                                  <select name="unit_product" value={formData.unit_product} onChange={handleInputChange} required>
+                                      <option value="Pcs">Pieces (Pcs)</option>
+                                      <option value="kg">Kilogram (KG)</option>
+                                      <option value="liter">Liter (L)</option>
+                                      <option value="meter">Meter (M)</option>
+                                      <option value="box">Box</option>
+                                  </select>
+                              </div>
+                          </div>
+
+                          <div className="form-row">
+                              <div className="form-group half-width">
+                                  <label>Min Order Qty*</label>
+                                  <input type="number" name="min_order_quantity_product" value={formData.min_order_quantity_product} onChange={handleInputChange} required />
+                              </div>
+                              <div className="form-group half-width">
+                                  <label>Max Order Qty*</label>
+                                  <input type="number" name="max_order_quantity_product" value={formData.max_order_quantity_product} onChange={handleInputChange} required />
+                              </div>
+                          </div>
+
+                          <div className="form-group">
+                              <label>Min Stock Alert*</label>
+                              <input type="number" name="min_stock_product" value={formData.min_stock_product} onChange={handleInputChange} required />
+                          </div>
+                        </>
+                    )}
+                 </>
+              ) : (
+                  <div style={{ padding: '16px', backgroundColor: '#eff6ff', color: '#1e3a8a', borderRadius: '8px', marginBottom: '20px', border: '1px solid #bfdbfe' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', fontSize: '15px', marginBottom: '6px' }}>
+                          <Layers size={18} /> Variant System Active
+                      </div>
+                      <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.5' }}>
+                          Because this item has variants, its pricing, stock quantities, and SKU barcodes will be managed individually for each variant. 
+                          <strong> You can set these up on the next screen after saving this base item.</strong>
+                      </p>
                   </div>
               )}
 
-              {!isService && (
-                  <>
-                    <div className="form-section-title">Inventory Details</div>
-                    <div className="form-row">
-                        <div className="form-group half-width">
-                            <label>Quantity*</label>
-                            <input type="number" name="quantity_product" value={formData.quantity_product} onChange={handleInputChange} required />
-                        </div>
-                        <div className="form-group half-width">
-                            <label>Unit*</label>
-                            <select name="unit_product" value={formData.unit_product} onChange={handleInputChange} required>
-                                <option value="Pcs">Pieces (Pcs)</option>
-                                <option value="kg">Kilogram (KG)</option>
-                                <option value="liter">Liter (L)</option>
-                                <option value="meter">Meter (M)</option>
-                                <option value="box">Box</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="form-row">
-                        <div className="form-group half-width">
-                            <label>Min Order Qty*</label>
-                            <input type="number" name="min_order_quantity_product" value={formData.min_order_quantity_product} onChange={handleInputChange} required />
-                        </div>
-                        <div className="form-group half-width">
-                            <label>Max Order Qty*</label>
-                            <input type="number" name="max_order_quantity_product" value={formData.max_order_quantity_product} onChange={handleInputChange} required />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label>Min Stock Alert*</label>
-                        <input type="number" name="min_stock_product" value={formData.min_stock_product} onChange={handleInputChange} required />
-                    </div>
-                  </>
-              )}
-
               <div className="form-section-title">Media & Extras</div>
+              
+              {/* 🚨 UPDATED UI: Main Item Image */}
               <div className="form-group">
                  <label className="block fw-600" style={{fontSize:'13px', marginBottom:'6px'}}>Main Item Image</label>
-                 <input type="file" onChange={(e) => handleFileChange(e, 'item_image')} accept="image/*" />
+                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                     <input type="file" onChange={(e) => handleFileChange(e, 'item_image')} accept="image/*" style={{flex: 1, minWidth: '200px'}} />
+                     <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 'bold' }}>OR</span>
+                     <input type="url" name="item_image_url" value={formData.item_image_url} onChange={handleInputChange} placeholder="Paste Image URL" className="form-input" style={{flex: 1, minWidth: '200px'}} />
+                 </div>
               </div>
+
+              {/* 🚨 UPDATED UI: Images 1, 2, 3 */}
               <div className="form-row">
                  <div className="form-group" style={{flex:1}}>
                     <label style={{fontSize:'12px'}}>Image 1</label>
-                    <input type="file" onChange={(e) => handleFileChange(e, 'image_1')} accept="image/*" className="file-input-small"/>
+                    <input type="file" onChange={(e) => handleFileChange(e, 'image_1')} accept="image/*" className="file-input-small mb-2" style={{width:'100%'}}/>
+                    <input type="url" name="item_image_1" value={formData.item_image_1} onChange={handleInputChange} placeholder="Or paste URL" className="form-input" style={{fontSize:'12px', padding:'6px'}}/>
                  </div>
                  <div className="form-group" style={{flex:1}}>
                     <label style={{fontSize:'12px'}}>Image 2</label>
-                    <input type="file" onChange={(e) => handleFileChange(e, 'image_2')} accept="image/*" className="file-input-small"/>
+                    <input type="file" onChange={(e) => handleFileChange(e, 'image_2')} accept="image/*" className="file-input-small mb-2" style={{width:'100%'}}/>
+                    <input type="url" name="item_image_2" value={formData.item_image_2} onChange={handleInputChange} placeholder="Or paste URL" className="form-input" style={{fontSize:'12px', padding:'6px'}}/>
                  </div>
                  <div className="form-group" style={{flex:1}}>
                     <label style={{fontSize:'12px'}}>Image 3</label>
-                    <input type="file" onChange={(e) => handleFileChange(e, 'image_3')} accept="image/*" className="file-input-small"/>
+                    <input type="file" onChange={(e) => handleFileChange(e, 'image_3')} accept="image/*" className="file-input-small mb-2" style={{width:'100%'}}/>
+                    <input type="url" name="item_image_3" value={formData.item_image_3} onChange={handleInputChange} placeholder="Or paste URL" className="form-input" style={{fontSize:'12px', padding:'6px'}}/>
                  </div>
               </div>
+
               <div className="form-group">
                  <label>Video Link (Optional)</label>
                  <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
@@ -776,6 +817,13 @@ const Products = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {managingVariantsFor && (
+          <VariantManagerModal 
+              item={managingVariantsFor} 
+              onClose={() => setManagingVariantsFor(null)} 
+          />
       )}
     </div>
   );

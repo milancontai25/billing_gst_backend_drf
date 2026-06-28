@@ -5,7 +5,7 @@ from invoice.models import Invoice
 from order.models import Order
 from business_entity.models import BusinessEntity
 from customers.models import Customer
-from products.models import Item
+from products.models import Item, ItemVariant
 from users.models import User
 from users.serializers import UserSerializer
 from business_entity.serializers import BusinessEntitySerializer
@@ -42,18 +42,35 @@ class CustomerJWTAuthentication(JWTAuthentication):
             raise exceptions.AuthenticationFailed('No such customer')
 
 
+from django.db.models import Prefetch
+
 class ItemListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        business_slug = self.kwargs.get('business_slug')
+        business_slug = self.kwargs.get("business_slug")
 
-        return Item.objects.filter(
-            business__slug=business_slug,
-            isShow=True
-        ).order_by('-created_date')
+        return (
+            Item.objects
+            .filter(
+                business__slug=business_slug,
+                isShow=True
+            )
+            .select_related("business")
+            .prefetch_related(
+                Prefetch(
+                    "variants",
+                    queryset=ItemVariant.objects.prefetch_related(
+                        "attributes",
+                        "images"
+                    )
+                )
+            )
+            .order_by("-created_date")
+        )
     
+
 
 class BaseItemListView(generics.ListAPIView):
     serializer_class = ProductSerializer
@@ -61,13 +78,27 @@ class BaseItemListView(generics.ListAPIView):
     item_type = None
 
     def get_queryset(self):
-        business_slug = self.kwargs.get('business_slug')
+        business_slug = self.kwargs.get("business_slug")
 
-        return Item.objects.filter(
-            business__slug=business_slug,
-            isShow=True,
-            item_type=self.item_type
-        ).order_by('id')
+        return (
+            Item.objects
+            .filter(
+                business__slug=business_slug,
+                isShow=True,
+                item_type=self.item_type
+            )
+            .select_related("business")
+            .prefetch_related(
+                Prefetch(
+                    "variants",
+                    queryset=ItemVariant.objects.prefetch_related(
+                        "attributes",
+                        "images"
+                    )
+                )
+            )
+            .order_by("id")
+        )
 
 
 class GoodsItemListView(BaseItemListView):
@@ -85,9 +116,22 @@ class ItemSummaryBySlugView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, business_slug):
-        items = Item.objects.filter(
-            business__slug=business_slug,
-            isShow=True
+        items = (
+            Item.objects
+            .filter(
+                business__slug=business_slug,
+                isShow=True
+            )
+            .select_related("business")
+            .prefetch_related(
+                Prefetch(
+                    "variants",
+                    queryset=ItemVariant.objects.prefetch_related(
+                        "attributes",
+                        "images"
+                    )
+                )
+            )
         )
 
         # Categories in order of FIRST appearance
@@ -121,26 +165,53 @@ class ItemSummaryBySlugView(APIView):
         })
 
 
-    
+
+
 class ItemAllListView(generics.ListAPIView):
-    queryset = Item.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
 
-    
+    queryset = (
+        Item.objects
+        .select_related("business")
+        .prefetch_related(
+            Prefetch(
+                "variants",
+                queryset=ItemVariant.objects.prefetch_related(
+                    "attributes",
+                    "images"
+                )
+            )
+        )
+    )
+
 
 class ItemDetailBySlugView(generics.RetrieveAPIView):
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
-    lookup_field = 'slug'
-    lookup_url_kwarg = 'item_slug'   
+
+    lookup_field = "slug"
+    lookup_url_kwarg = "item_slug"
 
     def get_queryset(self):
-        business_slug = self.kwargs.get('business_slug')
+        business_slug = self.kwargs.get("business_slug")
 
-        return Item.objects.filter(
-            business__slug=business_slug,
-            isShow=True
+        return (
+            Item.objects
+            .filter(
+                business__slug=business_slug,
+                isShow=True
+            )
+            .select_related("business")
+            .prefetch_related(
+                Prefetch(
+                    "variants",
+                    queryset=ItemVariant.objects.prefetch_related(
+                        "attributes",
+                        "images"
+                    )
+                )
+            )
         )
 
 

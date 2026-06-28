@@ -155,13 +155,30 @@ const StoreCategory = () => {
   };
 
   const renderProductCard = (product, badgeLabel = null) => {
-    const mrp = parseFloat(product.mrp_baseprice || 0);
-    const sellingPrice = parseFloat(product.gross_amount || 0);
+    // --- 1. DEFAULT TO BASE PRODUCT DATA ---
+    let mrp = parseFloat(product.mrp_baseprice || 0);
+    let sellingPrice = parseFloat(product.gross_amount || 0);
+    let stockQuantity = product.quantity_product || 0;
+    let imageUrl = product.item_image_url || null;
+
+    // --- 2. OVERRIDE WITH FIRST VARIANT IF HAS_VARIANTS IS TRUE ---
+    if (product.has_variants && product.variants && product.variants.length > 0) {
+        const firstVariant = product.variants[0];
+        sellingPrice = parseFloat(firstVariant.selling_price || sellingPrice);
+        mrp = parseFloat(firstVariant.mrp || mrp); // Fallbacks to base mrp if not defined in variant
+        stockQuantity = firstVariant.stock !== undefined ? firstVariant.stock : stockQuantity;
+        
+        if (firstVariant.images && firstVariant.images.length > 0) {
+            const primaryImg = firstVariant.images.find(img => img.is_primary);
+            imageUrl = primaryImg ? primaryImg.image_url : firstVariant.images[0].image_url;
+        }
+    }
+
     const hasDiscount = mrp > sellingPrice;
     const currency = product.currency_symbol || '₹'; 
     const discountPercent = hasDiscount ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
 
-    // --- DYNAMIC AVAILABILITY LOGIC ---
+    // --- 3. DYNAMIC AVAILABILITY LOGIC ---
     const isService = product.item_type && String(product.item_type).toLowerCase().includes('service');
     let isUnavailable = false;
     let unavailableText = 'SOLD OUT';
@@ -173,7 +190,7 @@ const StoreCategory = () => {
             unavailableText = 'NOT AVAILABLE';
         }
     } else {
-        if (product.quantity_product <= 0) {
+        if (stockQuantity <= 0) {
             isUnavailable = true;
             unavailableText = 'SOLD OUT';
         }
@@ -186,8 +203,8 @@ const StoreCategory = () => {
                 {badgeLabel && !isUnavailable && <div className="elegant-badge">{badgeLabel}</div>}
                 {isUnavailable && <div className="elegant-badge out-of-stock">{unavailableText}</div>}
 
-                {product.item_image_url ? (
-                    <img src={product.item_image_url} alt={product.item_name} className={`elegant-product-img ${isUnavailable ? 'grayscale' : ''}`} />
+                {imageUrl ? (
+                    <img src={imageUrl} alt={product.item_name} className={`elegant-product-img ${isUnavailable ? 'grayscale' : ''}`} />
                 ) : ( 
                     <div className="elegant-placeholder-img">{product.item_name.charAt(0)}</div> 
                 )}
@@ -196,9 +213,16 @@ const StoreCategory = () => {
                     <button 
                         className="elegant-add-btn" 
                         disabled={isUnavailable} 
-                        onClick={(e) => handleAddToCart(product.id, e)}
+                        onClick={(e) => {
+                            // If it has variants, it's better to redirect them to the item page so they can choose size/color!
+                            if (product.has_variants) {
+                                navigate(`/${slug}/item/${product.slug}`);
+                            } else {
+                                handleAddToCart(product.id, e);
+                            }
+                        }}
                     >
-                        {isUnavailable ? unavailableText : 'Add to Cart'}
+                        {isUnavailable ? unavailableText : (product.has_variants ? 'Select Options' : 'Add to Cart')}
                     </button>
                 </div>
             </div>
@@ -324,7 +348,8 @@ const StoreCategory = () => {
                 <div className="category-blocks-grid">
                     {summaryData.categories.map((cat, idx) => (
                         <Link 
-                            to={`/${slug}/items#${encodeURIComponent(cat.category)}`}
+                            /* 👇 THE FIX: Passing Category via URL Query Param instead of hash 👇 */
+                            to={`/${slug}/items?category=${encodeURIComponent(cat.category)}`}
                             key={idx} 
                             className="cat-block"
                         >
